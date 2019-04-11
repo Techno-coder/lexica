@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Context, Dependency, ExecutionStep, NodeConstruct};
+use super::NodeConstruct;
 use super::{BinaryOperation, Identifier};
 
 #[derive(Debug)]
@@ -11,27 +11,6 @@ pub enum Expression<'a> {
 }
 
 impl<'a> NodeConstruct<'a> for Expression<'a> {
-	fn dependencies(&'a self, context: &mut Context<'a>) -> Vec<Dependency<'a>> {
-		match self {
-			Expression::BinaryOperation(operation) => operation.dependencies(context),
-			_ => Vec::new()
-		}
-	}
-
-	fn execute(&'a self, context: &mut Context<'a>) -> Result<ExecutionStep, ()> {
-		Ok(match self {
-			Expression::Variable(variable) => ExecutionStep::Value(*context.binding_value(variable)),
-			Expression::LiteralInteger(integer) => ExecutionStep::Value(*integer),
-			Expression::BinaryOperation(operation) => return operation.execute(context),
-		})
-	}
-
-	fn reverse(&'a self, context: &mut Context<'a>) -> Result<ExecutionStep, ()> {
-		match self {
-			Expression::BinaryOperation(operation) => operation.reverse(context),
-			_ => Ok(ExecutionStep::Void),
-		}
-	}
 }
 
 impl<'a> fmt::Display for Expression<'a> {

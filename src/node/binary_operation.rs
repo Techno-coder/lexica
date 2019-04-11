@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Context, Dependency, ExecutionStep, NodeConstruct};
+use super::NodeConstruct;
 use super::Expression;
 
 #[derive(Debug)]
@@ -29,31 +29,6 @@ pub struct BinaryOperation<'a> {
 }
 
 impl<'a> NodeConstruct<'a> for BinaryOperation<'a> {
-	fn dependencies(&'a self, _context: &mut Context<'a>) -> Vec<Dependency> {
-		vec![
-			Dependency::advance(&self.left),
-			Dependency::advance(&self.right)
-		]
-	}
-
-	fn execute(&'a self, context: &mut Context<'a>) -> Result<ExecutionStep, ()> {
-		let left = context.evaluation(&self.left);
-		let right = context.evaluation(&self.right);
-		let value = match self.operator {
-			BinaryOperator::Equal => if left == right { 1 } else { 0 },
-			BinaryOperator::Plus => left + right,
-			BinaryOperator::Minus => left - right,
-		};
-		Ok(ExecutionStep::Value(value))
-	}
-
-	fn reverse_dependencies(&'a self, _context: &mut Context<'a>) -> Vec<Dependency> {
-		self.dependencies(_context)
-	}
-
-	fn reverse(&'a self, _context: &mut Context<'a>) -> Result<ExecutionStep, ()> {
-		Ok(ExecutionStep::Void)
-	}
 }
 
 impl<'a> fmt::Display for BinaryOperation<'a> {

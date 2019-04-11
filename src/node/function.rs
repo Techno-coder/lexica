@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Context, Dependency, ExecutionStep, NodeConstruct};
+use super::NodeConstruct;
 use super::{Expression, Statement, Variable};
 
 #[derive(Debug)]
@@ -10,25 +10,7 @@ pub struct Function<'a> {
 	pub return_value: Expression<'a>,
 }
 
-// TODO: Replace with FunctionCall as this is a definition
 impl<'a> NodeConstruct<'a> for Function<'a> {
-	fn dependencies(&'a self, _context: &mut Context<'a>) -> Vec<Dependency<'a>> {
-		self.statements.iter().map(|node| Dependency::advance(node))
-		    .chain(::std::iter::once(Dependency::advance(&self.return_value))).collect()
-	}
-
-	fn execute(&'a self, context: &mut Context<'a>) -> Result<ExecutionStep, ()> {
-		let value = context.evaluation(&self.return_value);
-		Ok(ExecutionStep::Value(*value))
-	}
-
-	fn reverse_dependencies(&'a self, context: &mut Context<'a>) -> Vec<Dependency> {
-		self.dependencies(context)
-	}
-
-	fn reverse(&self, _context: &mut Context) -> Result<ExecutionStep, ()> {
-		Ok(ExecutionStep::Void)
-	}
 }
 
 impl<'a> fmt::Display for Function<'a> {
