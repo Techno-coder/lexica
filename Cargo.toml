@@ -1,0 +1,5 @@
+[package]
+name = "lexica"
+version = "0.1.0"
+authors = ["Techno-coder <8334328+Techno-coder@users.noreply.github.com>"]
+edition = "2018"
