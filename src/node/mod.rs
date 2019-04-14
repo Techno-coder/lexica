@@ -1,4 +1,4 @@
-use crate::interpreter::NodeConstruct;
+use crate::compiler::NodeConstruct;
 
 pub use self::binary_operation::*;
 pub use self::binding::*;

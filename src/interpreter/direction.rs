@@ -4,5 +4,4 @@ pub enum Direction {
 	Reverse,
 }
 
-impl Direction {
-}
+impl Direction {}

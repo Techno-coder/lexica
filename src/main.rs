@@ -1,7 +1,10 @@
+use crate::interpreter::Lexer;
+
 mod compiler;
 mod interpreter;
 mod node;
 mod display;
+mod source;
 
 //static PROGRAM: &'static str = r"
 //fn fibonacci(n: u32) -> u32 {
@@ -25,6 +28,56 @@ mod display;
 //}
 //";
 
+static LEXER_TEST: &'static str = r"
+@local u32 0   # 0: n
+@local u32 1   # 1: first
+@local u32 1   # 2: second
+@local u32 1   # 3: counter
+@local u32 0   # 4: summation
++fibonnaci:
+  -return
+  restore 0       *
+.0:
+  *
+  -jump 1
+  +branch = 3 0 1
+  *
+
+  add 4 1         *
+  add 4 2         *
+  swap 1 2        *
+  swap 2 4        *
+
+  *
+  +reset 4 0
+  -minus 4 1
+  -add 4 2
+  *
+
+  add.i 3 1       *
+
+  *
+  +jump 0
+  -branch.i = 4 1
+  *
+.1:
+  clone 0 3
+  drop 1
+  drop 3
+  drop 2
+  +return
+-fibonnaci^
+
++main:
+  drop.i u32 10
+  call +fibonnaci
+-main^
+";
+
 fn main() {
-	let _function = interpreter::construct();
+	let _function = compiler::construct();
+	let lexer = Lexer::new(LEXER_TEST);
+	for item in lexer {
+		println!("{:?}", item);
+	}
 }
