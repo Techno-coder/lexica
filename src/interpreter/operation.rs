@@ -1,5 +1,5 @@
-use super::operations::*;
 use super::OperationIdentifier;
+use super::operations::*;
 
 #[derive(Debug)]
 pub enum Operation {

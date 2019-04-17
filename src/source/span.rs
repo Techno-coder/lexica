@@ -14,12 +14,5 @@ impl Span {
 	pub fn range(&self) -> Range<usize> {
 		self.byte_start..self.byte_end
 	}
-
-	pub fn widen(&self, extension: usize) -> Span {
-		Span {
-			byte_start: self.byte_start.saturating_sub(extension),
-			byte_end: self.byte_end + extension,
-		}
-	}
 }
 

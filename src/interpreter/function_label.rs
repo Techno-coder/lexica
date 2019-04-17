@@ -1,4 +1,4 @@
-use super::{InstructionTarget, Primitive, LocalTable};
+use super::{InstructionTarget, LocalTable, Primitive};
 
 #[derive(Debug)]
 pub struct FunctionLabel {

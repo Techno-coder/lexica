@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Argument, Token, InterpreterError};
+use super::{Argument, InterpreterError, Token};
 
 pub type ParserResult<'a, T> = Result<T, Spanned<ParserError<'a>>>;
 
@@ -41,7 +41,7 @@ impl<'a> fmt::Display for ParserError<'a> {
 			InvalidArgument(argument) => writeln!(f, "Invalid annotation argument token: {:?}", argument),
 			UnexpectedArgument(argument) => writeln!(f, "Unexpected annotation argument: {:?}", argument),
 			UnexpectedOperand(operand) => writeln!(f, "Unexpected instruction operand: {:?}", operand),
-			IsolatedReverseLabel(label) => writeln!(f, "Reverse label is does not have function label: {}", label),
+			IsolatedReverseLabel(label) => writeln!(f, "Reverse label: {}, does not have function label", label),
 			UndefinedFunction(identifier) => writeln!(f, "Function label: {}, does not exist", identifier),
 			UndefinedLabel(identifier) => writeln!(f, "Label: {}, does not exist", identifier),
 			FunctionMissingContext => writeln!(f, "Instruction operation must be after function label"),

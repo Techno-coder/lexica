@@ -85,11 +85,10 @@ fn main() {
 	annotation_map.register("local".to_owned(), Box::new(crate::interpreter::annotations::LocalAnnotation));
 
 	let result = parse(text_map.text(), &annotation_map);
-	println!("{:?}", result);
 	if let Err(errors) = result {
 		for error in errors {
-			eprintln!("{:#?}", error);
-			eprintln!("{}", text_map.apply(&error.span.widen(20)));
+			crate::source::emit(&text_map, error);
+			println!()
 		}
 	}
 }

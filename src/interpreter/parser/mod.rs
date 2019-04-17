@@ -7,11 +7,11 @@ pub use self::element::*;
 pub use self::element_parser::*;
 pub use self::error::*;
 pub use self::lexer::*;
-pub use self::token::*;
-pub use self::operations::*;
-pub use self::parser_context::*;
 pub use self::operation_identifier::*;
+pub use self::operations::*;
 pub use self::parser::*;
+pub use self::parser_context::*;
+pub use self::token::*;
 
 #[macro_use]
 mod annotation_type;
