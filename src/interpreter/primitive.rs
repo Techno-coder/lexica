@@ -45,6 +45,7 @@ impl Primitive {
 
 	pub fn cast(self, target: Size) -> Option<Primitive> {
 		Some(match self {
+			Primitive::Boolean(_) if target == Size::Boolean => self,
 			Primitive::Integer(integer) => Primitive::Integer(integer.cast(target)?),
 			Primitive::Float(float) => Primitive::Float(float.cast(target)?),
 			_ => return None,

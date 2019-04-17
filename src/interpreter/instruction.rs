@@ -1,6 +1,6 @@
 use crate::source::Spanned;
 
-use super::{Direction, Operation, Token};
+use super::{Direction, Operation, OperationIdentifier, Token};
 
 #[derive(Debug)]
 pub struct Instruction {
@@ -14,8 +14,8 @@ pub struct InstructionTarget(pub usize);
 
 #[derive(Debug, Clone)]
 pub struct TranslationInstruction<'a> {
-	pub operation: &'a str,
-	pub arguments: Vec<Spanned<Token<'a>>>,
+	pub operation: OperationIdentifier,
+	pub operands: Vec<Spanned<Token<'a>>>,
 	pub direction: Option<Direction>,
 	pub polarization: Option<Direction>,
 }

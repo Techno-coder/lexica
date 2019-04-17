@@ -6,6 +6,7 @@ use super::{Annotation, Element};
 pub struct ParserContext<'a> {
 	pub pending_annotations: Vec<Spanned<Annotation<'a>>>,
 	pub last_function_label: Option<&'a str>,
+	pub last_label: Option<&'a str>,
 	pub last_element: Spanned<Element<'a>>,
 }
 
@@ -14,6 +15,7 @@ impl<'a> ParserContext<'a> {
 		Self {
 			pending_annotations: Vec::new(),
 			last_function_label: None,
+			last_label: None,
 			last_element: initial_element,
 		}
 	}

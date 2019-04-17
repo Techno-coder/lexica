@@ -2,7 +2,7 @@ use std::ops::{Index, IndexMut};
 
 use super::{InterpreterError, InterpreterResult, Primitive};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct LocalTable {
 	locals: Vec<Primitive>,
 }

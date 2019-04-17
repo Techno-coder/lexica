@@ -10,10 +10,9 @@ impl Reset {
 	pub fn new(table: &LocalTable, local: LocalTarget, immediate: Primitive)
 	           -> InterpreterResult<Reset> {
 		let table_local = table.local(&local)?;
-		if table_local.size() == immediate.size() {
-			Ok(Reset { local, immediate })
-		} else {
-			Err(InterpreterError::TypesIncompatible)
+		match immediate.cast(table_local.size()) {
+			Some(immediate) => Ok(Reset { local, immediate }),
+			None => Err(InterpreterError::TypesIncompatible),
 		}
 	}
 

@@ -11,7 +11,7 @@ impl AnnotationType for LocalAnnotation {
 		2
 	}
 
-	fn annotate<'a>(&self, annotation: &'a Spanned<Annotation>, context: &'a ParserContext,
+	fn annotate<'a>(&self, annotation: &Spanned<Annotation<'a>>, context: &ParserContext,
 	                unit: &mut TranslationUnit) -> ParserResult<'a, ()> {
 		let arguments = &annotation.arguments;
 		let size = argument!(arguments[0], Argument::String(size), size);
@@ -20,7 +20,7 @@ impl AnnotationType for LocalAnnotation {
 		let size = Size::parse(size)
 			.map_err(|error| Spanned::new(error, arguments[0].span.clone()))?;
 		let local = local.clone().cast(size)
-		                 .ok_or(arguments[1].map(|node| ParserError::UnexpectedArgument(node)))?;
+		                 .ok_or(arguments[1].map(|node| ParserError::UnexpectedArgument(node.clone())))?;
 
 		match context.last_element.node {
 			Element::FunctionLabel(function_label) => {

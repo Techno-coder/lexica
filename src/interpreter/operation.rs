@@ -15,7 +15,7 @@ pub enum Operation {
 	Restore(Restore),
 	Discard(Discard),
 	Reset(Reset),
-	Clone(Clone),
+	Clone(CloneLocal),
 	Call(Call),
 	Return,
 	Jump(Jump),

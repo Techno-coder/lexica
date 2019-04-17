@@ -1,4 +1,4 @@
-use super::{Context, InterpreterResult, LocalTable, LocalTarget, Primitive};
+use super::{Context, InterpreterResult, LocalTable, LocalTarget, Primitive, Size, InterpreterError};
 
 #[derive(Debug)]
 pub struct Drop {
@@ -28,8 +28,12 @@ pub struct DropImmediate {
 }
 
 impl DropImmediate {
-	pub fn new(immediate: Primitive) -> DropImmediate {
-		DropImmediate { immediate }
+	pub fn new(size: Size, immediate: Primitive) -> InterpreterResult<DropImmediate> {
+		match immediate.cast(size) {
+			Some(immediate) => Ok(DropImmediate { immediate }),
+			None => Err(InterpreterError::TypesIncompatible),
+		}
+
 	}
 
 	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {

@@ -81,7 +81,7 @@ impl<'a> ElementParser<'a> {
 			None => return self.discard(span.clone(), ParserError::EndOfInput),
 		};
 
-		let instruction = TranslationInstruction { operation: identifier, arguments, direction, polarization };
+		let instruction = TranslationInstruction { operation, operands: arguments, direction, polarization };
 		Ok(Spanned::new(Element::Instruction(instruction), span))
 	}
 }

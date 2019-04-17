@@ -1,6 +1,7 @@
 #![feature(try_from)]
 
-use crate::interpreter::{AnnotationMap, ElementParser};
+use crate::interpreter::{AnnotationMap, ElementParser, parse};
+use crate::source::TextMap;
 
 mod compiler;
 mod interpreter;
@@ -60,7 +61,7 @@ static LEXER_TEST: &'static str = r"
 
   *
   +jump 0
-  -branch.i = 4 1
+  -branch.i = 4 1 0
   *
 .1:
   -clone 0 3
@@ -78,15 +79,17 @@ static LEXER_TEST: &'static str = r"
 
 fn main() {
 	let _function = compiler::construct();
-//	let lexer = Lexer::new(LEXER_TEST);
-//	for item in lexer {
-//		println!("{:?}", item);
-//	}
+	let text_map = TextMap::new(LEXER_TEST.to_owned());
 
 	let mut annotation_map = AnnotationMap::default();
 	annotation_map.register("local".to_owned(), Box::new(crate::interpreter::annotations::LocalAnnotation));
-	let parser = ElementParser::new(LEXER_TEST, &annotation_map);
-	for item in parser {
-		println!("{:?}", item);
+
+	let result = parse(text_map.text(), &annotation_map);
+	println!("{:?}", result);
+	if let Err(errors) = result {
+		for error in errors {
+			eprintln!("{:#?}", error);
+			eprintln!("{}", text_map.apply(&error.span.widen(20)));
+		}
 	}
 }

@@ -13,4 +13,8 @@ impl TextMap {
 	pub fn apply(&self, span: &Span) -> &str {
 		&self.text[span.range()]
 	}
+
+	pub fn text(&self) -> &str {
+		&self.text
+	}
 }

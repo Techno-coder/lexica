@@ -6,5 +6,5 @@ use super::{Instruction, InstructionTarget, TranslationFunctionLabel};
 pub struct TranslationUnit {
 	pub instructions: Vec<Instruction>,
 	pub functions: HashMap<String, TranslationFunctionLabel>,
-	pub labels: HashMap<String, InstructionTarget>,
+	pub labels: HashMap<String, (InstructionTarget, HashMap<String, InstructionTarget>)>,
 }

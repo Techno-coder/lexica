@@ -1,18 +1,18 @@
 use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget};
 
 #[derive(Debug)]
-pub struct Clone {
+pub struct CloneLocal {
 	left: LocalTarget,
 	right: LocalTarget,
 }
 
-impl Clone {
+impl CloneLocal {
 	pub fn new(table: &LocalTable, left: LocalTarget, right: LocalTarget)
-	           -> InterpreterResult<Clone> {
+	           -> InterpreterResult<CloneLocal> {
 		let left_size = table.local(&left)?.size().byte_count();
 		let right_size = table.local(&right)?.size().byte_count();
 		if left_size == right_size {
-			Ok(Clone { left, right })
+			Ok(CloneLocal { left, right })
 		} else {
 			Err(InterpreterError::SizeIncompatible)
 		}

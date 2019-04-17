@@ -27,7 +27,3 @@ mod parser;
 mod parser_context;
 mod operation_identifier;
 pub mod annotations;
-
-pub fn parse(string: &str) -> TranslationUnit {
-	unimplemented!()
-}

@@ -2,7 +2,7 @@ use std::fmt;
 
 pub type InterpreterResult<T> = Result<T, InterpreterError>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InterpreterError {
 	CallStackEmpty,
 	DropStackEmpty,
