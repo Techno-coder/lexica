@@ -1,7 +1,7 @@
 use std::fmt;
 
-use super::NodeConstruct;
 use super::{BinaryOperation, Identifier};
+use super::NodeConstruct;
 
 #[derive(Debug)]
 pub enum Expression<'a> {
@@ -10,8 +10,7 @@ pub enum Expression<'a> {
 	BinaryOperation(Box<BinaryOperation<'a>>),
 }
 
-impl<'a> NodeConstruct<'a> for Expression<'a> {
-}
+impl<'a> NodeConstruct<'a> for Expression<'a> {}
 
 impl<'a> fmt::Display for Expression<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

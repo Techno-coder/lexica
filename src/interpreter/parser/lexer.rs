@@ -1,6 +1,6 @@
-use crate::source::SplitWhitespace;
+use crate::source::{Spanned, SplitWhitespace};
 
-use super::{Token, TokenType};
+use super::Token;
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -15,7 +15,7 @@ impl<'a> Lexer<'a> {
 }
 
 impl<'a> Iterator for Lexer<'a> {
-	type Item = Token<'a>;
+	type Item = Spanned<Token<'a>>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let (span, lexeme) = self.lexemes.next()?;
@@ -26,33 +26,35 @@ impl<'a> Iterator for Lexer<'a> {
 		let left_rest = || &lexeme[..right_index];
 		let middle = || &lexeme[1..right_index];
 
-		let token_type = match (left, right) {
-			('@', _) => TokenType::Annotation(right_rest()),
-			('+', ':') => TokenType::FunctionLabel(middle()),
-			('-', '^') => TokenType::ReverseLabel(middle()),
-			('.', ':') => TokenType::LocalLabel(middle()),
-			(_, ':') => TokenType::Label(left_rest()),
-			('+', _) => TokenType::Advance(right_rest()),
-			('-', _) => TokenType::Reverse(right_rest()),
-			('#', _) => TokenType::Comment(lexeme),
-			('*', _) if lexeme.len() == 1 => TokenType::ReversalHint,
-			('=', _) if lexeme.len() == 1 => TokenType::Equal,
-			('<', _) if lexeme.len() == 1 => TokenType::LessThan,
-			('>', _) if lexeme.len() == 1 => TokenType::GreaterThan,
-			('<', '=') if lexeme.len() == 2 => TokenType::LessThanEqual,
-			('>', '=') if lexeme.len() == 2 => TokenType::GreaterThanEqual,
+		let token = match (left, right) {
+			('@', _) => Token::Annotation(right_rest()),
+			('+', ':') => Token::FunctionLabel(middle()),
+			('-', '^') => Token::ReverseLabel(middle()),
+			('.', ':') => Token::LocalLabel(middle()),
+			(_, ':') => Token::Label(left_rest()),
+			('+', '\'') => Token::ReverseOnAdvancing(middle()),
+			('-', '\'') => Token::ReverseOnReversing(middle()),
+			('+', _) => Token::AdvanceOnAdvancing(right_rest()),
+			('-', _) => Token::AdvanceOnReversing(right_rest()),
+			('#', _) => Token::Comment(lexeme),
+			('*', _) if lexeme.len() == 1 => Token::ReversalHint,
+			('=', _) if lexeme.len() == 1 => Token::Equal,
+			('<', _) if lexeme.len() == 1 => Token::LessThan,
+			('>', _) if lexeme.len() == 1 => Token::GreaterThan,
+			('<', '=') if lexeme.len() == 2 => Token::LessThanEqual,
+			('>', '=') if lexeme.len() == 2 => Token::GreaterThanEqual,
 			_ => {
 				if let Ok(unsigned) = lexeme.parse::<u64>() {
-					TokenType::UnsignedInteger(unsigned)
+					Token::UnsignedInteger(unsigned)
 				} else if let Ok(signed) = lexeme.parse::<i64>() {
-					TokenType::SignedInteger(signed)
+					Token::SignedInteger(signed)
 				} else if let Ok(float) = lexeme.parse::<f64>() {
-					TokenType::Float(float)
+					Token::Float(float)
 				} else {
-					TokenType::Identifier(lexeme)
+					Token::Identifier(lexeme)
 				}
 			}
 		};
-		Some(Token { span, token_type })
+		Some(Spanned::new(token, span))
 	}
 }

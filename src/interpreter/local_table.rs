@@ -8,6 +8,10 @@ pub struct LocalTable {
 }
 
 impl LocalTable {
+	pub fn register(&mut self, local: Primitive) {
+		self.locals.push(local);
+	}
+
 	pub fn local(&self, target: &LocalTarget) -> InterpreterResult<&Primitive> {
 		let LocalTarget(index) = target;
 		self.locals.get(*index).ok_or(InterpreterError::InvalidLocal)

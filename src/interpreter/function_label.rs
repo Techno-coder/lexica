@@ -1,13 +1,13 @@
-use super::{InstructionTarget, Primitive};
+use super::{InstructionTarget, Primitive, LocalTable};
 
 #[derive(Debug)]
 pub struct FunctionLabel {
-	pub locals: Vec<Primitive>,
+	pub locals: LocalTable,
 }
 
 #[derive(Debug)]
 pub struct TranslationFunctionLabel {
-	pub locals: Vec<Primitive>,
+	pub locals: LocalTable,
 	pub target: InstructionTarget,
 	pub reverse_target: Option<InstructionTarget>,
 }

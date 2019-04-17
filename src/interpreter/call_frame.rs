@@ -1,4 +1,4 @@
-use super::{Direction, InterpreterError, InterpreterResult, LocalTable, LocalTarget, Primitive};
+use super::{Direction, LocalTable};
 
 #[derive(Debug)]
 pub struct CallFrame {

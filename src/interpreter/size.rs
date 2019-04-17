@@ -1,3 +1,5 @@
+use super::ParserError;
+
 #[derive(Debug, PartialEq)]
 pub enum Size {
 	Boolean,
@@ -15,6 +17,24 @@ pub enum Size {
 }
 
 impl Size {
+	pub fn parse(string: &str) -> Result<Size, ParserError> {
+		Ok(match string {
+			"bool" => Size::Boolean,
+			"u8" => Size::Unsigned8,
+			"u16" => Size::Unsigned16,
+			"u32" => Size::Unsigned32,
+			"u64" => Size::Unsigned64,
+			"i8" => Size::Signed8,
+			"i16" => Size::Signed16,
+			"i32" => Size::Signed32,
+			"i64" => Size::Signed64,
+			"f32" => Size::Float32,
+			"f64" => Size::Float64,
+			"box" => Size::Box,
+			_ => return Err(ParserError::InvalidSize(string))
+		})
+	}
+
 	pub fn byte_count(&self) -> usize {
 		match self {
 			Size::Boolean => 1,

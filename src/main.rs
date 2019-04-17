@@ -1,4 +1,6 @@
-use crate::interpreter::Lexer;
+#![feature(try_from)]
+
+use crate::interpreter::{AnnotationMap, ElementParser};
 
 mod compiler;
 mod interpreter;
@@ -61,7 +63,7 @@ static LEXER_TEST: &'static str = r"
   -branch.i = 4 1
   *
 .1:
-  clone 0 3
+  -clone 0 3
   drop 1
   drop 3
   drop 2
@@ -70,14 +72,21 @@ static LEXER_TEST: &'static str = r"
 
 +main:
   drop.i u32 10
-  call +fibonnaci
+  call fibonnaci
 -main^
 ";
 
 fn main() {
 	let _function = compiler::construct();
-	let lexer = Lexer::new(LEXER_TEST);
-	for item in lexer {
+//	let lexer = Lexer::new(LEXER_TEST);
+//	for item in lexer {
+//		println!("{:?}", item);
+//	}
+
+	let mut annotation_map = AnnotationMap::default();
+	annotation_map.register("local".to_owned(), Box::new(crate::interpreter::annotations::LocalAnnotation));
+	let parser = ElementParser::new(LEXER_TEST, &annotation_map);
+	for item in parser {
 		println!("{:?}", item);
 	}
 }

@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use super::{Instruction, InstructionTarget, TranslationFunctionLabel};
 
+#[derive(Debug, Default)]
 pub struct TranslationUnit {
-	instructions: Vec<Instruction>,
-	functions: HashMap<String, TranslationFunctionLabel>,
-	labels: HashMap<String, InstructionTarget>,
+	pub instructions: Vec<Instruction>,
+	pub functions: HashMap<String, TranslationFunctionLabel>,
+	pub labels: HashMap<String, InstructionTarget>,
 }

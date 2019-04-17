@@ -1,7 +1,7 @@
 use std::fmt;
 
-use super::NodeConstruct;
 use super::{Binding, ConditionalLoop, ExplicitDrop, Mutation, Swap};
+use super::NodeConstruct;
 
 #[derive(Debug)]
 pub enum Statement<'a> {
@@ -12,8 +12,7 @@ pub enum Statement<'a> {
 	ConditionalLoop(ConditionalLoop<'a>),
 }
 
-impl<'a> NodeConstruct<'a> for Statement<'a> {
-}
+impl<'a> NodeConstruct<'a> for Statement<'a> {}
 
 impl<'a> fmt::Display for Statement<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

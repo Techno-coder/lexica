@@ -86,4 +86,14 @@ impl Float {
 			Float::Float64(float) => *float -= other.extend(),
 		}
 	}
+
+	pub fn cast(self, target: Size) -> Option<Float> {
+		let mut float = match target {
+			Size::Float32 => Float::Float32(0.0),
+			Size::Float64 => Float::Float64(0.0),
+			_ => return None,
+		};
+		float.add(&self);
+		Some(float)
+	}
 }

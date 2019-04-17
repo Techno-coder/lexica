@@ -8,8 +8,7 @@ pub struct Swap<'a> {
 	pub right: Identifier<'a>,
 }
 
-impl<'a> NodeConstruct<'a> for Swap<'a> {
-}
+impl<'a> NodeConstruct<'a> for Swap<'a> {}
 
 impl<'a> fmt::Display for Swap<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

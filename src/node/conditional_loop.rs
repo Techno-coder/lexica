@@ -1,7 +1,7 @@
 use std::fmt;
 
-use super::NodeConstruct;
 use super::{Expression, Statement};
+use super::NodeConstruct;
 
 #[derive(Debug)]
 pub struct ConditionalLoop<'a> {
@@ -10,8 +10,7 @@ pub struct ConditionalLoop<'a> {
 	pub statements: Vec<Statement<'a>>,
 }
 
-impl<'a> NodeConstruct<'a> for ConditionalLoop<'a> {
-}
+impl<'a> NodeConstruct<'a> for ConditionalLoop<'a> {}
 
 impl<'a> fmt::Display for ConditionalLoop<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

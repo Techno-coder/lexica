@@ -127,4 +127,20 @@ impl Integer {
 			Integer::Signed64(integer) => *integer = integer.wrapping_sub(extension as i64),
 		}
 	}
+
+	pub fn cast(self, target: Size) -> Option<Integer> {
+		let mut other = match target {
+			Size::Unsigned8 => Integer::Unsigned8(0),
+			Size::Unsigned16 => Integer::Unsigned16(0),
+			Size::Unsigned32 => Integer::Unsigned32(0),
+			Size::Unsigned64 => Integer::Unsigned64(0),
+			Size::Signed8 => Integer::Signed8(0),
+			Size::Signed16 => Integer::Signed16(0),
+			Size::Signed32 => Integer::Signed32(0),
+			Size::Signed64 => Integer::Signed64(0),
+			_ => return None,
+		};
+		other.add(&self);
+		Some(other)
+	}
 }

@@ -14,3 +14,12 @@ impl Call {
 		context.set_next_instruction(&self.target)
 	}
 }
+
+#[derive(Debug)]
+pub struct Return;
+
+impl Return {
+	pub fn execute(&self, context: &mut Context) {
+		unimplemented!()
+	}
+}

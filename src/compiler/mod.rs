@@ -1,6 +1,6 @@
-mod node_construct;
-
 pub use self::node_construct::*;
+
+mod node_construct;
 
 pub fn construct() -> crate::node::Function<'static> {
 	use crate::node::*;

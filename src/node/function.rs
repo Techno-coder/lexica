@@ -1,7 +1,7 @@
 use std::fmt;
 
-use super::NodeConstruct;
 use super::{Expression, Statement, Variable};
+use super::NodeConstruct;
 
 #[derive(Debug)]
 pub struct Function<'a> {
@@ -10,8 +10,7 @@ pub struct Function<'a> {
 	pub return_value: Expression<'a>,
 }
 
-impl<'a> NodeConstruct<'a> for Function<'a> {
-}
+impl<'a> NodeConstruct<'a> for Function<'a> {}
 
 impl<'a> fmt::Display for Function<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
