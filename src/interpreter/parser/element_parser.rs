@@ -6,6 +6,8 @@ use crate::source::{Span, Spanned};
 use super::{Annotation, AnnotationMap, AnnotationType, Argument, Direction, Element,
             Lexer, OperationIdentifier, ParserError, ParserResult, Token, TranslationInstruction};
 
+/// Parses tokens into elements.
+#[derive(Debug)]
 pub struct ElementParser<'a> {
 	lexer: Peekable<Lexer<'a>>,
 	annotation_map: &'a AnnotationMap,
@@ -17,6 +19,8 @@ impl<'a> ElementParser<'a> {
 		Self { lexer, annotation_map }
 	}
 
+	/// Advances the lexer until a valid state is reached and returns
+	/// the provided error.
 	fn discard<T>(&mut self, span: Span, error: ParserError<'a>) -> ParserResult<'a, T> {
 		while let Some(token) = self.lexer.peek() {
 			if token.node.element_delimiter() {
@@ -28,6 +32,7 @@ impl<'a> ElementParser<'a> {
 		Err(Spanned::new(error, span))
 	}
 
+	/// Parses an annotation from the subsequent tokens.
 	fn annotation(&mut self, span: Span, identifier: &'a str)
 	              -> Option<ParserResult<'a, Spanned<Element<'a>>>> {
 		Some(match self.annotation_map.get(identifier) {
@@ -44,6 +49,7 @@ impl<'a> ElementParser<'a> {
 		})
 	}
 
+	/// Parses the annotation arguments from the subsequent tokens.
 	fn annotation_arguments(&mut self, span: Span, annotation: &AnnotationType)
 	                        -> ParserResult<'a, Vec<Spanned<Argument<'a>>>> {
 		let mut arguments: Vec<Spanned<Argument>> = Vec::new();
@@ -62,12 +68,16 @@ impl<'a> ElementParser<'a> {
 		Ok(arguments)
 	}
 
+	/// Parses an instruction from the subsequent tokens.
+	/// Additionally, verifies the instruction directions and polarizations are valid.
 	fn instruction(&mut self, span: Span, identifier: &'a str, direction: Option<Direction>,
 	               polarization: Option<Direction>) -> ParserResult<'a, Spanned<Element<'a>>> {
 		let operation = match OperationIdentifier::parse(identifier) {
-			Some(operation) => match !operation.reversible() && polarization.is_none() {
-				false => operation,
-				_ => return self.discard(span, ParserError::MissingPolarization(identifier)),
+			Some(operation) => match (operation.reversible(), direction, polarization) {
+				(false, Some(Direction::Reverse), _) => return self
+					.discard(span, ParserError::IrreversibleOperation(identifier)),
+				(false, _, None) => return self.discard(span, ParserError::MissingPolarization(identifier)),
+				_ => operation,
 			},
 			None => return self.discard(span.clone(), ParserError::InvalidOperation(identifier)),
 		};
@@ -93,7 +103,10 @@ impl<'a> Iterator for ElementParser<'a> {
 		let token = self.lexer.next()?;
 		Some(match token.node {
 			Token::Annotation(identifier) => return self.annotation(token.span, identifier),
-			Token::Identifier(identifier) => self.instruction(token.span, identifier, None, None),
+			Token::Identifier(identifier) => self
+				.instruction(token.span, identifier, Some(Direction::Advance), None),
+			Token::Reversed(identifier) => self
+				.instruction(token.span, identifier, Some(Direction::Reverse), None),
 			Token::AdvanceOnAdvancing(identifier) => self
 				.instruction(token.span, identifier, Some(Direction::Advance), Some(Direction::Advance)),
 			Token::AdvanceOnReversing(identifier) => self

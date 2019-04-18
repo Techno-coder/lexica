@@ -1,3 +1,4 @@
+/// The identifier each operation matches.
 #[derive(Debug, Clone)]
 pub enum OperationIdentifier {
 	ReversalHint,
@@ -21,6 +22,7 @@ pub enum OperationIdentifier {
 }
 
 impl OperationIdentifier {
+	/// Returns the number of arguments the operation accepts.
 	pub fn argument_count(&self) -> usize {
 		use self::OperationIdentifier::*;
 		match self {
@@ -45,6 +47,11 @@ impl OperationIdentifier {
 		}
 	}
 
+	/// Parses an identifier string into an the operation identifier.
+	///
+	/// # Errors
+	///
+	/// Returns `None` if no operation matches the string.
 	pub fn parse(identifier: &str) -> Option<OperationIdentifier> {
 		use self::OperationIdentifier::*;
 		Some(match identifier {
@@ -70,6 +77,7 @@ impl OperationIdentifier {
 		})
 	}
 
+	/// Returns whether the operation is reversible.
 	pub fn reversible(&self) -> bool {
 		use self::OperationIdentifier::*;
 		match self {

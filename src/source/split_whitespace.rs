@@ -20,7 +20,7 @@ impl<'a> SplitWhitespace<'a> {
 	}
 
 	fn split_comment(&mut self) -> usize {
-		self.iterator.find(|(index, character)| character == &'\n')
+		self.iterator.find(|(_, character)| character == &'\n')
 		    .map(|(index, _)| index)
 		    .unwrap_or(0)
 	}

@@ -6,6 +6,7 @@ use super::{Argument, InterpreterError, Token};
 
 pub type ParserResult<'a, T> = Result<T, Spanned<ParserError<'a>>>;
 
+/// An error that can occur during the parsing stage.
 #[derive(Debug, Clone)]
 pub enum ParserError<'a> {
 	InvalidAnnotation(&'a str),
@@ -25,6 +26,8 @@ pub enum ParserError<'a> {
 	DuplicateLabel(&'a str),
 	DuplicateLocalLabel(&'a str),
 	InvalidSize(&'a str),
+	IrreversibleOperation(&'a str),
+	IrreversibleCall,
 	EndOfInput,
 	Interpreter(InterpreterError),
 }
@@ -50,6 +53,8 @@ impl<'a> fmt::Display for ParserError<'a> {
 			DuplicateLabel(label) => writeln!(f, "Label: {}, has already been defined", label),
 			DuplicateLocalLabel(label) => writeln!(f, "Local label: {}, has already been defined", label),
 			InvalidSize(size) => writeln!(f, "Specified size {}, is invalid", size),
+			IrreversibleOperation(operation) => writeln!(f, "Instruction operation: {}, is not reversible", operation),
+			IrreversibleCall => writeln!(f, "Function with no reverse label is not reversible"),
 			EndOfInput => writeln!(f, "Unexpected end of input"),
 			Interpreter(error) => writeln!(f, "Interpreter error occurred while parsing: {}", error),
 		}

@@ -2,9 +2,12 @@ use std::collections::HashMap;
 
 use crate::source::{Span, Spanned};
 
-use super::{AnnotationMap, Element, ElementParser, Instruction, InstructionTarget, LocalTable,
-            Operation, ParserContext, ParserError, TranslationFunctionLabel, TranslationUnit};
+use super::{AnnotationMap, Direction, Element, ElementParser, Instruction, InstructionTarget,
+            LocalTable, Operation, ParserContext, ParserError, TranslationFunctionLabel,
+            TranslationUnit};
 
+/// Parses byte code into a `TranslationUnit`.
+/// Additionally, verifies that all instructions are valid.
 pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
                  -> Result<TranslationUnit, Vec<Spanned<ParserError<'a>>>> {
 	let mut errors: Vec<Spanned<ParserError<'a>>> = Vec::new();
@@ -47,8 +50,24 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 			Element::Label(label) => context.last_function_label = Some(label),
 			Element::Instruction(instruction) => {
 				use super::match_operation;
-				let operation = match_operation(&element.span, &instruction.operation, &instruction.operands,
-				                                &context, &unit);
+				let operation = match_operation(&element.span, &instruction.operation,
+				                                &instruction.operands, &context, &unit);
+
+				match &instruction.direction {
+					Some(Direction::Advance) => (),
+					_ => match &operation {
+						Ok(Operation::Call(call)) => match call.reversible() {
+							false => {
+								let error = ParserError::IrreversibleCall;
+								errors.push(Spanned::new(error, element.span));
+								continue;
+							}
+							_ => (),
+						}
+						_ => (),
+					}
+				}
+
 				match operation {
 					Ok(operation) => {
 						unit.instructions.push(Instruction {
@@ -83,6 +102,7 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 	}
 }
 
+/// Adds labels and label definitions to the `TranslationUnit`.
 fn labels<'a>(unit: &mut TranslationUnit, elements: &Vec<Spanned<Element<'a>>>)
               -> Vec<Spanned<ParserError<'a>>> {
 	let mut errors = Vec::new();
@@ -134,6 +154,7 @@ fn labels<'a>(unit: &mut TranslationUnit, elements: &Vec<Spanned<Element<'a>>>)
 	errors
 }
 
+/// Adds and verifies reverse function labels to the `TranslationUnit`.
 fn reverse_labels<'a>(unit: &mut TranslationUnit, elements: &Vec<Spanned<Element<'a>>>)
                       -> Vec<Spanned<ParserError<'a>>> {
 	let mut errors = Vec::new();

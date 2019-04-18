@@ -10,6 +10,7 @@ use super::{Comparator, Float, Integer, InterpreterResult, LocalTable, LocalTarg
 
 type Operand<'a> = Spanned<Token<'a>>;
 
+/// Parses an operation given the operation identifier and operands.
 pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operands: &Vec<Operand<'a>>,
                            context: &ParserContext, unit: &TranslationUnit) -> ParserResult<'a, Operation> {
 	let function = context
@@ -67,11 +68,12 @@ pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operand
 		}
 		OperationIdentifier::Call => {
 			let target = target(&operands[0])?;
-			let target = unit.functions.get(&target)
-			                 .map(|function| function.target.clone())
-			                 .ok_or(Spanned::new(ParserError::UndefinedFunction(target),
-			                                     operands[0].span.clone()))?;
-			Operation::Call(Call::new(target))
+			let (target, reverse_target) = unit
+				.functions.get(&target)
+				.map(|function| (function.target.clone(), function.reverse_target.clone()))
+				.ok_or(Spanned::new(ParserError::UndefinedFunction(target),
+				                    operands[0].span.clone()))?;
+			Operation::Call(Call::new(target, reverse_target))
 		}
 		OperationIdentifier::Return => {
 			// TODO
@@ -96,10 +98,12 @@ pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operand
 	})
 }
 
+/// Transforms an `InterpreterResult` into a `ParserResult`.
 fn error<'a, 'b, T>(result: InterpreterResult<T>, span: &'a Span) -> ParserResult<'b, T> {
 	result.map_err(|error| Spanned::new(ParserError::Interpreter(error), span.clone()))
 }
 
+/// Transforms the operand into a `LocalTarget`.
 fn local<'a>(local: &Operand<'a>) -> ParserResult<'a, LocalTarget> {
 	match local.node {
 		Token::UnsignedInteger(integer) => Ok(LocalTarget(integer as usize)),
@@ -107,6 +111,7 @@ fn local<'a>(local: &Operand<'a>) -> ParserResult<'a, LocalTarget> {
 	}
 }
 
+/// Transforms the operand into a `Primitive`.
 fn primitive<'a>(primitive: &Operand<'a>) -> ParserResult<'a, Primitive> {
 	Ok(match primitive.node {
 		Token::UnsignedInteger(integer) => Primitive::Integer(Integer::Unsigned64(integer)),
@@ -116,6 +121,7 @@ fn primitive<'a>(primitive: &Operand<'a>) -> ParserResult<'a, Primitive> {
 	})
 }
 
+/// Transforms the operand into a `Size`.
 fn size<'a>(size: &Operand<'a>) -> ParserResult<'a, Size> {
 	match size.node {
 		Token::Identifier(identifier) => {
@@ -125,6 +131,7 @@ fn size<'a>(size: &Operand<'a>) -> ParserResult<'a, Size> {
 	}
 }
 
+/// Transforms the operand into a label target string.
 fn target<'a>(target: &Operand<'a>) -> ParserResult<'a, String> {
 	Ok(match target.node {
 		Token::Identifier(identifier) => identifier.to_owned(),
@@ -134,6 +141,7 @@ fn target<'a>(target: &Operand<'a>) -> ParserResult<'a, String> {
 	})
 }
 
+/// Transforms the operand into an `InstructionTarget`.
 fn target_label<'a>(span: &Span, target_label: &Operand<'a>, unit: &TranslationUnit,
                     context: &ParserContext) -> ParserResult<'a, InstructionTarget> {
 	let target = target(target_label)?;
@@ -146,6 +154,7 @@ fn target_label<'a>(span: &Span, target_label: &Operand<'a>, unit: &TranslationU
 	    .ok_or(Spanned::new(ParserError::UndefinedLabel(target), span.clone()))
 }
 
+/// Transforms the operand into a `Comparator`.
 fn comparator<'a>(comparator: &Operand<'a>) -> ParserResult<'a, Comparator> {
 	Ok(match comparator.node {
 		Token::Equal => Comparator::Equal,

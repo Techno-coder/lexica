@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Represents a whitespace separated substring of byte code.
 #[derive(Debug, Clone)]
 pub enum Token<'a> {
 	ReversalHint,
@@ -16,6 +17,7 @@ pub enum Token<'a> {
 	UnsignedInteger(u64),
 	SignedInteger(i64),
 	Float(f64),
+	Reversed(&'a str),
 	AdvanceOnAdvancing(&'a str),
 	AdvanceOnReversing(&'a str),
 	ReverseOnAdvancing(&'a str),
@@ -25,6 +27,7 @@ pub enum Token<'a> {
 }
 
 impl<'a> Token<'a> {
+	/// Returns whether the token can delineate an element.
 	pub fn element_delimiter(&self) -> bool {
 		match self {
 			Token::ReversalHint => true,
@@ -33,6 +36,7 @@ impl<'a> Token<'a> {
 			Token::LocalLabel(_) => true,
 			Token::FunctionLabel(_) => true,
 			Token::ReverseLabel(_) => true,
+			Token::Reversed(_) => true,
 			Token::AdvanceOnAdvancing(_) => true,
 			Token::AdvanceOnReversing(_) => true,
 			Token::ReverseOnAdvancing(_) => true,
@@ -66,6 +70,7 @@ impl<'a> fmt::Display for Token<'a> {
 			Token::ReverseOnReversing(string) => write!(f, "-{}'", string),
 			Token::Comment(comment) => write!(f, "{}", comment),
 			Token::Identifier(string) => write!(f, "{}", string),
+			Token::Reversed(string) => write!(f, "{}'", string),
 		}
 	}
 }

@@ -9,7 +9,7 @@ pub struct Instruction {
 	pub polarization: Option<Direction>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct InstructionTarget(pub usize);
 
 #[derive(Debug, Clone)]

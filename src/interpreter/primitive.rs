@@ -2,6 +2,7 @@ use super::{DropStack, Float, Integer, InterpreterResult, Size};
 
 pub type Endian = byteorder::LittleEndian;
 
+/// A basic data type in the interpreter storing a value.
 #[derive(Debug, Clone)]
 pub enum Primitive {
 	Boolean(bool),
@@ -10,6 +11,7 @@ pub enum Primitive {
 }
 
 impl Primitive {
+	/// Returns size of the primitive in bytes.
 	pub fn size(&self) -> Size {
 		match self {
 			Primitive::Boolean(_) => Size::Boolean,
@@ -18,6 +20,7 @@ impl Primitive {
 		}
 	}
 
+	/// Pushes the primitive value onto a drop stack.
 	pub fn drop(&self, drop_stack: &mut DropStack) {
 		match self {
 			Primitive::Boolean(boolean) => match boolean {
@@ -29,6 +32,7 @@ impl Primitive {
 		}
 	}
 
+	/// Pops a value off the drop stack and stores it into the primitive.
 	pub fn restore(&mut self, drop_stack: &mut DropStack) -> InterpreterResult<()> {
 		match self {
 			Primitive::Boolean(boolean) => {
@@ -43,6 +47,9 @@ impl Primitive {
 		}
 	}
 
+	/// Casts the primitive into another primitive of a compatible size.
+	///
+	/// Returns `None` if the sizes are not compatible.
 	pub fn cast(self, target: Size) -> Option<Primitive> {
 		Some(match self {
 			Primitive::Boolean(_) if target == Size::Boolean => self,

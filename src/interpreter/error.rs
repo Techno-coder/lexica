@@ -13,6 +13,7 @@ pub enum InterpreterError {
 	TypesIncompatible,
 	InvalidRuntime,
 	UndefinedComparison,
+	Irreversible,
 }
 
 impl fmt::Display for InterpreterError {
@@ -28,6 +29,7 @@ impl fmt::Display for InterpreterError {
 			TypesIncompatible => writeln!(f, "Types of operands are incompatible"),
 			InvalidRuntime => writeln!(f, "Runtime construction of operation is invalid"),
 			UndefinedComparison => writeln!(f, "Comparison of operands is not invalid"),
+			Irreversible => writeln!(f, "Instruction cannot be reversed"),
 		}
 	}
 }

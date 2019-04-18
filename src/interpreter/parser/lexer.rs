@@ -2,6 +2,7 @@ use crate::source::{Spanned, SplitWhitespace};
 
 use super::Token;
 
+/// Parses a string into separate tokens.
 #[derive(Debug)]
 pub struct Lexer<'a> {
 	lexemes: SplitWhitespace<'a>,
@@ -34,6 +35,7 @@ impl<'a> Iterator for Lexer<'a> {
 			(_, ':') => Token::Label(left_rest()),
 			('+', '\'') => Token::ReverseOnAdvancing(middle()),
 			('-', '\'') => Token::ReverseOnReversing(middle()),
+			(_, '\'') => Token::Reversed(left_rest()),
 			('+', _) => Token::AdvanceOnAdvancing(right_rest()),
 			('-', _) => Token::AdvanceOnReversing(right_rest()),
 			('#', _) => Token::Comment(lexeme),

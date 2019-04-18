@@ -1,5 +1,6 @@
 use super::ParserError;
 
+/// Represents possible data types in the interpreter.
 #[derive(Debug, PartialEq)]
 pub enum Size {
 	Boolean,
@@ -17,6 +18,11 @@ pub enum Size {
 }
 
 impl Size {
+	/// Parses a `Size` from a string.
+	///
+	/// # Errors
+	///
+	/// If the string does not match a size then an error is returned.
 	pub fn parse(string: &str) -> Result<Size, ParserError> {
 		Ok(match string {
 			"bool" => Size::Boolean,
@@ -35,6 +41,7 @@ impl Size {
 		})
 	}
 
+	/// Returns the number of bytes this size takes.
 	pub fn byte_count(&self) -> usize {
 		match self {
 			Size::Boolean => 1,
