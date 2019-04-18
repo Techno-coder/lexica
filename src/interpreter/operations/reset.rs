@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget, Primitive};
 
 #[derive(Debug)]
@@ -21,5 +23,11 @@ impl Reset {
 		let local = &mut context.frame()?.table_mut()[&self.local];
 		mem::replace(local, self.immediate.clone());
 		Ok(())
+	}
+}
+
+impl fmt::Display for Reset {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{} {}", self.local, self.immediate)
 	}
 }

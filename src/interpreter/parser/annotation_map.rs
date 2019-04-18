@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{AnnotationType, ParserError, ParserResult};
+use super::AnnotationType;
 
 /// Stores a register of annotation types keyed by their identifiers.
 #[derive(Debug, Default)]
@@ -18,6 +18,6 @@ impl AnnotationMap {
 	/// Retrieves an annotation by the specified identifier key.
 	pub fn get(&self, identifier: &str) -> Option<&AnnotationType> {
 		self.annotations.get(identifier)
-		    .map(|annotation| annotation.as_ref())
+			.map(|annotation| annotation.as_ref())
 	}
 }

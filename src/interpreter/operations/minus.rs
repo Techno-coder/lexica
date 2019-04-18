@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Add, AddImmediate, Context, InterpreterResult, LocalTable, LocalTarget, Primitive};
 
 #[derive(Debug)]
@@ -21,6 +23,12 @@ impl Minus {
 	}
 }
 
+impl fmt::Display for Minus {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{}", self.inner)
+	}
+}
+
 #[derive(Debug)]
 pub struct MinusImmediate {
 	inner: AddImmediate,
@@ -39,5 +47,11 @@ impl MinusImmediate {
 
 	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
 		self.inner.execute(context)
+	}
+}
+
+impl fmt::Display for MinusImmediate {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{}", self.inner)
 	}
 }

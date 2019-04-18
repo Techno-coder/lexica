@@ -70,11 +70,11 @@ impl<'a> ElementParser<'a> {
 
 	/// Parses an instruction from the subsequent tokens.
 	/// Additionally, verifies the instruction directions and polarizations are valid.
-	fn instruction(&mut self, span: Span, identifier: &'a str, direction: Option<Direction>,
+	fn instruction(&mut self, span: Span, identifier: &'a str, direction: Direction,
 	               polarization: Option<Direction>) -> ParserResult<'a, Spanned<Element<'a>>> {
 		let operation = match OperationIdentifier::parse(identifier) {
 			Some(operation) => match (operation.reversible(), direction, polarization) {
-				(false, Some(Direction::Reverse), _) => return self
+				(false, Direction::Reverse, _) => return self
 					.discard(span, ParserError::IrreversibleOperation(identifier)),
 				(false, _, None) => return self.discard(span, ParserError::MissingPolarization(identifier)),
 				_ => operation,
@@ -94,6 +94,18 @@ impl<'a> ElementParser<'a> {
 		let instruction = TranslationInstruction { operation, operands: arguments, direction, polarization };
 		Ok(Spanned::new(Element::Instruction(instruction), span))
 	}
+
+	/// Parses a reversal hint from the subsequent tokens.
+	/// If there are consecutive reversal hint tokens, only one is produced.
+	fn reversal_hint(&mut self, span: Span) -> ParserResult<'a, Spanned<Element<'a>>> {
+		while let Some(token) = self.lexer.peek() {
+			let _ = match token.node {
+				Token::ReversalHint => self.lexer.next(),
+				_ => break,
+			};
+		}
+		Ok(Spanned::new(Element::ReversalHint, span))
+	}
 }
 
 impl<'a> Iterator for ElementParser<'a> {
@@ -104,22 +116,22 @@ impl<'a> Iterator for ElementParser<'a> {
 		Some(match token.node {
 			Token::Annotation(identifier) => return self.annotation(token.span, identifier),
 			Token::Identifier(identifier) => self
-				.instruction(token.span, identifier, Some(Direction::Advance), None),
+				.instruction(token.span, identifier, Direction::Advance, None),
 			Token::Reversed(identifier) => self
-				.instruction(token.span, identifier, Some(Direction::Reverse), None),
+				.instruction(token.span, identifier, Direction::Reverse, None),
 			Token::AdvanceOnAdvancing(identifier) => self
-				.instruction(token.span, identifier, Some(Direction::Advance), Some(Direction::Advance)),
+				.instruction(token.span, identifier, Direction::Advance, Some(Direction::Advance)),
 			Token::AdvanceOnReversing(identifier) => self
-				.instruction(token.span, identifier, Some(Direction::Advance), Some(Direction::Reverse)),
+				.instruction(token.span, identifier, Direction::Advance, Some(Direction::Reverse)),
 			Token::ReverseOnAdvancing(identifier) => self
-				.instruction(token.span, identifier, Some(Direction::Reverse), Some(Direction::Advance)),
+				.instruction(token.span, identifier, Direction::Reverse, Some(Direction::Advance)),
 			Token::ReverseOnReversing(identifier) => self
-				.instruction(token.span, identifier, Some(Direction::Reverse), Some(Direction::Reverse)),
+				.instruction(token.span, identifier, Direction::Reverse, Some(Direction::Reverse)),
 			Token::Label(label) => Ok(Spanned::new(Element::Label(label), token.span)),
 			Token::LocalLabel(label) => Ok(Spanned::new(Element::LocalLabel(label), token.span)),
 			Token::FunctionLabel(label) => Ok(Spanned::new(Element::FunctionLabel(label), token.span)),
 			Token::ReverseLabel(label) => Ok(Spanned::new(Element::ReverseLabel(label), token.span)),
-			Token::ReversalHint => Ok(Spanned::new(Element::ReversalHint, token.span)),
+			Token::ReversalHint => self.reversal_hint(token.span),
 			Token::Comment(_) => return self.next(),
 			other => self.discard(token.span, ParserError::UnexpectedToken(other)),
 		})

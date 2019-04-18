@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// The identifier each operation matches.
 #[derive(Debug, Clone)]
 pub enum OperationIdentifier {
@@ -16,6 +18,7 @@ pub enum OperationIdentifier {
 	Clone,
 	Call,
 	Return,
+	Exit,
 	Jump,
 	Branch,
 	BranchImmediate,
@@ -44,6 +47,7 @@ impl OperationIdentifier {
 			Branch => 4,
 			BranchImmediate => 4,
 			Clone => 2,
+			Exit => 0,
 		}
 	}
 
@@ -70,6 +74,7 @@ impl OperationIdentifier {
 			"clone" => Clone,
 			"call" => Call,
 			"return" => Return,
+			"exit" => Exit,
 			"jump" => Jump,
 			"branch" => Branch,
 			"branch.i" => BranchImmediate,
@@ -99,6 +104,34 @@ impl OperationIdentifier {
 			BranchImmediate => false,
 			Return => false,
 			Clone => false,
+			Exit => false,
+		}
+	}
+}
+
+impl fmt::Display for OperationIdentifier {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		use self::OperationIdentifier::*;
+		match self {
+			ReversalHint => write!(f, "*"),
+			Pass => write!(f, "pass"),
+			Swap => write!(f, "swap"),
+			Add => write!(f, "add"),
+			AddImmediate => write!(f, "add.i"),
+			Minus => write!(f, "minus"),
+			MinusImmediate => write!(f, "minus.i"),
+			Drop => write!(f, "drop"),
+			DropImmediate => write!(f, "drop.i"),
+			Restore => write!(f, "restore"),
+			Discard => write!(f, "discard"),
+			Reset => write!(f, "reset"),
+			Clone => write!(f, "clone"),
+			Call => write!(f, "call"),
+			Return => write!(f, "return"),
+			Exit => write!(f, "exit"),
+			Jump => write!(f, "jump"),
+			Branch => write!(f, "branch"),
+			BranchImmediate => write!(f, "branch.i"),
 		}
 	}
 }

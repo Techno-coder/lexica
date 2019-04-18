@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::{Index, IndexMut};
 
 use super::{InterpreterError, InterpreterResult, Primitive};
@@ -39,3 +40,10 @@ impl IndexMut<&LocalTarget> for LocalTable {
 
 #[derive(Debug)]
 pub struct LocalTarget(pub usize);
+
+impl fmt::Display for LocalTarget {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		let LocalTarget(index) = self;
+		write!(f, "{}", index)
+	}
+}

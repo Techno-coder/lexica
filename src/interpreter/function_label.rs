@@ -19,6 +19,3 @@ impl TranslationFunctionLabel {
 		}
 	}
 }
-
-#[derive(Debug)]
-pub struct FunctionLabelIndex(pub usize);

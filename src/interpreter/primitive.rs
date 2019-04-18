@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{DropStack, Float, Integer, InterpreterResult, Size};
 
 pub type Endian = byteorder::LittleEndian;
@@ -57,5 +59,18 @@ impl Primitive {
 			Primitive::Float(float) => Primitive::Float(float.cast(target)?),
 			_ => return None,
 		})
+	}
+}
+
+impl fmt::Display for Primitive {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		match self {
+			Primitive::Boolean(boolean) => write!(f, "{}", boolean),
+			Primitive::Integer(integer) => match integer.is_signed() {
+				false => write!(f, "{}", integer.extend_unsigned()),
+				true => write!(f, "{}", integer.extend_signed()),
+			}
+			Primitive::Float(float) => write!(f, "{}", float.extend()),
+		}
 	}
 }

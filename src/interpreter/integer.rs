@@ -46,9 +46,12 @@ impl Integer {
 	}
 
 	pub fn restore(&mut self, drop_stack: &mut DropStack) -> InterpreterResult<()> {
-		let bytes: Result<Vec<_>, _> = (0..self.size().byte_count())
-			.map(|_| drop_stack.pop_byte()).collect();
-		let mut bytes = Cursor::new(bytes?);
+		let mut bytes = vec![0; self.size().byte_count()];
+		for index in (0..bytes.len()).rev() {
+			bytes[index] = drop_stack.pop_byte()?;
+		}
+
+		let mut bytes = Cursor::new(bytes);
 		(|| -> std::io::Result<()> {
 			Ok(match self {
 				Integer::Unsigned8(integer) => *integer = bytes.read_u8()?,

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget};
 
 #[derive(Debug)]
@@ -26,5 +28,11 @@ impl Swap {
 		mem::replace(&mut table[&self.left], right);
 		mem::replace(&mut table[&self.right], left);
 		Ok(())
+	}
+}
+
+impl fmt::Display for Swap {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{} {}", self.left, self.right)
 	}
 }

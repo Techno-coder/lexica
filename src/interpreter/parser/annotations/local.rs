@@ -21,7 +21,7 @@ impl AnnotationType for LocalAnnotation {
 		let size = Size::parse(size)
 			.map_err(|error| Spanned::new(error, arguments[0].span.clone()))?;
 		let local = local.clone().cast(size)
-		                 .ok_or(arguments[1].map(|node| ParserError::UnexpectedArgument(node.clone())))?;
+			.ok_or(arguments[1].map(|node| ParserError::UnexpectedArgument(node.clone())))?;
 
 		match context.last_element.node {
 			Element::FunctionLabel(function_label) => {

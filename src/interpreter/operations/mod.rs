@@ -11,6 +11,7 @@ pub use self::jump::*;
 pub use self::minus::*;
 pub use self::reset::*;
 pub use self::restore::*;
+pub use self::return_operation::*;
 pub use self::swap::*;
 
 mod swap;
@@ -25,3 +26,4 @@ mod call;
 mod jump;
 mod branch;
 mod clone;
+mod return_operation;

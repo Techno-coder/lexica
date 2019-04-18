@@ -1,4 +1,7 @@
-use super::{Context, InstructionTarget, InterpreterError, InterpreterResult};
+use std::fmt;
+
+use super::{CallFrame, CompilationUnit, Context, Direction, InstructionTarget,
+            InterpreterError, InterpreterResult};
 
 #[derive(Debug)]
 pub struct Call {
@@ -11,14 +14,23 @@ impl Call {
 		Call { target, reverse_target }
 	}
 
-	pub fn execute(&self, context: &mut Context) {
-		context.set_next_instruction(&self.target)
+	pub fn execute(&self, context: &mut Context, unit: &CompilationUnit) {
+		let function = unit.function_labels.get(&self.target)
+			.expect("Function label does not exist");
+		let InstructionTarget(program_counter) = context.program_counter();
+		let return_target = InstructionTarget(program_counter + 1);
+		context.push_frame(CallFrame::construct(&function, Direction::Reverse, return_target));
+		context.set_next_instruction(self.target.clone());
 	}
 
-	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
+	pub fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		let reverse_target = self.reverse_target.as_ref()
-		                         .ok_or(InterpreterError::Irreversible)?;
-		context.set_next_instruction(&reverse_target);
+			.ok_or(InterpreterError::Irreversible)?;
+		let label = unit.reverse_labels.get(reverse_target)
+			.expect("Reverse function label does not exist");
+		let function = unit.function_labels.get(label).unwrap();
+		context.push_frame(CallFrame::construct(&function, Direction::Reverse, context.program_counter()));
+		context.set_next_instruction(reverse_target.clone());
 		Ok(())
 	}
 
@@ -27,11 +39,8 @@ impl Call {
 	}
 }
 
-#[derive(Debug)]
-pub struct Return;
-
-impl Return {
-	pub fn execute(&self, context: &mut Context) {
-		unimplemented!()
+impl fmt::Display for Call {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{:?}", self.target)
 	}
 }

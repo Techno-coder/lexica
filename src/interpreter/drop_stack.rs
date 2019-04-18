@@ -14,6 +14,6 @@ impl DropStack {
 
 	pub fn pop_byte(&mut self) -> InterpreterResult<u8> {
 		self.stack.pop_back()
-		    .ok_or(InterpreterError::DropStackEmpty)
+			.ok_or(InterpreterError::DropStackEmpty)
 	}
 }

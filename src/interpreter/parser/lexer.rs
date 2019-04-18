@@ -20,7 +20,7 @@ impl<'a> Iterator for Lexer<'a> {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let (span, lexeme) = self.lexemes.next()?;
-		let (left_index, left) = lexeme.char_indices().next().unwrap();
+		let left = lexeme.chars().next().unwrap();
 		let (right_index, right) = lexeme.char_indices().last().unwrap();
 
 		let right_rest = || &lexeme[1..];

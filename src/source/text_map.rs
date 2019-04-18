@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::ops::Range;
 
 use super::Span;
 
@@ -11,7 +10,7 @@ pub struct TextMap {
 
 impl TextMap {
 	pub fn new(text: String) -> TextMap {
-		let mut text = "\n".to_owned() + &text;
+		let text = "\n".to_owned() + &text;
 		let mut line_breaks: BTreeMap<_, _> = text
 			.char_indices().filter(|(_, character)| character == &'\n')
 			.enumerate().map(|(line, (index, _))| (index, line + 1)).collect();
@@ -23,7 +22,7 @@ impl TextMap {
 	pub fn prefix(&self, span: &Span, height: usize) -> Vec<(usize, &str)> {
 		let mut lines = Vec::new();
 		let mut line_indexes = self.line_breaks.range(..=span.range().start)
-		                           .rev().take(height + 1).peekable();
+			.rev().take(height + 1).peekable();
 		while let Some((byte_index, _)) = line_indexes.next() {
 			if let Some((next_byte_index, line_index)) = line_indexes.peek() {
 				let substring = &self.text[*next_byte_index + 1..*byte_index];
@@ -37,7 +36,7 @@ impl TextMap {
 		let range = span.range();
 		let (start, _) = self.line_breaks.range(..=range.start).next_back().unwrap();
 		let (end, _) = self.line_breaks.range(range.end..).next()
-		                   .expect("Span extends past text map");
+			.expect("Span extends past text map");
 
 		let mut lines = Vec::new();
 		let mut line_indexes = self.line_breaks.range(start..=end).peekable();
@@ -53,7 +52,7 @@ impl TextMap {
 	pub fn suffix(&self, span: &Span, height: usize) -> Vec<(usize, &str)> {
 		let mut lines = Vec::new();
 		let mut line_indexes = self.line_breaks.range(span.range().end..)
-		                           .take(height + 1).peekable();
+			.take(height + 1).peekable();
 		while let Some((byte_index, line_index)) = line_indexes.next() {
 			if let Some((next_byte_index, _)) = line_indexes.peek() {
 				let substring = &self.text[*byte_index + 1..**next_byte_index];
@@ -66,9 +65,7 @@ impl TextMap {
 	pub fn line_offsets(&self, span: &Span) -> (&str, &str) {
 		let range = span.range();
 		let mut start = self.line_breaks.range(..=range.start);
-		let mut end = self.line_breaks.range(..=range.end);
 		let (start_byte, _) = start.next_back().unwrap();
-		let (end_byte, _) = end.next_back().unwrap();
 		(&self.text[*start_byte + 1..range.start], &self.text[range.start..range.end])
 	}
 

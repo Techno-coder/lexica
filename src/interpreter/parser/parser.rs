@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::source::{Span, Spanned};
+use crate::source::Spanned;
 
 use super::{AnnotationMap, Direction, Element, ElementParser, Instruction, InstructionTarget,
             LocalTable, Operation, ParserContext, ParserError, TranslationFunctionLabel,
@@ -29,12 +29,7 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 	errors.extend(labels(&mut unit, &elements).into_iter());
 	errors.extend(reverse_labels(&mut unit, &elements).into_iter());
 
-	let mut instruction_index = 0;
 	for element in elements {
-		if element.advances_counter() {
-			instruction_index += 1;
-		}
-
 		context.last_element = element.clone();
 		match &element.node {
 			Element::Annotation(annotation) => {
@@ -43,7 +38,7 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 			}
 			Element::ReversalHint => unit.instructions.push(Instruction {
 				operation: Operation::ReversalHint,
-				direction: None,
+				direction: Direction::Advance,
 				polarization: None,
 			}),
 			Element::FunctionLabel(function) => context.last_function_label = Some(function),
@@ -54,7 +49,7 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 				                                &instruction.operands, &context, &unit);
 
 				match &instruction.direction {
-					Some(Direction::Advance) => (),
+					Direction::Advance => (),
 					_ => match &operation {
 						Ok(Operation::Call(call)) => match call.reversible() {
 							false => {
@@ -84,7 +79,7 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 
 		match element.node {
 			Element::Annotation(_) => (),
-			other => {
+			_ => {
 				for annotation in &context.pending_annotations {
 					let annotation_type = annotation_map.get(annotation.identifier).unwrap();
 					if let Err(error) = annotation_type.annotate(&annotation, &context, &mut unit) {
@@ -168,8 +163,8 @@ fn reverse_labels<'a>(unit: &mut TranslationUnit, elements: &Vec<Spanned<Element
 			Element::ReverseLabel(label) => {
 				match unit.functions.get_mut(label) {
 					Some(function) => match &function.reverse_target {
-						Some(target) => errors.push(Spanned::new(ParserError::DuplicateReverseLabel(label),
-						                                         element.span.clone())),
+						Some(_) => errors.push(Spanned::new(ParserError::DuplicateReverseLabel(label),
+						                                    element.span.clone())),
 						None => function.reverse_target = Some(InstructionTarget(instruction_index)),
 					}
 					None => errors.push(Spanned::new(ParserError::IsolatedReverseLabel(label), element.span.clone()))

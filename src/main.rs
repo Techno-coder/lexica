@@ -1,8 +1,5 @@
 #![feature(try_from)]
 
-use crate::interpreter::{AnnotationMap, ElementParser, parse};
-use crate::source::TextMap;
-
 mod compiler;
 mod interpreter;
 mod node;
@@ -71,24 +68,52 @@ static LEXER_TEST: &'static str = r"
   +return
 -fibonnaci^
 
+@local u32 0    # 0 : fibonnaci result
 +main:
   drop.i u32 10
   call fibonnaci
+  restore 0
+  +exit
 -main^
 ";
 
 fn main() {
+	use crate::interpreter::{AnnotationMap, parse, Runtime};
+	use crate::source::TextMap;
+
 	let _function = compiler::construct();
 	let text_map = TextMap::new(LEXER_TEST.to_owned());
 
 	let mut annotation_map = AnnotationMap::default();
 	annotation_map.register("local".to_owned(), Box::new(crate::interpreter::annotations::LocalAnnotation));
 
-	let result = parse(text_map.text(), &annotation_map);
-	if let Err(errors) = result {
-		for error in errors {
-			crate::source::emit(&text_map, error);
-			println!()
+	let result = match parse(text_map.text(), &annotation_map) {
+		Ok(result) => result.compile(),
+		Err(errors) => {
+			for error in errors {
+				crate::source::emit(&text_map, error);
+				println!();
+			}
+			return;
+		}
+	};
+
+	let mut runtime = Runtime::new(result)
+		.expect("Failed to create runtime");
+	loop {
+		println!("[ {} ]", runtime.current_instruction());
+		match runtime.force_step() {
+			Ok(false) => {
+				println!("{:?}", runtime.context());
+			},
+			Ok(true) => {
+				println!("EXITED: {:?}", runtime.context());
+				break;
+			},
+			Err(error) => {
+				println!("{}", error);
+				return;
+			}
 		}
 	}
 }

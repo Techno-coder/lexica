@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Context, InterpreterResult, Size};
 
 #[derive(Debug)]
@@ -16,5 +18,11 @@ impl Discard {
 			context.drop_stack().pop_byte()?;
 		}
 		Ok(())
+	}
+}
+
+impl fmt::Display for Discard {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{}", self.size)
 	}
 }

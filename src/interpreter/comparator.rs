@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{InterpreterError, InterpreterResult, Primitive};
 
 #[derive(Debug)]
@@ -41,6 +43,18 @@ impl Comparator {
 				})
 			}
 			_ => Err(InterpreterError::TypesIncompatible)
+		}
+	}
+}
+
+impl fmt::Display for Comparator {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		match self {
+			Comparator::Equal => write!(f, "="),
+			Comparator::LessThan => write!(f, "<"),
+			Comparator::LessThanEqual => write!(f, "<="),
+			Comparator::GreaterThan => write!(f, ">"),
+			Comparator::GreaterThanEqual => write!(f, ">="),
 		}
 	}
 }

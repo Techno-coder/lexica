@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget, Primitive};
 
 #[derive(Debug)]
@@ -60,5 +62,11 @@ impl Add {
 			}
 			_ => Err(InterpreterError::InvalidRuntime)
 		}
+	}
+}
+
+impl fmt::Display for Add {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{} {}", self.accumulator, self.operand)
 	}
 }

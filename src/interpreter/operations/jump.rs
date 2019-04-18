@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Context, InstructionTarget};
 
 #[derive(Debug)]
@@ -11,6 +13,12 @@ impl Jump {
 	}
 
 	pub fn execute(&self, context: &mut Context) {
-		context.set_next_instruction(&self.target)
+		context.set_next_instruction(self.target.clone())
+	}
+}
+
+impl fmt::Display for Jump {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{:?}", self.target)
 	}
 }

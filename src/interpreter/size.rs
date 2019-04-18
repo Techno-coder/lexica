@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::ParserError;
 
 /// Represents possible data types in the interpreter.
@@ -56,6 +58,25 @@ impl Size {
 			Size::Float32 => 4,
 			Size::Float64 => 8,
 			Size::Box => 2, // TODO, Confirm size of box
+		}
+	}
+}
+
+impl fmt::Display for Size {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		match self {
+			Size::Boolean => write!(f, "bool"),
+			Size::Unsigned8 => write!(f, "u8"),
+			Size::Unsigned16 => write!(f, "u16"),
+			Size::Unsigned32 => write!(f, "u32"),
+			Size::Unsigned64 => write!(f, "u64"),
+			Size::Signed8 => write!(f, "i8"),
+			Size::Signed16 => write!(f, "i16"),
+			Size::Signed32 => write!(f, "i32"),
+			Size::Signed64 => write!(f, "i64"),
+			Size::Float32 => write!(f, "f32"),
+			Size::Float64 => write!(f, "f64"),
+			Size::Box => write!(f, "box"),
 		}
 	}
 }

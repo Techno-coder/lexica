@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Comparator, Context, InstructionTarget, InterpreterResult, LocalTable, LocalTarget,
             Primitive};
 
@@ -24,9 +26,15 @@ impl Branch {
 		let right_local = &table[&self.right];
 		let comparison = self.comparator.compare(left_local, right_local)?;
 		if comparison == true {
-			context.set_next_instruction(&self.target);
+			context.set_next_instruction(self.target.clone());
 		}
 		Ok(())
+	}
+}
+
+impl fmt::Display for Branch {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{} {} {} {:?}", self.comparator, self.left, self.right, self.target)
 	}
 }
 
@@ -51,8 +59,14 @@ impl BranchImmediate {
 		let local = &table[&self.local];
 		let comparison = self.comparator.compare(local, &self.immediate)?;
 		if comparison == true {
-			context.set_next_instruction(&self.target);
+			context.set_next_instruction(self.target.clone());
 		}
 		Ok(())
+	}
+}
+
+impl fmt::Display for BranchImmediate {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{} {} {} {:?}", self.comparator, self.local, self.immediate, self.target)
 	}
 }

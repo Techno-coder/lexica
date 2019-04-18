@@ -4,9 +4,8 @@ use crate::interpreter::instruction::InstructionTarget;
 use crate::interpreter::operations::*;
 use crate::source::{Span, Spanned};
 
-use super::{Comparator, Float, Integer, InterpreterResult, LocalTable, LocalTarget,
-            Operation, OperationIdentifier, ParserContext, ParserError, ParserResult, Primitive,
-            Size, Token, TranslationUnit};
+use super::{Comparator, Float, Integer, InterpreterResult, LocalTarget, Operation, OperationIdentifier,
+            ParserContext, ParserError, ParserResult, Primitive, Size, Token, TranslationUnit};
 
 type Operand<'a> = Spanned<Token<'a>>;
 
@@ -75,10 +74,8 @@ pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operand
 				                    operands[0].span.clone()))?;
 			Operation::Call(Call::new(target, reverse_target))
 		}
-		OperationIdentifier::Return => {
-			// TODO
-			Operation::Return
-		}
+		OperationIdentifier::Return => Operation::Return,
+		OperationIdentifier::Exit => Operation::Exit,
 		OperationIdentifier::Jump => {
 			let target = target_label(span, &operands[0], unit, context)?;
 			Operation::Jump(Jump::new(target))
@@ -146,12 +143,12 @@ fn target_label<'a>(span: &Span, target_label: &Operand<'a>, unit: &TranslationU
                     context: &ParserContext) -> ParserResult<'a, InstructionTarget> {
 	let target = target(target_label)?;
 	unit.labels.get(&target).map(|(label, _)| label.clone())
-	    .or_else(|| {
-		    let label = context.last_function_label?;
-		    let (_, local_labels) = unit.labels.get(label)?;
-		    local_labels.get(&target).cloned()
-	    })
-	    .ok_or(Spanned::new(ParserError::UndefinedLabel(target), span.clone()))
+		.or_else(|| {
+			let label = context.last_function_label?;
+			let (_, local_labels) = unit.labels.get(label)?;
+			local_labels.get(&target).cloned()
+		})
+		.ok_or(Spanned::new(ParserError::UndefinedLabel(target), span.clone()))
 }
 
 /// Transforms the operand into a `Comparator`.

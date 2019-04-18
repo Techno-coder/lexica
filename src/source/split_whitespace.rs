@@ -21,8 +21,8 @@ impl<'a> SplitWhitespace<'a> {
 
 	fn split_comment(&mut self) -> usize {
 		self.iterator.find(|(_, character)| character == &'\n')
-		    .map(|(index, _)| index)
-		    .unwrap_or(0)
+			.map(|(index, _)| index)
+			.unwrap_or(0)
 	}
 
 	fn construct_item(&self, span_start: usize, span_end: usize) -> (Span, &'a str) {

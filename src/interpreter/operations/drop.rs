@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget, Primitive, Size};
 
 #[derive(Debug)]
@@ -13,12 +15,21 @@ impl Drop {
 
 	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
 		let local = context.frame()?.table()[&self.local].clone();
-		Ok(local.drop(context.drop_stack()))
+		local.drop(context.drop_stack());
+		Ok(())
 	}
 
 	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
-		let local = &mut context.frame()?.table_mut()[&self.local].clone();
-		local.restore(context.drop_stack())
+		let mut local = context.frame()?.table()[&self.local].clone();
+		local.restore(context.drop_stack())?;
+		context.frame()?.table_mut()[&self.local] = local;
+		Ok(())
+	}
+}
+
+impl fmt::Display for Drop {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{}", self.local)
 	}
 }
 
@@ -45,5 +56,11 @@ impl DropImmediate {
 			context.drop_stack().pop_byte()?;
 		}
 		Ok(())
+	}
+}
+
+impl fmt::Display for DropImmediate {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{}", self.immediate)
 	}
 }

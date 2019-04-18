@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget};
 
 #[derive(Debug)]
@@ -24,5 +26,11 @@ impl CloneLocal {
 		let right = table[&self.right].clone();
 		mem::replace(&mut table[&self.left], right);
 		Ok(())
+	}
+}
+
+impl fmt::Display for CloneLocal {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+		write!(f, "{} {}", self.left, self.right)
 	}
 }
