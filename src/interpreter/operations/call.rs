@@ -17,10 +17,8 @@ impl Call {
 	pub fn execute(&self, context: &mut Context, unit: &CompilationUnit) {
 		let function = unit.function_labels.get(&self.target)
 			.expect("Function label does not exist");
-		let InstructionTarget(program_counter) = context.program_counter();
-		let return_target = InstructionTarget(program_counter + 1);
-		context.push_frame(CallFrame::construct(&function, Direction::Reverse, return_target));
-		context.set_next_instruction(self.target.clone());
+		context.push_frame(CallFrame::construct(&function, Direction::Advance, context.program_counter()));
+		context.set_next_instruction(|| Ok(self.target.clone()));
 	}
 
 	pub fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
@@ -30,7 +28,7 @@ impl Call {
 			.expect("Reverse function label does not exist");
 		let function = unit.function_labels.get(label).unwrap();
 		context.push_frame(CallFrame::construct(&function, Direction::Reverse, context.program_counter()));
-		context.set_next_instruction(reverse_target.clone());
+		context.set_next_instruction(|| Ok(reverse_target.clone()));
 		Ok(())
 	}
 

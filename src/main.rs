@@ -58,7 +58,7 @@ static LEXER_TEST: &'static str = r"
 
   *
   +jump 0
-  -branch.i = 4 1 0
+  -branch.i = 3 1 0
   *
 .1:
   -clone 0 3
@@ -70,16 +70,22 @@ static LEXER_TEST: &'static str = r"
 
 @local u32 0    # 0 : fibonnaci result
 +main:
-  drop.i u32 10
+  -exit *
+  drop.i u32 40 *
   call fibonnaci
+  *
+  -reset 0 0
   restore 0
+  *
   +exit
 -main^
 ";
 
 fn main() {
-	use crate::interpreter::{AnnotationMap, parse, Runtime};
+	use crate::interpreter::{AnnotationMap, parse, Runtime, Step};
 	use crate::source::TextMap;
+	use colored::Colorize;
+	use crate::interpreter::Direction;
 
 	let _function = compiler::construct();
 	let text_map = TextMap::new(LEXER_TEST.to_owned());
@@ -101,19 +107,33 @@ fn main() {
 	let mut runtime = Runtime::new(result)
 		.expect("Failed to create runtime");
 	loop {
-		println!("[ {} ]", runtime.current_instruction());
-		match runtime.force_step() {
-			Ok(false) => {
-				println!("{:?}", runtime.context());
-			},
-			Ok(true) => {
-				println!("EXITED: {:?}", runtime.context());
+		println!("{}", format!("[ {} ]", runtime.current_instruction()).blue().bold());
+		match runtime.step(Direction::Advance) {
+			Ok(Step::Exit) => {
+				println!("{}: {:#?}", "Exit".green().bold(), runtime.context());
 				break;
-			},
+			}
 			Err(error) => {
-				println!("{}", error);
+				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
 				return;
 			}
+			_ => (),
+		}
+	}
+
+	println!("{}", "REVERSING".red().bold());
+	loop {
+		println!("{}", format!("[ {} ]", runtime.current_instruction()).blue().bold());
+		match runtime.step(Direction::Reverse) {
+			Ok(Step::Exit) => {
+				println!("{}: {:#?}", "Exit".green().bold(), runtime.context());
+				break;
+			}
+			Err(error) => {
+				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
+				return;
+			}
+			_ => (),
 		}
 	}
 }

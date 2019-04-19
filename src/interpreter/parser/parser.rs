@@ -163,9 +163,11 @@ fn reverse_labels<'a>(unit: &mut TranslationUnit, elements: &Vec<Spanned<Element
 			Element::ReverseLabel(label) => {
 				match unit.functions.get_mut(label) {
 					Some(function) => match &function.reverse_target {
-						Some(_) => errors.push(Spanned::new(ParserError::DuplicateReverseLabel(label),
-						                                    element.span.clone())),
-						None => function.reverse_target = Some(InstructionTarget(instruction_index)),
+						Some(_) => errors.push(element.map(|_| ParserError::DuplicateReverseLabel(label))),
+						None => match instruction_index > 0 {
+							true => function.reverse_target = Some(InstructionTarget(instruction_index - 1)),
+							false => errors.push(element.map(|_| ParserError::InvalidReverseLabelPosition(label))),
+						}
 					}
 					None => errors.push(Spanned::new(ParserError::IsolatedReverseLabel(label), element.span.clone()))
 				}

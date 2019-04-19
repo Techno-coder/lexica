@@ -17,6 +17,7 @@ pub use self::primitive::*;
 pub use self::runtime::*;
 pub use self::size::*;
 pub use self::translation_unit::*;
+pub use self::step::*;
 
 mod error;
 mod direction;
@@ -37,3 +38,4 @@ mod runtime;
 mod operations;
 mod local_table;
 mod parser;
+mod step;

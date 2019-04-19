@@ -13,7 +13,7 @@ impl Jump {
 	}
 
 	pub fn execute(&self, context: &mut Context) {
-		context.set_next_instruction(self.target.clone())
+		context.set_program_counter(self.target.clone())
 	}
 }
 

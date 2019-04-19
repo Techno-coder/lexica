@@ -89,6 +89,7 @@ impl Operation {
 			Operation::DropImmediate(drop_immediate) => drop_immediate.reverse(context)?,
 			Operation::Restore(restore) => restore.reverse(context)?,
 			Operation::Call(call) => call.reverse(context, unit)?,
+			Operation::Exit => (),
 			_ => return Err(InterpreterError::Irreversible),
 		})
 	}

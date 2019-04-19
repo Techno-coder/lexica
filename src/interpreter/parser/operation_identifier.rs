@@ -104,7 +104,7 @@ impl OperationIdentifier {
 			BranchImmediate => false,
 			Return => false,
 			Clone => false,
-			Exit => false,
+			Exit => true,
 		}
 	}
 }

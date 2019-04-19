@@ -14,6 +14,7 @@ pub enum InterpreterError {
 	InvalidRuntime,
 	UndefinedComparison,
 	Irreversible,
+	InstructionBoundary,
 	MissingEntryPoint,
 	NextInstructionNull,
 }
@@ -32,6 +33,7 @@ impl fmt::Display for InterpreterError {
 			InvalidRuntime => write!(f, "Runtime construction of operation is invalid"),
 			UndefinedComparison => write!(f, "Comparison of operands is not invalid"),
 			Irreversible => write!(f, "Instruction cannot be reversed"),
+			InstructionBoundary => write!(f, "Execution cannot occur beyond counter bounds"),
 			MissingEntryPoint => write!(f, "Compilation unit has no entry point"),
 			NextInstructionNull => write!(f, "Context has no instruction to advance"),
 		}

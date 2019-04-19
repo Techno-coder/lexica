@@ -22,7 +22,6 @@ impl fmt::Display for Instruction {
 			(Reverse, None) => write!(f, "{}' {}", identifier, self.operation),
 			(Reverse, Some(Advance)) => write!(f, "+{}' {}", identifier, self.operation),
 			(Reverse, Some(Reverse)) => write!(f, "-{}' {}", identifier, self.operation),
-			_ => unreachable!(),
 		}
 	}
 }

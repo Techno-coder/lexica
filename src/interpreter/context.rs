@@ -5,7 +5,7 @@ pub struct Context {
 	call_stack: Vec<CallFrame>,
 	drop_stack: DropStack,
 	program_counter: InstructionTarget,
-	next_instruction: Option<InstructionTarget>,
+	next_instruction: Option<InterpreterResult<InstructionTarget>>,
 }
 
 impl Context {
@@ -37,10 +37,16 @@ impl Context {
 
 	/// Sets the next instruction to advance to on the next interpreter step.
 	/// If this instruction has already been set then it is **not** overwritten.
-	pub fn set_next_instruction(&mut self, target: InstructionTarget) {
+	pub fn set_next_instruction<F>(&mut self, functor: F)
+		where F: FnOnce() -> InterpreterResult<InstructionTarget> {
 		if self.next_instruction.is_none() {
-			self.next_instruction = Some(target);
+			self.next_instruction = Some(functor());
 		}
+	}
+
+	/// Overwrites the current program counter.
+	pub fn set_program_counter(&mut self, target: InstructionTarget) {
+		self.program_counter = target;
 	}
 
 	pub fn program_counter(&self) -> InstructionTarget {
@@ -49,7 +55,7 @@ impl Context {
 
 	pub fn advance(&mut self) -> InterpreterResult<()> {
 		match self.next_instruction.take() {
-			Some(instruction) => Ok(self.program_counter = instruction),
+			Some(instruction) => Ok(self.program_counter = instruction?),
 			None => Err(InterpreterError::NextInstructionNull),
 		}
 	}

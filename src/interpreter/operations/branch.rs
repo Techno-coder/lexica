@@ -26,7 +26,7 @@ impl Branch {
 		let right_local = &table[&self.right];
 		let comparison = self.comparator.compare(left_local, right_local)?;
 		if comparison == true {
-			context.set_next_instruction(self.target.clone());
+			context.set_next_instruction(|| Ok(self.target.clone()));
 		}
 		Ok(())
 	}
@@ -59,7 +59,7 @@ impl BranchImmediate {
 		let local = &table[&self.local];
 		let comparison = self.comparator.compare(local, &self.immediate)?;
 		if comparison == true {
-			context.set_next_instruction(self.target.clone());
+			context.set_program_counter(self.target.clone());
 		}
 		Ok(())
 	}
