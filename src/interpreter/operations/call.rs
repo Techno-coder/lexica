@@ -27,7 +27,7 @@ impl Call {
 		let label = unit.reverse_labels.get(reverse_target)
 			.expect("Reverse function label does not exist");
 		let function = unit.function_labels.get(label).unwrap();
-		context.push_frame(CallFrame::construct(&function, Direction::Reverse, context.program_counter()));
+		context.push_frame(CallFrame::construct(&function, Direction::Advance, context.program_counter()));
 		context.set_next_instruction(|| Ok(reverse_target.clone()));
 		Ok(())
 	}

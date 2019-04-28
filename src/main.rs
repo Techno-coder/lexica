@@ -35,7 +35,7 @@ static LEXER_TEST: &'static str = r"
 @local u32 1   # 3: counter
 @local u32 0   # 4: summation
 +fibonnaci:
-  -return
+  -return'
   restore 0       *
 .0:
   *
@@ -71,8 +71,9 @@ static LEXER_TEST: &'static str = r"
 @local u32 0    # 0 : fibonnaci result
 +main:
   -exit *
-  drop.i u32 40 *
+  drop.i u32 10 *
   call fibonnaci
+  recall fibonnaci
   *
   -reset 0 0
   restore 0
@@ -108,7 +109,7 @@ fn main() {
 		.expect("Failed to create runtime");
 	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction()).blue().bold());
-		match runtime.step(Direction::Advance) {
+		match runtime.force_step(Direction::Advance) {
 			Ok(Step::Exit) => {
 				println!("{}: {:#?}", "Exit".green().bold(), runtime.context());
 				break;
@@ -124,7 +125,7 @@ fn main() {
 	println!("{}", "REVERSING".red().bold());
 	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction()).blue().bold());
-		match runtime.step(Direction::Reverse) {
+		match runtime.force_step(Direction::Reverse) {
 			Ok(Step::Exit) => {
 				println!("{}: {:#?}", "Exit".green().bold(), runtime.context());
 				break;

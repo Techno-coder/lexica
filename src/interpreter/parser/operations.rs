@@ -70,9 +70,16 @@ pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operand
 			let (target, reverse_target) = unit
 				.functions.get(&target)
 				.map(|function| (function.target.clone(), function.reverse_target.clone()))
-				.ok_or(Spanned::new(ParserError::UndefinedFunction(target),
-				                    operands[0].span.clone()))?;
+				.ok_or(operands[0].map(|_| ParserError::UndefinedFunction(target)))?;
 			Operation::Call(Call::new(target, reverse_target))
+		}
+		OperationIdentifier::Recall => {
+			let target = target(&operands[0])?;
+			let function = unit.functions.get(&target)
+				.ok_or(operands[0].map(|_| ParserError::UndefinedFunction(target)))?;
+			let reverse_target = function.reverse_target.clone()
+				.ok_or(operands[0].map(|_| ParserError::IrreversibleCall))?;
+			Operation::Recall(Recall::new(function.target.clone(), reverse_target))
 		}
 		OperationIdentifier::Return => Operation::Return,
 		OperationIdentifier::Exit => Operation::Exit,
