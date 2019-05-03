@@ -27,7 +27,7 @@ pub enum OperationIdentifier {
 
 impl OperationIdentifier {
 	/// Returns the number of arguments the operation accepts.
-	pub fn argument_count(&self) -> usize {
+	pub fn arity(&self) -> usize {
 		use self::OperationIdentifier::*;
 		match self {
 			ReversalHint => 0,

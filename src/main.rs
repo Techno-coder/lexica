@@ -34,7 +34,7 @@ static LEXER_TEST: &'static str = r"
 @local u32 1   # 2: second
 @local u32 1   # 3: counter
 @local u32 0   # 4: summation
-+fibonnaci:
++fibonacci:
   -return'
   restore 0       *
 .0:
@@ -66,14 +66,14 @@ static LEXER_TEST: &'static str = r"
   drop 3
   drop 2
   +return
--fibonnaci^
+-fibonacci^
 
-@local u32 0    # 0 : fibonnaci result
+@local u32 0    # 0 : fibonacci result
 +main:
   -exit *
   drop.i u32 10 *
-  call fibonnaci
-  recall fibonnaci
+  call fibonacci
+  recall fibonacci
   *
   -reset 0 0
   restore 0

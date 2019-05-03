@@ -8,7 +8,7 @@ use super::{Annotation, AnnotationType, Argument, Element, ParserContext, Parser
 pub struct LocalAnnotation;
 
 impl AnnotationType for LocalAnnotation {
-	fn argument_count(&self) -> usize {
+	fn arity(&self) -> usize {
 		2
 	}
 

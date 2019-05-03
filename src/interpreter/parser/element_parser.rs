@@ -53,7 +53,7 @@ impl<'a> ElementParser<'a> {
 	fn annotation_arguments(&mut self, span: Span, annotation: &AnnotationType)
 	                        -> ParserResult<'a, Vec<Spanned<Argument<'a>>>> {
 		let mut arguments: Vec<Spanned<Argument>> = Vec::new();
-		for _ in 0..annotation.argument_count() {
+		for _ in 0..annotation.arity() {
 			match self.lexer.next() {
 				Some(argument) => {
 					let argument_type = Argument::try_from(argument.node);
@@ -82,7 +82,7 @@ impl<'a> ElementParser<'a> {
 			None => return self.discard(span.clone(), ParserError::InvalidOperation(identifier)),
 		};
 
-		let arguments = (0..operation.argument_count())
+		let arguments = (0..operation.arity())
 			.map(|_| self.lexer.next())
 			.collect::<Option<Vec<_>>>();
 
