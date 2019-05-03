@@ -1,6 +1,7 @@
 use std::fmt;
 
-use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget, Primitive, Size};
+use super::{CompilationUnit, Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget,
+            Operation, Primitive, Size};
 
 #[derive(Debug)]
 pub struct Drop {
@@ -12,14 +13,16 @@ impl Drop {
 		let _local = table.local(&local)?;
 		Ok(Drop { local })
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
+impl Operation for Drop {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let local = context.frame()?.table()[&self.local].clone();
 		local.drop(context.drop_stack());
 		Ok(())
 	}
 
-	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
+	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let mut local = context.frame()?.table()[&self.local].clone();
 		local.restore(context.drop_stack())?;
 		context.frame()?.table_mut()[&self.local] = local;
@@ -45,12 +48,14 @@ impl DropImmediate {
 			None => Err(InterpreterError::TypesIncompatible),
 		}
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
+impl Operation for DropImmediate {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		Ok(self.immediate.drop(context.drop_stack()))
 	}
 
-	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
+	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let byte_count = self.immediate.size().byte_count();
 		for _ in 0..byte_count {
 			context.drop_stack().pop_byte()?;

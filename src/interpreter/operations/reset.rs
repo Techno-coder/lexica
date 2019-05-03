@@ -1,6 +1,7 @@
 use std::fmt;
 
-use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget, Primitive};
+use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget, Primitive,
+            Operation, CompilationUnit};
 
 #[derive(Debug)]
 pub struct Reset {
@@ -17,8 +18,10 @@ impl Reset {
 			None => Err(InterpreterError::TypesIncompatible),
 		}
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
+impl Operation for Reset {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		use std::mem;
 		let local = &mut context.frame()?.table_mut()[&self.local];
 		mem::replace(local, self.immediate.clone());

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Context, InterpreterResult, Size};
+use super::{Context, InterpreterResult, Size, Operation, CompilationUnit};
 
 #[derive(Debug)]
 pub struct Discard {
@@ -11,8 +11,10 @@ impl Discard {
 	pub fn new(size: Size) -> Discard {
 		Discard { size }
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
+impl Operation for Discard {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let byte_count = self.size.byte_count();
 		for _ in 0..byte_count {
 			context.drop_stack().pop_byte()?;

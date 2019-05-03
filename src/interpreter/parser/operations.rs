@@ -4,14 +4,14 @@ use crate::interpreter::instruction::InstructionTarget;
 use crate::interpreter::operations::*;
 use crate::source::{Span, Spanned};
 
-use super::{Comparator, Float, Integer, InterpreterResult, LocalTarget, Operation, OperationIdentifier,
+use super::{Comparator, Float, Integer, InterpreterResult, LocalTarget, RefactorOperation, OperationIdentifier,
             ParserContext, ParserError, ParserResult, Primitive, Size, Token, TranslationUnit};
 
 type Operand<'a> = Spanned<Token<'a>>;
 
 /// Parses an operation given the operation identifier and operands.
 pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operands: &Vec<Operand<'a>>,
-                           context: &ParserContext, unit: &TranslationUnit) -> ParserResult<'a, Operation> {
+                           context: &ParserContext, unit: &TranslationUnit) -> ParserResult<'a, RefactorOperation> {
 	let function = context
 		.last_function_label
 		.and_then(|label| unit.functions.get(label))
@@ -19,51 +19,51 @@ pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operand
 	let table = function.clone().map(|function| &function.locals);
 
 	Ok(match operation {
-		OperationIdentifier::ReversalHint => Operation::ReversalHint,
-		OperationIdentifier::Pass => Operation::Pass,
+		OperationIdentifier::ReversalHint => RefactorOperation::ReversalHint,
+		OperationIdentifier::Pass => RefactorOperation::Pass,
 		OperationIdentifier::Swap => {
 			let (left, right) = (local(&operands[0])?, local(&operands[1])?);
-			Operation::Swap(error(Swap::new(table?, left, right), span)?)
+			RefactorOperation::Swap(error(Swap::new(table?, left, right), span)?)
 		}
 		OperationIdentifier::Add => {
 			let (left, right) = (local(&operands[0])?, local(&operands[1])?);
-			Operation::Add(error(Add::new(table?, left, right), span)?)
+			RefactorOperation::Add(error(Add::new(table?, left, right), span)?)
 		}
 		OperationIdentifier::AddImmediate => {
 			let (local, primitive) = (local(&operands[0])?, primitive(&operands[1])?);
-			Operation::AddImmediate(error(AddImmediate::new(table?, local, primitive), span)?)
+			RefactorOperation::AddImmediate(error(AddImmediate::new(table?, local, primitive), span)?)
 		}
 		OperationIdentifier::Minus => {
 			let (left, right) = (local(&operands[0])?, local(&operands[1])?);
-			Operation::Minus(error(Minus::new(table?, left, right), span)?)
+			RefactorOperation::Minus(error(Minus::new(table?, left, right), span)?)
 		}
 		OperationIdentifier::MinusImmediate => {
 			let (local, primitive) = (local(&operands[0])?, primitive(&operands[1])?);
-			Operation::MinusImmediate(error(MinusImmediate::new(table?, local, primitive), span)?)
+			RefactorOperation::MinusImmediate(error(MinusImmediate::new(table?, local, primitive), span)?)
 		}
 		OperationIdentifier::Drop => {
 			let local = local(&operands[0])?;
-			Operation::Drop(error(Drop::new(table?, local), span)?)
+			RefactorOperation::Drop(error(Drop::new(table?, local), span)?)
 		}
 		OperationIdentifier::DropImmediate => {
 			let (size, primitive) = (size(&operands[0])?, primitive(&operands[1])?);
-			Operation::DropImmediate(error(DropImmediate::new(size, primitive), span)?)
+			RefactorOperation::DropImmediate(error(DropImmediate::new(size, primitive), span)?)
 		}
 		OperationIdentifier::Restore => {
 			let local = local(&operands[0])?;
-			Operation::Restore(error(Restore::new(table?, local), span)?)
+			RefactorOperation::Restore(error(Restore::new(table?, local), span)?)
 		}
 		OperationIdentifier::Discard => {
 			let size = size(&operands[0])?;
-			Operation::Discard(Discard::new(size))
+			RefactorOperation::Discard(Discard::new(size))
 		}
 		OperationIdentifier::Reset => {
 			let (local, primitive) = (local(&operands[0])?, primitive(&operands[1])?);
-			Operation::Reset(error(Reset::new(table?, local, primitive), span)?)
+			RefactorOperation::Reset(error(Reset::new(table?, local, primitive), span)?)
 		}
 		OperationIdentifier::Clone => {
 			let (left, right) = (local(&operands[0])?, local(&operands[1])?);
-			Operation::Clone(error(CloneLocal::new(table?, left, right), span)?)
+			RefactorOperation::Clone(error(CloneLocal::new(table?, left, right), span)?)
 		}
 		OperationIdentifier::Call => {
 			let target = target(&operands[0])?;
@@ -71,7 +71,7 @@ pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operand
 				.functions.get(&target)
 				.map(|function| (function.target.clone(), function.reverse_target.clone()))
 				.ok_or(operands[0].map(|_| ParserError::UndefinedFunction(target)))?;
-			Operation::Call(Call::new(target, reverse_target))
+			RefactorOperation::Call(Call::new(target, reverse_target))
 		}
 		OperationIdentifier::Recall => {
 			let target = target(&operands[0])?;
@@ -79,25 +79,25 @@ pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operand
 				.ok_or(operands[0].map(|_| ParserError::UndefinedFunction(target)))?;
 			let reverse_target = function.reverse_target.clone()
 				.ok_or(operands[0].map(|_| ParserError::IrreversibleCall))?;
-			Operation::Recall(Recall::new(function.target.clone(), reverse_target))
+			RefactorOperation::Recall(Recall::new(function.target.clone(), reverse_target))
 		}
-		OperationIdentifier::Return => Operation::Return,
-		OperationIdentifier::Exit => Operation::Exit,
+		OperationIdentifier::Return => RefactorOperation::Return(Return),
+		OperationIdentifier::Exit => RefactorOperation::Exit,
 		OperationIdentifier::Jump => {
 			let target = target_label(span, &operands[0], unit, context)?;
-			Operation::Jump(Jump::new(target))
+			RefactorOperation::Jump(Jump::new(target))
 		}
 		OperationIdentifier::Branch => {
 			let comparator = comparator(&operands[0])?;
 			let (left, right) = (local(&operands[1])?, local(&operands[2])?);
 			let target = target_label(span, &operands[3], unit, context)?;
-			Operation::Branch(error(Branch::new(table?, comparator, left, right, target), span)?)
+			RefactorOperation::Branch(error(Branch::new(table?, comparator, left, right, target), span)?)
 		}
 		OperationIdentifier::BranchImmediate => {
 			let comparator = comparator(&operands[0])?;
 			let (left, right) = (local(&operands[1])?, primitive(&operands[2])?);
 			let target = target_label(span, &operands[3], unit, context)?;
-			Operation::BranchImmediate(error(BranchImmediate::new(table?, comparator, left, right, target), span)?)
+			RefactorOperation::BranchImmediate(error(BranchImmediate::new(table?, comparator, left, right, target), span)?)
 		}
 	})
 }

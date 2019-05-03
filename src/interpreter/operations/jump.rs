@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Context, InstructionTarget};
+use super::{Context, InstructionTarget, Operation, CompilationUnit, InterpreterResult};
 
 #[derive(Debug)]
 pub struct Jump {
@@ -11,9 +11,12 @@ impl Jump {
 	pub fn new(target: InstructionTarget) -> Jump {
 		Jump { target }
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) {
-		context.set_program_counter(self.target.clone())
+impl Operation for Jump {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
+		context.set_program_counter(self.target.clone());
+		Ok(())
 	}
 }
 

@@ -1,6 +1,7 @@
 use std::fmt;
 
-use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget};
+use super::{CompilationUnit, Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget,
+            Operation};
 
 #[derive(Debug)]
 pub struct Swap {
@@ -19,8 +20,10 @@ impl Swap {
 			Err(InterpreterError::SizeIncompatible)
 		}
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
+impl Operation for Swap {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		use std::mem;
 		let table = context.frame()?.table_mut();
 		let left = table[&self.left].clone();

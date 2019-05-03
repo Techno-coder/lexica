@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::source::Spanned;
 
 use super::{AnnotationMap, Direction, Element, ElementParser, Instruction, InstructionTarget,
-            LocalTable, Operation, ParserContext, ParserError, TranslationFunctionLabel,
+            LocalTable, RefactorOperation, ParserContext, ParserError, TranslationFunctionLabel,
             TranslationUnit};
 
 /// Parses byte code into a `TranslationUnit`.
@@ -37,7 +37,7 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 				context.pending_annotations.push(annotation);
 			}
 			Element::ReversalHint => unit.instructions.push(Instruction {
-				operation: Operation::ReversalHint,
+				operation: RefactorOperation::ReversalHint,
 				direction: Direction::Advance,
 				polarization: None,
 			}),
@@ -51,7 +51,7 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 				match &instruction.direction {
 					Direction::Advance => (),
 					_ => match &operation {
-						Ok(Operation::Call(call)) => match call.reversible() {
+						Ok(RefactorOperation::Call(call)) => match call.reversible() {
 							false => {
 								let error = ParserError::IrreversibleCall;
 								errors.push(Spanned::new(error, element.span));

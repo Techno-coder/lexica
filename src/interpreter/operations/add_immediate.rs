@@ -1,6 +1,7 @@
 use std::fmt;
 
-use super::{Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget, Primitive};
+use super::{CompilationUnit, Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget,
+            Operation, Primitive};
 
 #[derive(Debug)]
 pub struct AddImmediate {
@@ -26,8 +27,10 @@ impl AddImmediate {
 		}?;
 		Ok(AddImmediate { accumulator, immediate })
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
+impl Operation for AddImmediate {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table_mut();
 		let accumulator = table.local_mut(&self.accumulator)?;
 		match accumulator {
@@ -44,7 +47,7 @@ impl AddImmediate {
 		}
 	}
 
-	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
+	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table_mut();
 		let accumulator = table.local_mut(&self.accumulator)?;
 		match accumulator {

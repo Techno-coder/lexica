@@ -1,10 +1,12 @@
-use super::{Context, InstructionTarget, InterpreterResult, Direction};
+use std::fmt;
+
+use super::{CompilationUnit, Context, Direction, InstructionTarget, InterpreterResult, Operation};
 
 #[derive(Debug)]
 pub struct Return;
 
-impl Return {
-	pub fn execute(context: &mut Context) -> InterpreterResult<()> {
+impl Operation for Return {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let frame = context.frame()?;
 		let target = frame.return_target().clone();
 		let InstructionTarget(return_target) = target;
@@ -19,7 +21,7 @@ impl Return {
 		Ok(())
 	}
 
-	pub fn reverse(context: &mut Context) -> InterpreterResult<()> {
+	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let frame = context.frame()?;
 		let target = frame.return_target().clone();
 		let InstructionTarget(return_target) = target;
@@ -31,6 +33,12 @@ impl Return {
 
 		context.set_next_instruction(|| Ok(next_instruction));
 		context.pop_frame()?;
+		Ok(())
+	}
+}
+
+impl fmt::Display for Return {
+	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
 		Ok(())
 	}
 }

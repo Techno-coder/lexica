@@ -1,7 +1,7 @@
 use std::fmt;
 
 use super::{Comparator, Context, InstructionTarget, InterpreterResult, LocalTable, LocalTarget,
-            Primitive};
+            Primitive, Operation, CompilationUnit};
 
 #[derive(Debug)]
 pub struct Branch {
@@ -19,8 +19,10 @@ impl Branch {
 		let _comparison = comparator.compare(left_local, right_local)?;
 		Ok(Branch { comparator, left, right, target })
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
+impl Operation for Branch {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table();
 		let left_local = &table[&self.left];
 		let right_local = &table[&self.right];
@@ -53,8 +55,10 @@ impl BranchImmediate {
 		let _comparison = comparator.compare(table_local, &immediate)?;
 		Ok(BranchImmediate { comparator, local, immediate, target })
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
+impl Operation for BranchImmediate {
+	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table();
 		let local = &table[&self.local];
 		let comparison = self.comparator.compare(local, &self.immediate)?;

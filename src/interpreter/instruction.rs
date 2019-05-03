@@ -2,11 +2,11 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Direction, Operation, OperationIdentifier, Token};
+use super::{Direction, RefactorOperation, OperationIdentifier, Token};
 
 #[derive(Debug)]
 pub struct Instruction {
-	pub operation: Operation,
+	pub operation: RefactorOperation,
 	pub direction: Direction,
 	pub polarization: Option<Direction>,
 }

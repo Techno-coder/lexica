@@ -1,6 +1,7 @@
 use std::fmt;
 
-use super::{Add, AddImmediate, Context, InterpreterResult, LocalTable, LocalTarget, Primitive};
+use super::{Add, AddImmediate, CompilationUnit, Context, InterpreterResult, LocalTable, LocalTarget,
+            Operation, Primitive};
 
 #[derive(Debug)]
 pub struct Minus {
@@ -13,13 +14,15 @@ impl Minus {
 		let inner = Add::new(table, accumulator, operand)?;
 		Ok(Minus { inner })
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
-		self.inner.reverse(context)
+impl Operation for Minus {
+	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
+		self.inner.reverse(context, unit)
 	}
 
-	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
-		self.inner.execute(context)
+	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
+		self.inner.execute(context, unit)
 	}
 }
 
@@ -40,13 +43,15 @@ impl MinusImmediate {
 		let inner = AddImmediate::new(table, accumulator, operand)?;
 		Ok(MinusImmediate { inner })
 	}
+}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
-		self.inner.reverse(context)
+impl Operation for MinusImmediate {
+	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
+		self.inner.reverse(context, unit)
 	}
 
-	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
-		self.inner.execute(context)
+	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
+		self.inner.execute(context, unit)
 	}
 }
 

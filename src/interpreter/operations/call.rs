@@ -1,7 +1,7 @@
 use std::fmt;
 
-use super::{CallFrame, CompilationUnit, Context, Direction, InstructionTarget,
-            InterpreterError, InterpreterResult};
+use super::{CallFrame, CompilationUnit, Context, Direction, InstructionTarget, InterpreterError,
+            InterpreterResult, Operation};
 
 #[derive(Debug)]
 pub struct Call {
@@ -14,14 +14,21 @@ impl Call {
 		Call { target, reverse_target }
 	}
 
-	pub fn execute(&self, context: &mut Context, unit: &CompilationUnit) {
+	pub fn reversible(&self) -> bool {
+		self.reverse_target.is_some()
+	}
+}
+
+impl Operation for Call {
+	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		let function = unit.function_labels.get(&self.target)
 			.expect("Function label does not exist");
 		context.push_frame(CallFrame::construct(&function, Direction::Advance, context.program_counter()));
 		context.set_next_instruction(|| Ok(self.target.clone()));
+		Ok(())
 	}
 
-	pub fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
+	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		let reverse_target = self.reverse_target.as_ref()
 			.ok_or(InterpreterError::Irreversible)?;
 		let label = unit.reverse_labels.get(reverse_target)
@@ -30,10 +37,6 @@ impl Call {
 		context.push_frame(CallFrame::construct(&function, Direction::Advance, context.program_counter()));
 		context.set_next_instruction(|| Ok(reverse_target.clone()));
 		Ok(())
-	}
-
-	pub fn reversible(&self) -> bool {
-		self.reverse_target.is_some()
 	}
 }
 

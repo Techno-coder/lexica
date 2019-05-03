@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Context, Drop, InterpreterResult, LocalTable, LocalTarget};
+use super::{Context, Drop, InterpreterResult, LocalTable, LocalTarget, Operation, CompilationUnit};
 
 #[derive(Debug)]
 pub struct Restore {
@@ -13,12 +13,12 @@ impl Restore {
 		Ok(Restore { inner })
 	}
 
-	pub fn execute(&self, context: &mut Context) -> InterpreterResult<()> {
-		self.inner.reverse(context)
+	pub fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
+		self.inner.reverse(context, unit)
 	}
 
-	pub fn reverse(&self, context: &mut Context) -> InterpreterResult<()> {
-		self.inner.execute(context)
+	pub fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
+		self.inner.execute(context, unit)
 	}
 }
 
