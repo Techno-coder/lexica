@@ -14,6 +14,7 @@ pub use self::reset::*;
 pub use self::restore::*;
 pub use self::return_operation::*;
 pub use self::swap::*;
+pub use self::exit::*;
 
 mod swap;
 mod add;
@@ -29,3 +30,4 @@ mod jump;
 mod branch;
 mod clone;
 mod return_operation;
+mod exit;

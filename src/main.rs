@@ -70,7 +70,7 @@ static LEXER_TEST: &'static str = r"
 
 @local u32 0    # 0 : fibonacci result
 +main:
-  -exit *
+  exit' *
   drop.i u32 10 *
   call fibonacci
   recall fibonacci
@@ -78,12 +78,12 @@ static LEXER_TEST: &'static str = r"
   -reset 0 0
   restore 0
   *
-  +exit
+  exit
 -main^
 ";
 
 fn main() {
-	use crate::interpreter::{AnnotationMap, parse, Runtime, Step};
+	use crate::interpreter::{AnnotationMap, parse, Runtime, RuntimeStep};
 	use crate::source::TextMap;
 	use colored::Colorize;
 	use crate::interpreter::Direction;
@@ -110,7 +110,7 @@ fn main() {
 	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction()).blue().bold());
 		match runtime.force_step(Direction::Advance) {
-			Ok(Step::Exit) => {
+			Ok(RuntimeStep::Halted) => {
 				println!("{}: {:#?}", "Exit".green().bold(), runtime.context());
 				break;
 			}
@@ -126,7 +126,7 @@ fn main() {
 	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction()).blue().bold());
 		match runtime.force_step(Direction::Reverse) {
-			Ok(Step::Exit) => {
+			Ok(RuntimeStep::Halted) => {
 				println!("{}: {:#?}", "Exit".green().bold(), runtime.context());
 				break;
 			}

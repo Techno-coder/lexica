@@ -2,6 +2,7 @@ use super::{CallFrame, DropStack, InstructionTarget, InterpreterError, Interpret
 
 #[derive(Debug)]
 pub struct Context {
+	is_halted: bool,
 	call_stack: Vec<CallFrame>,
 	drop_stack: DropStack,
 	program_counter: InstructionTarget,
@@ -11,6 +12,7 @@ pub struct Context {
 impl Context {
 	pub fn new(program_counter: InstructionTarget) -> Context {
 		Context {
+			is_halted: false,
 			call_stack: Vec::new(),
 			drop_stack: DropStack::default(),
 			program_counter,
@@ -47,6 +49,14 @@ impl Context {
 	/// Overwrites the current program counter.
 	pub fn set_program_counter(&mut self, target: InstructionTarget) {
 		self.program_counter = target;
+	}
+
+	pub fn set_is_halted(&mut self, halted: bool) {
+		self.is_halted = halted;
+	}
+
+	pub fn is_halted(&self) -> bool {
+		self.is_halted
 	}
 
 	pub fn program_counter(&self) -> InstructionTarget {

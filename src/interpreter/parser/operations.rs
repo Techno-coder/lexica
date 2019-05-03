@@ -82,7 +82,7 @@ pub fn match_operation<'a>(span: &Span, operation: &OperationIdentifier, operand
 			RefactorOperation::Recall(Recall::new(function.target.clone(), reverse_target))
 		}
 		OperationIdentifier::Return => RefactorOperation::Return(Return),
-		OperationIdentifier::Exit => RefactorOperation::Exit,
+		OperationIdentifier::Exit => RefactorOperation::Exit(Exit),
 		OperationIdentifier::Jump => {
 			let target = target_label(span, &operands[0], unit, context)?;
 			RefactorOperation::Jump(Jump::new(target))

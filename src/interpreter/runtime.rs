@@ -1,5 +1,5 @@
 use super::{CallFrame, CompilationUnit, Context, Direction, Instruction, InstructionTarget,
-            InterpreterError, InterpreterResult, RefactorOperation, Step};
+            InterpreterError, InterpreterResult, RefactorOperation, RuntimeStep};
 
 #[derive(Debug)]
 pub struct Runtime {
@@ -22,44 +22,43 @@ impl Runtime {
 	pub fn run(&mut self, direction: Direction) -> InterpreterResult<()> {
 		loop {
 			match self.step(direction)? {
-				Step::Exit => break Ok(()),
+				RuntimeStep::Halted => break Ok(()),
 				_ => (),
 			}
 		}
 	}
 
 	/// Forcibly steps the runtime until a reversal hint is encountered.
-	pub fn step(&mut self, direction: Direction) -> InterpreterResult<Step> {
+	pub fn step(&mut self, direction: Direction) -> InterpreterResult<RuntimeStep> {
 		loop {
 			let step = self.force_step(direction)?;
 			match step {
-				Step::Pass => (),
+				RuntimeStep::Pass => (),
 				_ => break Ok(step),
 			}
 		}
 	}
 
 	/// Forces the runtime to step depending on the runtime and frame direction.
-	pub fn force_step(&mut self, direction: Direction) -> InterpreterResult<Step> {
+	pub fn force_step(&mut self, direction: Direction) -> InterpreterResult<RuntimeStep> {
 		let frame_direction = self.context.frame()?.direction();
 		let step = match Direction::compose(frame_direction, &direction) {
 			Direction::Advance => self.force_advance(),
 			Direction::Reverse => self.force_reverse(),
 		}?;
 
+		if self.context.is_halted() {
+			return Ok(RuntimeStep::Halted);
+		}
+
 		let frame_direction = self.context.frame()?.direction();
 		let composition = Direction::compose(frame_direction, &direction);
 		self.advance_instruction(composition)?;
-
-		match step {
-			Step::Exit => self.advance_instruction(composition.invert())?,
-			_ => (),
-		}
 		Ok(step)
 	}
 
 	/// Forces the runtime to advance regardless of frame direction.
-	pub fn force_advance(&mut self) -> InterpreterResult<Step> {
+	pub fn force_advance(&mut self) -> InterpreterResult<RuntimeStep> {
 		let InstructionTarget(index) = self.context.program_counter();
 		let instruction = &self.compilation_unit.instructions[index];
 
@@ -67,8 +66,7 @@ impl Runtime {
 		match instruction.polarization {
 			Some(Direction::Advance) | None => {
 				match instruction.operation {
-					RefactorOperation::Exit => return Ok(Step::Exit),
-					RefactorOperation::ReversalHint => return Ok(Step::ReversalHint),
+					RefactorOperation::ReversalHint => return Ok(RuntimeStep::ReversalHint),
 					_ => match instruction.direction {
 						Direction::Advance => instruction.operation.execute(context, unit)?,
 						Direction::Reverse => instruction.operation.reverse(context, unit)?,
@@ -77,11 +75,11 @@ impl Runtime {
 			}
 			_ => (),
 		}
-		Ok(Step::Pass)
+		Ok(RuntimeStep::Pass)
 	}
 
 	/// Forces the runtime to reverse regardless of frame direction.
-	pub fn force_reverse(&mut self) -> InterpreterResult<Step> {
+	pub fn force_reverse(&mut self) -> InterpreterResult<RuntimeStep> {
 		let InstructionTarget(index) = self.context.program_counter();
 		let instruction = &self.compilation_unit.instructions[index];
 
@@ -89,8 +87,7 @@ impl Runtime {
 		match instruction.polarization {
 			Some(Direction::Advance) => (),
 			_ => match instruction.operation {
-				RefactorOperation::Exit => return Ok(Step::Exit),
-				RefactorOperation::ReversalHint => return Ok(Step::ReversalHint),
+				RefactorOperation::ReversalHint => return Ok(RuntimeStep::ReversalHint),
 				_ => (),
 			}
 		}
@@ -106,7 +103,7 @@ impl Runtime {
 			},
 			_ => (),
 		}
-		Ok(Step::Pass)
+		Ok(RuntimeStep::Pass)
 	}
 
 	pub fn advance_instruction(&mut self, direction: Direction) -> InterpreterResult<()> {
