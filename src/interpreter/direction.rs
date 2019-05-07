@@ -11,11 +11,4 @@ impl Direction {
 			false => Direction::Reverse,
 		}
 	}
-
-	pub fn invert(&self) -> Direction {
-		match self {
-			Direction::Advance => Direction::Reverse,
-			Direction::Reverse => Direction::Advance,
-		}
-	}
 }

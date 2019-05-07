@@ -19,7 +19,7 @@ impl Recall {
 }
 
 impl Operational for Recall {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	fn parse<'a>(_: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
 	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let target = target(&operands[0])?;

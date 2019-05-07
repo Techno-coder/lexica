@@ -4,7 +4,7 @@ use crate::source::Span;
 
 use super::{Comparator, CompilationUnit, Context, GenericOperation, InstructionTarget, InterpreterResult,
             LocalTable, LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult,
-            Primitive, TranslationUnit};
+            TranslationUnit};
 
 #[derive(Debug)]
 pub struct Branch {

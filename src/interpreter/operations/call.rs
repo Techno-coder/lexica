@@ -23,10 +23,9 @@ impl Call {
 }
 
 impl Operational for Call {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	fn parse<'a>(_: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
 	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
-		let function = base_function(context, unit, span);
 		let target = target(&operands[0])?;
 		let (target, reverse_target) = unit
 			.functions.get(&target)

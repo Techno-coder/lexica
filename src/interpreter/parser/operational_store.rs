@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::source::Span;
 
-use super::{GenericOperation, Operand, Operation, Operational, ParserContext, ParserResult, TranslationUnit};
+use super::{GenericOperation, Operand, Operational, ParserContext, ParserResult, TranslationUnit};
 
 pub type OperationParser = for<'a> fn(&Span, &Vec<Operand<'a>>, &ParserContext, &TranslationUnit)
                                       -> ParserResult<'a, GenericOperation>;

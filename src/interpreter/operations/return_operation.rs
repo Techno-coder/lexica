@@ -9,8 +9,8 @@ use super::{CompilationUnit, Context, Direction, GenericOperation, InstructionTa
 pub struct Return;
 
 impl Operational for Return {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn parse<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
+	             _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		Ok(Box::new(Return))
 	}
 }
@@ -48,7 +48,7 @@ impl Operation for Return {
 }
 
 impl fmt::Display for Return {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
 		Ok(())
 	}
 }

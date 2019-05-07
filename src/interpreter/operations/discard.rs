@@ -17,8 +17,8 @@ impl Discard {
 }
 
 impl Operational for Discard {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn parse<'a>(_: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
+	             _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let size = size(&operands[0])?;
 		Ok(Box::new(Discard::new(size)))

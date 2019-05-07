@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use crate::source::Spanned;
 
-use super::{AnnotationMap, Direction, Element, ElementParser, Instruction, InstructionTarget,
-            LocalTable, OperationalStore, ParserContext, ParserError, RefactorOperation,
-            TranslationFunctionLabel, TranslationUnit};
+use super::{AnnotationMap, Element, ElementParser, Instruction, InstructionTarget,
+            LocalTable, OperationalStore, ParserContext, ParserError, TranslationFunctionLabel,
+            TranslationUnit};
 
 /// Parses byte code into a `TranslationUnit`.
 /// Additionally, verifies that all instructions are valid.
