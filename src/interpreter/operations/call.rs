@@ -1,7 +1,10 @@
 use std::fmt;
 
-use super::{CallFrame, CompilationUnit, Context, Direction, InstructionTarget, InterpreterError,
-            InterpreterResult, Operation};
+use crate::source::Span;
+
+use super::{CallFrame, CompilationUnit, Context, Direction, GenericOperation, InstructionTarget,
+            InterpreterError, InterpreterResult, Operand, Operation, Operational, ParserContext,
+            ParserError, ParserResult, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Call {
@@ -16,6 +19,20 @@ impl Call {
 
 	pub fn reversible(&self) -> bool {
 		self.reverse_target.is_some()
+	}
+}
+
+impl Operational for Call {
+	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		use super::unit_parsers::*;
+		let function = base_function(context, unit, span);
+		let target = target(&operands[0])?;
+		let (target, reverse_target) = unit
+			.functions.get(&target)
+			.map(|function| (function.target.clone(), function.reverse_target.clone()))
+			.ok_or(operands[0].map(|_| ParserError::UndefinedFunction(target)))?;
+		Ok(Box::new(Call::new(target, reverse_target)))
 	}
 }
 
@@ -41,7 +58,7 @@ impl Operation for Call {
 }
 
 impl fmt::Display for Call {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{:?}", self.target)
 	}
 }

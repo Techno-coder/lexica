@@ -34,7 +34,7 @@ pub enum ParserError<'a> {
 }
 
 impl<'a> fmt::Display for ParserError<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use self::ParserError::*;
 		match self {
 			InvalidAnnotation(identifier) => write!(f, "Annotation identifier: {}, is invalid", identifier),

@@ -1,7 +1,12 @@
 use std::fmt;
 
-use super::{CompilationUnit, Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget,
-            Operation, Primitive};
+use crate::source::Span;
+
+use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, LocalTable,
+            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Primitive,
+            Reverser, TranslationUnit};
+
+pub type Minus = Reverser<Add>;
 
 #[derive(Debug)]
 pub struct Add {
@@ -27,6 +32,16 @@ impl Add {
 			}
 		}?;
 		Ok(Add { accumulator, operand })
+	}
+}
+
+impl Operational for Add {
+	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		use super::unit_parsers::*;
+		let table = local_table(&base_function(context, unit, span));
+		let (left, right) = (local(&operands[0])?, local(&operands[1])?);
+		Ok(Box::new(error(Add::new(table?, left, right), span)?))
 	}
 }
 
@@ -69,7 +84,7 @@ impl Operation for Add {
 }
 
 impl fmt::Display for Add {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{} {}", self.accumulator, self.operand)
 	}
 }

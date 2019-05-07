@@ -1,7 +1,12 @@
 use std::fmt;
 
-use super::{CompilationUnit, Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget,
-            Operation, Primitive, Size};
+use crate::source::Span;
+
+use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, LocalTable,
+            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Reverser,
+            TranslationUnit};
+
+pub type Restore = Reverser<Drop>;
 
 #[derive(Debug)]
 pub struct Drop {
@@ -12,6 +17,16 @@ impl Drop {
 	pub fn new(table: &LocalTable, local: LocalTarget) -> InterpreterResult<Drop> {
 		let _local = table.local(&local)?;
 		Ok(Drop { local })
+	}
+}
+
+impl Operational for Drop {
+	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		use super::unit_parsers::*;
+		let local = local(&operands[0])?;
+		let table = local_table(&base_function(context, unit, span));
+		Ok(Box::new(error(Drop::new(table?, local), span)?))
 	}
 }
 
@@ -31,41 +46,7 @@ impl Operation for Drop {
 }
 
 impl fmt::Display for Drop {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{}", self.local)
-	}
-}
-
-#[derive(Debug)]
-pub struct DropImmediate {
-	immediate: Primitive,
-}
-
-impl DropImmediate {
-	pub fn new(size: Size, immediate: Primitive) -> InterpreterResult<DropImmediate> {
-		match immediate.cast(size) {
-			Some(immediate) => Ok(DropImmediate { immediate }),
-			None => Err(InterpreterError::TypesIncompatible),
-		}
-	}
-}
-
-impl Operation for DropImmediate {
-	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		Ok(self.immediate.drop(context.drop_stack()))
-	}
-
-	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		let byte_count = self.immediate.size().byte_count();
-		for _ in 0..byte_count {
-			context.drop_stack().pop_byte()?;
-		}
-		Ok(())
-	}
-}
-
-impl fmt::Display for DropImmediate {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-		write!(f, "{}", self.immediate)
 	}
 }

@@ -1,7 +1,10 @@
 use std::fmt;
 
-use super::{CallFrame, CompilationUnit, Context, Direction, InstructionTarget, Operation,
-            InterpreterResult};
+use crate::source::Span;
+
+use super::{CallFrame, CompilationUnit, Context, Direction, GenericOperation, InstructionTarget,
+            InterpreterResult, Operand, Operation, Operational, ParserContext, ParserError,
+            ParserResult, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Recall {
@@ -12,6 +15,19 @@ pub struct Recall {
 impl Recall {
 	pub fn new(target: InstructionTarget, reverse_target: InstructionTarget) -> Recall {
 		Recall { target, reverse_target }
+	}
+}
+
+impl Operational for Recall {
+	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		use super::unit_parsers::*;
+		let target = target(&operands[0])?;
+		let function = unit.functions.get(&target)
+			.ok_or(operands[0].map(|_| ParserError::UndefinedFunction(target)))?;
+		let reverse_target = function.reverse_target.clone()
+			.ok_or(operands[0].map(|_| ParserError::IrreversibleCall))?;
+		Ok(Box::new(Recall::new(function.target.clone(), reverse_target)))
 	}
 }
 
@@ -35,7 +51,7 @@ impl Operation for Recall {
 }
 
 impl fmt::Display for Recall {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{:?}", self.target)
 	}
 }

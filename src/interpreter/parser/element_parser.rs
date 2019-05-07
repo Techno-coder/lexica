@@ -104,7 +104,13 @@ impl<'a> ElementParser<'a> {
 				_ => break,
 			};
 		}
-		Ok(Spanned::new(Element::ReversalHint, span))
+
+		Ok(Spanned::new(Element::Instruction(TranslationInstruction {
+			operation: OperationIdentifier::ReversalHint,
+			operands: vec![],
+			direction: Direction::Advance,
+			polarization: None,
+		}), span))
 	}
 }
 

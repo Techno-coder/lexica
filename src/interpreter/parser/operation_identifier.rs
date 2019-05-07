@@ -114,7 +114,7 @@ impl OperationIdentifier {
 }
 
 impl fmt::Display for OperationIdentifier {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use self::OperationIdentifier::*;
 		match self {
 			ReversalHint => write!(f, "*"),

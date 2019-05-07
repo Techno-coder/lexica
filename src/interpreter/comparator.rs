@@ -48,7 +48,7 @@ impl Comparator {
 }
 
 impl fmt::Display for Comparator {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Comparator::Equal => write!(f, "="),
 			Comparator::LessThan => write!(f, "<"),

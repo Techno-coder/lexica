@@ -63,7 +63,7 @@ impl Primitive {
 }
 
 impl fmt::Display for Primitive {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Primitive::Boolean(boolean) => write!(f, "{}", boolean),
 			Primitive::Integer(integer) => match integer.is_signed() {

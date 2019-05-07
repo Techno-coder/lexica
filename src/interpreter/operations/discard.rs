@@ -1,6 +1,9 @@
 use std::fmt;
 
-use super::{Context, InterpreterResult, Size, Operation, CompilationUnit};
+use crate::source::Span;
+
+use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, Operand, Operation, Operational,
+            ParserContext, ParserResult, Size, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Discard {
@@ -10,6 +13,15 @@ pub struct Discard {
 impl Discard {
 	pub fn new(size: Size) -> Discard {
 		Discard { size }
+	}
+}
+
+impl Operational for Discard {
+	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		use super::unit_parsers::*;
+		let size = size(&operands[0])?;
+		Ok(Box::new(Discard::new(size)))
 	}
 }
 
@@ -24,7 +36,7 @@ impl Operation for Discard {
 }
 
 impl fmt::Display for Discard {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{}", self.size)
 	}
 }

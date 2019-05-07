@@ -42,7 +42,7 @@ impl IndexMut<&LocalTarget> for LocalTable {
 pub struct LocalTarget(pub usize);
 
 impl fmt::Display for LocalTarget {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let LocalTarget(index) = self;
 		write!(f, "{}", index)
 	}

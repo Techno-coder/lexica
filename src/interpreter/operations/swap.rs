@@ -1,7 +1,9 @@
 use std::fmt;
 
-use super::{CompilationUnit, Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget,
-            Operation};
+use crate::source::Span;
+
+use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, LocalTable,
+            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Swap {
@@ -22,6 +24,16 @@ impl Swap {
 	}
 }
 
+impl Operational for Swap {
+	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		use super::unit_parsers::*;
+		let table = local_table(&base_function(context, unit, span));
+		let (left, right) = (local(&operands[0])?, local(&operands[1])?);
+		Ok(Box::new(error(Swap::new(table?, left, right), span)?))
+	}
+}
+
 impl Operation for Swap {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		use std::mem;
@@ -32,10 +44,14 @@ impl Operation for Swap {
 		mem::replace(&mut table[&self.right], left);
 		Ok(())
 	}
+
+	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
+		self.execute(context, unit)
+	}
 }
 
 impl fmt::Display for Swap {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{} {}", self.left, self.right)
 	}
 }

@@ -63,7 +63,7 @@ impl Size {
 }
 
 impl fmt::Display for Size {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Size::Boolean => write!(f, "bool"),
 			Size::Unsigned8 => write!(f, "u8"),

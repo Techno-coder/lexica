@@ -1,9 +1,19 @@
 use std::fmt;
 
-use super::{CompilationUnit, Context, Direction, InstructionTarget, InterpreterResult, Operation};
+use crate::source::Span;
+
+use super::{CompilationUnit, Context, Direction, GenericOperation, InstructionTarget, InterpreterResult,
+            Operand, Operation, Operational, ParserContext, ParserResult, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Exit;
+
+impl Operational for Exit {
+	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		Ok(Box::new(Exit))
+	}
+}
 
 impl Operation for Exit {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
@@ -36,7 +46,7 @@ impl Operation for Exit {
 }
 
 impl fmt::Display for Exit {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		Ok(())
 	}
 }

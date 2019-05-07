@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use crate::source::Spanned;
 
 use super::{AnnotationMap, Direction, Element, ElementParser, Instruction, InstructionTarget,
-            LocalTable, RefactorOperation, ParserContext, ParserError, TranslationFunctionLabel,
-            TranslationUnit};
+            LocalTable, OperationalStore, ParserContext, ParserError, RefactorOperation,
+            TranslationFunctionLabel, TranslationUnit};
 
 /// Parses byte code into a `TranslationUnit`.
 /// Additionally, verifies that all instructions are valid.
-pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
+pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap, store: &OperationalStore)
                  -> Result<TranslationUnit, Vec<Spanned<ParserError<'a>>>> {
 	let mut errors: Vec<Spanned<ParserError<'a>>> = Vec::new();
 	let mut unit = TranslationUnit::default();
@@ -36,36 +36,33 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap)
 				let annotation = Spanned::new(annotation.clone(), element.span);
 				context.pending_annotations.push(annotation);
 			}
-			Element::ReversalHint => unit.instructions.push(Instruction {
-				operation: RefactorOperation::ReversalHint,
-				direction: Direction::Advance,
-				polarization: None,
-			}),
 			Element::FunctionLabel(function) => context.last_function_label = Some(function),
 			Element::Label(label) => context.last_function_label = Some(label),
 			Element::Instruction(instruction) => {
-				use super::match_operation;
-				let operation = match_operation(&element.span, &instruction.operation,
-				                                &instruction.operands, &context, &unit);
+				let (identifier, constructor) = store.get(&format!("{}", instruction.operation))
+					.expect("Invalid instruction operation parsed");
+				let operation = constructor(&element.span, &instruction.operands, &context, &unit);
 
-				match &instruction.direction {
-					Direction::Advance => (),
-					_ => match &operation {
-						Ok(RefactorOperation::Call(call)) => match call.reversible() {
-							false => {
-								let error = ParserError::IrreversibleCall;
-								errors.push(Spanned::new(error, element.span));
-								continue;
-							}
-							_ => (),
-						}
-						_ => (),
-					}
-				}
+				// TODO: Consider reversibility of instructions (Call)
+//				match &instruction.direction {
+//					Direction::Advance => (),
+//					_ => match &operation {
+//						Ok(RefactorOperation::Call(call)) => match call.reversible() {
+//							false => {
+//								let error = ParserError::IrreversibleCall;
+//								errors.push(Spanned::new(error, element.span));
+//								continue;
+//							}
+//							_ => (),
+//						}
+//						_ => (),
+//					}
+//				}
 
 				match operation {
 					Ok(operation) => {
 						unit.instructions.push(Instruction {
+							identifier,
 							operation,
 							direction: instruction.direction,
 							polarization: instruction.polarization,

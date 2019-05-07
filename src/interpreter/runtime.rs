@@ -1,5 +1,5 @@
 use super::{CallFrame, CompilationUnit, Context, Direction, Instruction, InstructionTarget,
-            InterpreterError, InterpreterResult, RefactorOperation, RuntimeStep};
+            InterpreterError, InterpreterResult, RuntimeStep};
 
 #[derive(Debug)]
 pub struct Runtime {
@@ -64,14 +64,9 @@ impl Runtime {
 
 		let (context, unit) = (&mut self.context, &self.compilation_unit);
 		match instruction.polarization {
-			Some(Direction::Advance) | None => {
-				match instruction.operation {
-					RefactorOperation::ReversalHint => return Ok(RuntimeStep::ReversalHint),
-					_ => match instruction.direction {
-						Direction::Advance => instruction.operation.execute(context, unit)?,
-						Direction::Reverse => instruction.operation.reverse(context, unit)?,
-					}
-				}
+			Some(Direction::Advance) | None => match instruction.direction {
+				Direction::Advance => instruction.operation.execute(context, unit)?,
+				Direction::Reverse => instruction.operation.reverse(context, unit)?,
 			}
 			_ => (),
 		}
@@ -84,14 +79,6 @@ impl Runtime {
 		let instruction = &self.compilation_unit.instructions[index];
 
 		let (context, unit) = (&mut self.context, &self.compilation_unit);
-		match instruction.polarization {
-			Some(Direction::Advance) => (),
-			_ => match instruction.operation {
-				RefactorOperation::ReversalHint => return Ok(RuntimeStep::ReversalHint),
-				_ => (),
-			}
-		}
-
 		match instruction.polarization {
 			Some(Direction::Reverse) => match instruction.direction {
 				Direction::Advance => instruction.operation.execute(context, unit)?,

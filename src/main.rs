@@ -1,4 +1,4 @@
-#![feature(try_from)]
+#![feature(map_get_key_value)]
 
 mod compiler;
 mod interpreter;
@@ -73,7 +73,7 @@ static LEXER_TEST: &'static str = r"
   exit' *
   drop.i u32 10 *
   call fibonacci
-  recall fibonacci
+#  recall fibonacci
   *
   -reset 0 0
   restore 0
@@ -83,10 +83,9 @@ static LEXER_TEST: &'static str = r"
 ";
 
 fn main() {
-	use crate::interpreter::{AnnotationMap, parse, Runtime, RuntimeStep};
+	use crate::interpreter::*;
 	use crate::source::TextMap;
 	use colored::Colorize;
-	use crate::interpreter::Direction;
 
 	let _function = compiler::construct();
 	let text_map = TextMap::new(LEXER_TEST.to_owned());
@@ -94,7 +93,9 @@ fn main() {
 	let mut annotation_map = AnnotationMap::default();
 	annotation_map.register("local".to_owned(), Box::new(crate::interpreter::annotations::LocalAnnotation));
 
-	let result = match parse(text_map.text(), &annotation_map) {
+	let operational_store = OperationalStore::new();
+
+	let result = match parse(text_map.text(), &annotation_map, &operational_store) {
 		Ok(result) => result.compile(),
 		Err(errors) => {
 			for error in errors {
@@ -107,12 +108,12 @@ fn main() {
 
 	let mut runtime = Runtime::new(result)
 		.expect("Failed to create runtime");
-	loop {
+	for _ in 0..800 {
 		println!("{}", format!("[ {} ]", runtime.current_instruction()).blue().bold());
 		match runtime.force_step(Direction::Advance) {
 			Ok(RuntimeStep::Halted) => {
-				println!("{}: {:#?}", "Exit".green().bold(), runtime.context());
-				break;
+//				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
+				println!("{}", "Halt".green().bold());
 			}
 			Err(error) => {
 				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
@@ -122,13 +123,15 @@ fn main() {
 		}
 	}
 
+	println!("{:#?}", runtime.context());
+
 	println!("{}", "REVERSING".red().bold());
-	loop {
+	for _ in 0..800 {
 		println!("{}", format!("[ {} ]", runtime.current_instruction()).blue().bold());
 		match runtime.force_step(Direction::Reverse) {
 			Ok(RuntimeStep::Halted) => {
-				println!("{}: {:#?}", "Exit".green().bold(), runtime.context());
-				break;
+//				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
+				println!("{}", "Halt".green().bold());
 			}
 			Err(error) => {
 				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
@@ -137,4 +140,6 @@ fn main() {
 			_ => (),
 		}
 	}
+
+	println!("{:#?}", runtime.context());
 }

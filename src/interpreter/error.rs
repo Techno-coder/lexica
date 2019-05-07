@@ -20,7 +20,7 @@ pub enum InterpreterError {
 }
 
 impl fmt::Display for InterpreterError {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use self::InterpreterError::*;
 		match self {
 			CallStackEmpty => write!(f, "Call stack is empty"),

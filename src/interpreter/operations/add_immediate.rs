@@ -1,7 +1,12 @@
 use std::fmt;
 
-use super::{CompilationUnit, Context, InterpreterError, InterpreterResult, LocalTable, LocalTarget,
-            Operation, Primitive};
+use crate::source::Span;
+
+use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, LocalTable,
+            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Primitive,
+            Reverser, TranslationUnit};
+
+pub type MinusImmediate = Reverser<AddImmediate>;
 
 #[derive(Debug)]
 pub struct AddImmediate {
@@ -26,6 +31,16 @@ impl AddImmediate {
 			}
 		}?;
 		Ok(AddImmediate { accumulator, immediate })
+	}
+}
+
+impl Operational for AddImmediate {
+	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		use super::unit_parsers::*;
+		let table = local_table(&base_function(context, unit, span));
+		let (local, primitive) = (local(&operands[0])?, primitive(&operands[1])?);
+		Ok(Box::new(error(AddImmediate::new(table?, local, primitive), span)?))
 	}
 }
 
@@ -66,7 +81,7 @@ impl Operation for AddImmediate {
 }
 
 impl fmt::Display for AddImmediate {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{} {}", self.accumulator, self.immediate)
 	}
 }
