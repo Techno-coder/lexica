@@ -3,7 +3,8 @@ use std::fmt;
 use crate::source::Span;
 
 use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, LocalTable,
-            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, TranslationUnit};
+            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Reversible,
+            TranslationUnit};
 
 #[derive(Debug)]
 pub struct Swap {
@@ -45,6 +46,12 @@ impl Operation for Swap {
 		Ok(())
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl Reversible for Swap {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		self.execute(context, unit)
 	}

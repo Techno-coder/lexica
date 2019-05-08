@@ -3,7 +3,7 @@ use std::fmt;
 use crate::source::Span;
 
 use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, Operand, Operation,
-            Operational, ParserContext, ParserResult, TranslationUnit};
+            Operational, ParserContext, ParserResult, Reversible, TranslationUnit};
 
 #[derive(Debug)]
 pub struct ReversalHint;
@@ -22,6 +22,12 @@ impl Operation for ReversalHint {
 		Ok(())
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl Reversible for ReversalHint {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		self.execute(context, unit)
 	}

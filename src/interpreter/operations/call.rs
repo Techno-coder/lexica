@@ -4,7 +4,7 @@ use crate::source::Span;
 
 use super::{CallFrame, CompilationUnit, Context, Direction, GenericOperation, InstructionTarget,
             InterpreterError, InterpreterResult, Operand, Operation, Operational, ParserContext,
-            ParserError, ParserResult, TranslationUnit};
+            ParserError, ParserResult, Reversible, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Call {
@@ -15,10 +15,6 @@ pub struct Call {
 impl Call {
 	pub fn new(target: InstructionTarget, reverse_target: Option<InstructionTarget>) -> Call {
 		Call { target, reverse_target }
-	}
-
-	pub fn reversible(&self) -> bool {
-		self.reverse_target.is_some()
 	}
 }
 
@@ -44,6 +40,12 @@ impl Operation for Call {
 		Ok(())
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		self.reverse_target.as_ref().map(|_| self as &Reversible)
+	}
+}
+
+impl Reversible for Call {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		let reverse_target = self.reverse_target.as_ref()
 			.ok_or(InterpreterError::Irreversible)?;

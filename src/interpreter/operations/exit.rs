@@ -3,7 +3,7 @@ use std::fmt;
 use crate::source::Span;
 
 use super::{CompilationUnit, Context, Direction, GenericOperation, InstructionTarget, InterpreterResult,
-            Operand, Operation, Operational, ParserContext, ParserResult, TranslationUnit};
+            Operand, Operation, Operational, ParserContext, ParserResult, Reversible, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Exit;
@@ -30,6 +30,12 @@ impl Operation for Exit {
 		Ok(())
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl Reversible for Exit {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let frame_direction = context.frame()?.direction().clone();
 		match frame_direction {

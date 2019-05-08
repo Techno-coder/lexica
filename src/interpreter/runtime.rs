@@ -66,7 +66,10 @@ impl Runtime {
 		match instruction.polarization {
 			Some(Direction::Advance) | None => match instruction.direction {
 				Direction::Advance => instruction.operation.execute(context, unit)?,
-				Direction::Reverse => instruction.operation.reverse(context, unit)?,
+				Direction::Reverse => match instruction.operation.reversible() {
+					Some(reversible) => reversible.reverse(context, unit)?,
+					None => return Err(InterpreterError::Irreversible)
+				}
 			}
 			_ => (),
 		}
@@ -82,10 +85,16 @@ impl Runtime {
 		match instruction.polarization {
 			Some(Direction::Reverse) => match instruction.direction {
 				Direction::Advance => instruction.operation.execute(context, unit)?,
-				Direction::Reverse => instruction.operation.reverse(context, unit)?,
+				Direction::Reverse => match instruction.operation.reversible() {
+					Some(reversible) => reversible.reverse(context, unit)?,
+					None => return Err(InterpreterError::Irreversible)
+				}
 			},
 			None => match instruction.direction {
-				Direction::Advance => instruction.operation.reverse(context, unit)?,
+				Direction::Advance => match instruction.operation.reversible() {
+					Some(reversible) => reversible.reverse(context, unit)?,
+					None => return Err(InterpreterError::Irreversible)
+				}
 				Direction::Reverse => instruction.operation.execute(context, unit)?,
 			},
 			_ => (),

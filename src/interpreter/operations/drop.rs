@@ -4,7 +4,7 @@ use crate::source::Span;
 
 use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, LocalTable,
             LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Reverser,
-            TranslationUnit};
+            Reversible, TranslationUnit};
 
 pub type Restore = Reverser<Drop>;
 
@@ -37,6 +37,12 @@ impl Operation for Drop {
 		Ok(())
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl Reversible for Drop {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let mut local = context.frame()?.table()[&self.local].clone();
 		local.restore(context.drop_stack())?;

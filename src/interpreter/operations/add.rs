@@ -4,7 +4,7 @@ use crate::source::Span;
 
 use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, LocalTable,
             LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Primitive,
-            Reverser, TranslationUnit};
+            Reverser, Reversible, TranslationUnit};
 
 pub type Minus = Reverser<Add>;
 
@@ -64,6 +64,12 @@ impl Operation for Add {
 		}
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl Reversible for Add {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table_mut();
 		let operand = &table[&self.operand].clone();

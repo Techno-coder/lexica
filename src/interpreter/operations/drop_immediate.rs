@@ -3,8 +3,8 @@ use std::fmt;
 use crate::source::Span;
 
 use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult,
-            Operand, Operation, Operational, ParserContext, ParserResult, Primitive, Size,
-            TranslationUnit};
+            Operand, Operation, Operational, ParserContext, ParserResult, Primitive, Reversible,
+            Size, TranslationUnit};
 
 #[derive(Debug)]
 pub struct DropImmediate {
@@ -34,6 +34,12 @@ impl Operation for DropImmediate {
 		Ok(self.immediate.drop(context.drop_stack()))
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl Reversible for DropImmediate {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let byte_count = self.immediate.size().byte_count();
 		for _ in 0..byte_count {

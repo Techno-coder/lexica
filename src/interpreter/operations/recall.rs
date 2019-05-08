@@ -4,7 +4,7 @@ use crate::source::Span;
 
 use super::{CallFrame, CompilationUnit, Context, Direction, GenericOperation, InstructionTarget,
             InterpreterResult, Operand, Operation, Operational, ParserContext, ParserError,
-            ParserResult, TranslationUnit};
+            ParserResult, Reversible, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Recall {
@@ -41,6 +41,12 @@ impl Operation for Recall {
 		Ok(())
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl Reversible for Recall {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		let function = unit.function_labels.get(&self.target)
 			.expect("Function label does not exist");

@@ -2,19 +2,23 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, InterpreterError, InterpreterResult, Operand,
+use super::{CompilationUnit, Context, InterpreterResult, Operand,
             ParserContext, ParserResult, TranslationUnit};
 
 pub type GenericOperation = Box<dyn Operation>;
 
-/// An interface that defines how an operation is executed or reversed.
+/// An interface that defines how an operation is executed.
 pub trait Operation: fmt::Debug + fmt::Display {
 	/// Executes the operation on the given context by advancing.
 	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()>;
+	/// Provides a reversible variant of the operation.
+	fn reversible(&self) -> Option<&Reversible> { None }
+}
+
+/// An interface that defines how an operation is reversed.
+pub trait Reversible: Operation {
 	/// Reverses the operation on the given context.
-	fn reverse(&self, _context: &mut Context, _unit: &CompilationUnit) -> InterpreterResult<()> {
-		Err(InterpreterError::Irreversible)
-	}
+	fn reverse(&self, _context: &mut Context, _unit: &CompilationUnit) -> InterpreterResult<()>;
 }
 
 /// An interface that defines how an operation is constructed.

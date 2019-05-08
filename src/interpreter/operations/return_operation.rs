@@ -3,7 +3,7 @@ use std::fmt;
 use crate::source::Span;
 
 use super::{CompilationUnit, Context, Direction, GenericOperation, InstructionTarget, InterpreterResult,
-            Operand, Operation, Operational, ParserContext, ParserResult, TranslationUnit};
+            Operand, Operation, Operational, ParserContext, ParserResult, Reversible, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Return;
@@ -31,6 +31,12 @@ impl Operation for Return {
 		Ok(())
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl Reversible for Return {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let frame = context.frame()?;
 		let target = frame.return_target().clone();

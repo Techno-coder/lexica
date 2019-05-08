@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, Operand, Operation, Operational,
-            ParserContext, ParserResult, TranslationUnit};
+use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, Operand, Operation,
+            Operational, ParserContext, ParserResult, Reversible, TranslationUnit};
 
 #[derive(Debug)]
 pub struct Reverser<T> {
@@ -22,14 +22,22 @@ impl<T> Operational for Reverser<T> where T: Operational + 'static {
 
 impl<T> Operation for Reverser<T> where T: Operational {
 	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
-		self.operation.reverse(context, unit)
+		match self.operation.reversible() {
+			Some(reversible) => reversible.reverse(context, unit),
+			None => Err(InterpreterError::Irreversible),
+		}
 	}
 
+	fn reversible(&self) -> Option<&Reversible> {
+		Some(self)
+	}
+}
+
+impl<T> Reversible for Reverser<T> where T: Operational {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		self.operation.execute(context, unit)
 	}
 }
-
 
 impl<T> fmt::Display for Reverser<T> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
