@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use crate::source::Spanned;
 
-use super::{AnnotationMap, Element, ElementParser, Instruction, InstructionTarget,
-            LocalTable, OperationalStore, ParserContext, ParserError, TranslationFunctionLabel,
-            TranslationUnit};
+use super::{AnnotationMap, Direction, Element, ElementParser, Instruction,
+            InstructionTarget, LocalTable, OperationalStore, ParserContext, ParserError,
+            TranslationFunctionLabel, TranslationUnit};
 
 /// Parses byte code into a `TranslationUnit`.
 /// Additionally, verifies that all instructions are valid.
@@ -43,24 +43,20 @@ pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap, store: &Opera
 					.expect("Invalid instruction operation parsed");
 				let operation = constructor(&element.span, &instruction.operands, &context, &unit);
 
-				// TODO: Consider reversibility of instructions (Call)
-//				match &instruction.direction {
-//					Direction::Advance => (),
-//					_ => match &operation {
-//						Ok(RefactorOperation::Call(call)) => match call.reversible() {
-//							false => {
-//								let error = ParserError::IrreversibleCall;
-//								errors.push(Spanned::new(error, element.span));
-//								continue;
-//							}
-//							_ => (),
-//						}
-//						_ => (),
-//					}
-//				}
-
 				match operation {
 					Ok(operation) => {
+						match (&instruction.polarization, &instruction.direction) {
+							(Some(_), Direction::Advance) => (),
+							_ => match operation.reversible().is_some() {
+								false => {
+									let error = ParserError::IrreversibleCall;
+									errors.push(Spanned::new(error, element.span));
+									continue;
+								}
+								_ => (),
+							}
+						}
+
 						unit.instructions.push(Instruction {
 							identifier,
 							operation,
