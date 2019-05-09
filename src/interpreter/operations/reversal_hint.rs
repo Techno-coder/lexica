@@ -9,8 +9,8 @@ use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, Opera
 pub struct ReversalHint;
 
 impl Operational for ReversalHint {
-	fn parse<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
-	             _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
+	               _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		Ok(Box::new(ReversalHint))
 	}
 }

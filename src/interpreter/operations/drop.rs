@@ -21,8 +21,8 @@ impl Drop {
 }
 
 impl Operational for Drop {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let local = local(&operands[0])?;
 		let table = local_table(&base_function(context, unit, span));

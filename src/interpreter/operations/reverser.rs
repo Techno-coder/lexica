@@ -13,9 +13,9 @@ pub struct Reverser<T> {
 }
 
 impl<T> Operational for Reverser<T> where T: Operational + 'static {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
-		let operation = T::parse(span, operands, context, unit)?;
+	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+		let operation = T::compile(span, operands, context, unit)?;
 		Ok(Box::new(Self { operation, operational: PhantomData }))
 	}
 }

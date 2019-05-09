@@ -9,8 +9,8 @@ use super::{CompilationUnit, Context, Direction, GenericOperation, InstructionTa
 pub struct Exit;
 
 impl Operational for Exit {
-	fn parse<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
-	             _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
+	               _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		Ok(Box::new(Exit))
 	}
 }

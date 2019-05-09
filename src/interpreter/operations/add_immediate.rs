@@ -35,8 +35,8 @@ impl AddImmediate {
 }
 
 impl Operational for AddImmediate {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let table = local_table(&base_function(context, unit, span));
 		let (local, primitive) = (local(&operands[0])?, primitive(&operands[1])?);

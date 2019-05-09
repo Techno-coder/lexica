@@ -23,13 +23,14 @@ impl AnnotationType for LocalAnnotation {
 		let local = local.clone().cast(size)
 			.ok_or(arguments[1].map(|node| ParserError::UnexpectedArgument(node.clone())))?;
 
-		match context.last_element.node {
-			Element::FunctionLabel(function_label) => {
-				let function = unit.functions.get_mut(function_label).unwrap();
+		match context.last_element().node {
+			Element::Function(_) => {
+				let function = context.pending_function(unit);
 				function.locals.register(local);
 				Ok(())
 			}
-			_ => Err(Spanned::new(ParserError::InvalidApplication(annotation.identifier), annotation.span.clone()))
+			_ => Err(Spanned::new(ParserError::InvalidApplication(annotation.identifier),
+			                      annotation.span.clone()))
 		}
 	}
 }

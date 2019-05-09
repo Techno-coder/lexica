@@ -4,12 +4,12 @@ use super::AnnotationType;
 
 /// Stores a register of annotation types keyed by their identifiers.
 #[derive(Debug, Default)]
-pub struct AnnotationMap {
+pub struct AnnotationStore {
 	annotations: HashMap<String, Box<AnnotationType>>,
 }
 
-impl AnnotationMap {
-	/// Adds an annotation type to the map.
+impl AnnotationStore {
+	/// Adds an annotation type to the store.
 	/// Existing annotations by the same identifier are overwritten.
 	pub fn register(&mut self, identifier: String, annotation: Box<AnnotationType>) {
 		self.annotations.insert(identifier, annotation);

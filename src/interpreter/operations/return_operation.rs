@@ -9,7 +9,7 @@ use super::{CompilationUnit, Context, Direction, GenericOperation, InstructionTa
 pub struct Return;
 
 impl Operational for Return {
-	fn parse<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
+	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
 	             _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		Ok(Box::new(Return))
 	}

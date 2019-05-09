@@ -19,8 +19,8 @@ impl Call {
 }
 
 impl Operational for Call {
-	fn parse<'a>(_: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(_: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
+	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let target = target(&operands[0])?;
 		let (target, reverse_target) = unit
@@ -33,7 +33,7 @@ impl Operational for Call {
 
 impl Operation for Call {
 	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
-		let function = unit.function_labels.get(&self.target)
+		let function = unit.function_targets.get(&self.target)
 			.expect("Function label does not exist");
 		context.push_frame(CallFrame::construct(&function, Direction::Advance, context.program_counter()));
 		context.set_next_instruction(|| Ok(self.target.clone()));
@@ -49,9 +49,9 @@ impl Reversible for Call {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		let reverse_target = self.reverse_target.as_ref()
 			.ok_or(InterpreterError::Irreversible)?;
-		let label = unit.reverse_labels.get(reverse_target)
+		let label = unit.reverse_targets.get(reverse_target)
 			.expect("Reverse function label does not exist");
-		let function = unit.function_labels.get(label).unwrap();
+		let function = unit.function_targets.get(label).unwrap();
 		context.push_frame(CallFrame::construct(&function, Direction::Advance, context.program_counter()));
 		context.set_next_instruction(|| Ok(reverse_target.clone()));
 		Ok(())

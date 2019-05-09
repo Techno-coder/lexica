@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Direction, GenericOperation, OperationIdentifier, Token};
+use super::{Direction, FunctionOffset, FunctionTarget, GenericOperation, OperationIdentifier, Token};
 
 pub type Operand<'a> = Spanned<Token<'a>>;
 
@@ -28,8 +28,9 @@ impl fmt::Display for Instruction {
 	}
 }
 
+/// An index for an instruction within a unit.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct InstructionTarget(pub usize);
+pub struct InstructionTarget(pub FunctionTarget, pub FunctionOffset);
 
 #[derive(Debug, Clone)]
 pub struct TranslationInstruction<'a> {

@@ -1,5 +1,5 @@
-use super::{CallFrame, CompilationUnit, Context, Direction, Instruction, InstructionTarget,
-            InterpreterError, InterpreterResult, RuntimeStep};
+use super::{CallFrame, CompilationUnit, Context, Direction, FunctionOffset, FunctionTarget,
+            Instruction, InstructionTarget, InterpreterError, InterpreterResult, RuntimeStep};
 
 #[derive(Debug)]
 pub struct Runtime {
@@ -9,13 +9,13 @@ pub struct Runtime {
 
 impl Runtime {
 	pub fn new(compilation_unit: CompilationUnit) -> InterpreterResult<Runtime> {
-		let entry_point = compilation_unit.main.clone()
+		let function_index = compilation_unit.main.clone()
 			.ok_or(InterpreterError::MissingEntryPoint)?;
-		let entry_function = compilation_unit.function_labels
-			.get(&entry_point).unwrap();
+		let entry_function = &compilation_unit.function(function_index.clone()).unwrap();
 
-		let mut context = Context::new(entry_point);
-		context.push_frame(CallFrame::construct(entry_function, Direction::Advance, InstructionTarget(0)));
+		let mut context = Context::new(InstructionTarget(function_index, FunctionOffset(0)));
+		let null_target = InstructionTarget(FunctionTarget(0), FunctionOffset(0));
+		context.push_frame(CallFrame::construct(entry_function, Direction::Advance, null_target));
 		Ok(Runtime { compilation_unit, context })
 	}
 
@@ -59,8 +59,9 @@ impl Runtime {
 
 	/// Forces the runtime to advance regardless of frame direction.
 	pub fn force_advance(&mut self) -> InterpreterResult<RuntimeStep> {
-		let InstructionTarget(index) = self.context.program_counter();
-		let instruction = &self.compilation_unit.instructions[index];
+		let target = self.context.program_counter();
+		let instruction = self.compilation_unit.instruction(target)
+			.ok_or(InterpreterError::InstructionBoundary)?;
 
 		let (context, unit) = (&mut self.context, &self.compilation_unit);
 		match instruction.polarization {
@@ -78,8 +79,9 @@ impl Runtime {
 
 	/// Forces the runtime to reverse regardless of frame direction.
 	pub fn force_reverse(&mut self) -> InterpreterResult<RuntimeStep> {
-		let InstructionTarget(index) = self.context.program_counter();
-		let instruction = &self.compilation_unit.instructions[index];
+		let target = self.context.program_counter();
+		let instruction = self.compilation_unit.instruction(target)
+			.ok_or(InterpreterError::InstructionBoundary)?;
 
 		let (context, unit) = (&mut self.context, &self.compilation_unit);
 		match instruction.polarization {
@@ -103,11 +105,11 @@ impl Runtime {
 	}
 
 	pub fn advance_instruction(&mut self, direction: Direction) -> InterpreterResult<()> {
-		let InstructionTarget(index) = self.context.program_counter();
+		let InstructionTarget(target, FunctionOffset(offset)) = self.context.program_counter();
 		self.context.set_next_instruction(|| match direction {
-			Direction::Advance => Ok(InstructionTarget(index + 1)),
-			Direction::Reverse => Ok(InstructionTarget(index.checked_sub(1)
-				.ok_or(InterpreterError::InstructionBoundary)?)),
+			Direction::Advance => Ok(InstructionTarget(target, FunctionOffset(offset + 1))),
+			Direction::Reverse => Ok(InstructionTarget(target, FunctionOffset(offset.checked_sub(1)
+				.ok_or(InterpreterError::InstructionBoundary)?))),
 		});
 		self.context.advance()?;
 		Ok(())
@@ -117,8 +119,9 @@ impl Runtime {
 		&self.context
 	}
 
-	pub fn current_instruction(&self) -> &Instruction {
-		let InstructionTarget(index) = self.context.program_counter();
-		&self.compilation_unit.instructions[index]
+	pub fn current_instruction(&self) -> InterpreterResult<&Instruction> {
+		let target = self.context.program_counter();
+		self.compilation_unit.instruction(target)
+			.ok_or(InterpreterError::InstructionBoundary)
 	}
 }

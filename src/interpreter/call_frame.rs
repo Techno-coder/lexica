@@ -1,4 +1,4 @@
-use super::{Direction, FunctionLabel, InstructionTarget, LocalTable};
+use super::{Direction, Function, InstructionTarget, LocalTable};
 
 #[derive(Debug)]
 pub struct CallFrame {
@@ -8,7 +8,7 @@ pub struct CallFrame {
 }
 
 impl CallFrame {
-	pub fn construct(function: &FunctionLabel, direction: Direction,
+	pub fn construct(function: &Function, direction: Direction,
 	                 return_target: InstructionTarget) -> CallFrame {
 		let local_table = function.locals.clone();
 		CallFrame { local_table, direction, return_target }

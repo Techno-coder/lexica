@@ -17,8 +17,8 @@ impl Jump {
 }
 
 impl Operational for Jump {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
+	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let target = target_label(span, &operands[0], unit, context)?;
 		Ok(Box::new(Jump::new(target)))

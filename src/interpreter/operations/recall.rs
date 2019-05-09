@@ -19,8 +19,8 @@ impl Recall {
 }
 
 impl Operational for Recall {
-	fn parse<'a>(_: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(_: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
+	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let target = target(&operands[0])?;
 		let function = unit.functions.get(&target)
@@ -33,9 +33,9 @@ impl Operational for Recall {
 
 impl Operation for Recall {
 	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
-		let label = unit.reverse_labels.get(&self.reverse_target)
+		let label = unit.reverse_targets.get(&self.reverse_target)
 			.expect("Reverse function label does not exist");
-		let function = unit.function_labels.get(label).unwrap();
+		let function = unit.function_targets.get(label).unwrap();
 		context.push_frame(CallFrame::construct(&function, Direction::Reverse, context.program_counter()));
 		context.set_next_instruction(|| Ok(self.reverse_target.clone()));
 		Ok(())
@@ -48,7 +48,7 @@ impl Operation for Recall {
 
 impl Reversible for Recall {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
-		let function = unit.function_labels.get(&self.target)
+		let function = unit.function_targets.get(&self.target)
 			.expect("Function label does not exist");
 		context.push_frame(CallFrame::construct(&function, Direction::Reverse, context.program_counter()));
 		context.set_next_instruction(|| Ok(self.target.clone()));

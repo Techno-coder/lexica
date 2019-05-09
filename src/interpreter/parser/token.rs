@@ -1,14 +1,14 @@
 use std::fmt;
 
-/// Represents a whitespace separated substring of byte code.
+/// Represents a whitespace separated substring of textual code.
 #[derive(Debug, Clone)]
 pub enum Token<'a> {
 	ReversalHint,
 	Annotation(&'a str),
 	Label(&'a str),
-	LocalLabel(&'a str),
-	FunctionLabel(&'a str),
-	ReverseLabel(&'a str),
+	Function(&'a str),
+	FunctionOpen,
+	FunctionClose,
 	Equal,
 	LessThan,
 	LessThanEqual,
@@ -33,9 +33,8 @@ impl<'a> Token<'a> {
 			Token::ReversalHint => true,
 			Token::Annotation(_) => true,
 			Token::Label(_) => true,
-			Token::LocalLabel(_) => true,
-			Token::FunctionLabel(_) => true,
-			Token::ReverseLabel(_) => true,
+			Token::Function(_) => true,
+			Token::FunctionClose => true,
 			Token::Reversed(_) => true,
 			Token::AdvanceOnAdvancing(_) => true,
 			Token::AdvanceOnReversing(_) => true,
@@ -53,9 +52,9 @@ impl<'a> fmt::Display for Token<'a> {
 			Token::ReversalHint => write!(f, "*"),
 			Token::Annotation(string) => write!(f, "@{}", string),
 			Token::Label(string) => write!(f, "{}:", string),
-			Token::LocalLabel(string) => write!(f, ".{}:", string),
-			Token::FunctionLabel(string) => write!(f, "+{}:", string),
-			Token::ReverseLabel(string) => write!(f, "-{}^", string),
+			Token::Function(string) => write!(f, "~{}", string),
+			Token::FunctionOpen => write!(f, "{{"),
+			Token::FunctionClose => write!(f, "}}"),
 			Token::Equal => write!(f, "="),
 			Token::LessThan => write!(f, "<"),
 			Token::LessThanEqual => write!(f, "<="),

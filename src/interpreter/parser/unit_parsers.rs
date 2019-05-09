@@ -1,18 +1,17 @@
 use crate::source::{Span, Spanned};
 
-use super::{Comparator, Float, InstructionTarget, Integer, InterpreterResult, LocalTable, LocalTarget,
-            Operand, ParserContext, ParserError, ParserResult, Primitive, Size, Token,
-            TranslationFunctionLabel, TranslationUnit};
+use super::{Comparator, CompileContext, Float, FunctionOffset, Integer, InterpreterResult,
+            LocalTable, LocalTarget, Operand, ParserError, ParserResult, Primitive, Size,
+            Token, TranslationFunction};
 
 /// Gets the last defined function from the current context.
-pub fn base_function<'a, 'b>(context: &ParserContext, unit: &'b TranslationUnit, span: &Span)
-                             -> ParserResult<'a, &'b TranslationFunctionLabel> {
-	context.last_function_label.and_then(|label| unit.functions.get(label))
-		.ok_or(Spanned::new(ParserError::FunctionMissingContext, span.clone()))
+pub fn base_function<'a>(context: CompileContext<'a>, span: &Span)
+                         -> ParserResult<'a, &'a TranslationFunction<'a>> {
+	context.pending_function.ok_or(Spanned::new(ParserError::FunctionMissingContext, span.clone()))
 }
 
 /// Gets the local table from a potentially erroneous function.
-pub fn local_table<'a, 'b>(function: &ParserResult<'a, &'b TranslationFunctionLabel>)
+pub fn local_table<'a, 'b>(function: &ParserResult<'a, &'b TranslationFunction>)
                            -> ParserResult<'a, &'b LocalTable> {
 	function.clone().map(|function| &function.locals)
 }
@@ -60,16 +59,11 @@ pub fn target<'a>(target: &Operand<'a>) -> ParserResult<'a, String> {
 	})
 }
 
-/// Transforms the operand into an `InstructionTarget`.
-pub fn target_label<'a>(span: &Span, target_label: &Operand<'a>, unit: &TranslationUnit,
-                        context: &ParserContext) -> ParserResult<'a, InstructionTarget> {
+/// Transforms the operand into a `FunctionOffset`.
+pub fn target_label<'a>(span: &Span, target_label: &Operand<'a>, function: &TranslationFunction)
+                        -> ParserResult<'a, FunctionOffset> {
 	let target = target(target_label)?;
-	unit.labels.get(&target).map(|(label, _)| label.clone())
-		.or_else(|| {
-			let label = context.last_function_label?;
-			let (_, local_labels) = unit.labels.get(label)?;
-			local_labels.get(&target).cloned()
-		})
+	function.labels.get(&target).cloned()
 		.ok_or(Spanned::new(ParserError::UndefinedLabel(target), span.clone()))
 }
 

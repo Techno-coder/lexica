@@ -2,8 +2,7 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, InterpreterResult, Operand,
-            ParserContext, ParserResult, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, InterpreterResult, Operand};
 
 pub type GenericOperation = Box<dyn Operation>;
 
@@ -23,6 +22,6 @@ pub trait Reversible: Operation {
 
 /// An interface that defines how an operation is constructed.
 pub trait Operational: fmt::Debug + fmt::Display {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	             unit: &TranslationUnit) -> ParserResult<'a, GenericOperation>;
+	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext)
+	               -> CompileResult<'a, GenericOperation>;
 }

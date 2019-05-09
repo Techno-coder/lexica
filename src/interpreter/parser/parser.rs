@@ -1,172 +1,107 @@
-use std::collections::HashMap;
+use std::iter::Peekable;
 
-use crate::source::Spanned;
+use crate::source::{Span, Spanned};
 
-use super::{AnnotationMap, Direction, Element, ElementParser, Instruction,
-            InstructionTarget, LocalTable, OperationalStore, ParserContext, ParserError,
-            TranslationFunctionLabel, TranslationUnit};
+use super::{AnnotationStore, Element, ElementParser, FunctionOffset, ParserContext,
+            ParserError, TranslationFunction, TranslationUnit};
 
-/// Parses byte code into a `TranslationUnit`.
-/// Additionally, verifies that all instructions are valid.
-pub fn parse<'a>(text: &'a str, annotation_map: &'a AnnotationMap, store: &OperationalStore)
-                 -> Result<TranslationUnit, Vec<Spanned<ParserError<'a>>>> {
-	let mut errors: Vec<Spanned<ParserError<'a>>> = Vec::new();
+pub fn parse<'a>(text: &'a str, annotations: &'a AnnotationStore)
+                 -> (TranslationUnit<'a>, Vec<Spanned<ParserError<'a>>>) {
 	let mut unit = TranslationUnit::default();
+	let mut elements = ElementParser::new(text, annotations).peekable();
+	let mut context = ParserContext::default();
 
-	let (elements, element_errors) = ElementParser::new(text, annotation_map)
-		.partition::<Vec<_>, _>(|element| element.is_ok());
-	let elements: Vec<Spanned<Element>> = elements.into_iter().map(Result::unwrap).collect();
-	errors.extend(element_errors.into_iter().map(Result::unwrap_err));
-
-	let mut context = match elements.get(0) {
-		Some(element) => ParserContext::new(element.clone()),
-		None => return match errors.is_empty() {
-			true => Ok(unit),
-			false => Err(errors),
-		},
-	};
-
-	errors.extend(labels(&mut unit, &elements).into_iter());
-	errors.extend(reverse_labels(&mut unit, &elements).into_iter());
-
-	for element in elements {
-		context.last_element = element.clone();
-		match &element.node {
-			Element::Annotation(annotation) => {
-				let annotation = Spanned::new(annotation.clone(), element.span);
-				context.pending_annotations.push(annotation);
-			}
-			Element::FunctionLabel(function) => context.last_function_label = Some(function),
-			Element::Label(label) => context.last_function_label = Some(label),
-			Element::Instruction(instruction) => {
-				let (identifier, constructor) = store.get(&format!("{}", instruction.operation))
-					.expect("Invalid instruction operation parsed");
-				let operation = constructor(&element.span, &instruction.operands, &context, &unit);
-
-				match operation {
-					Ok(operation) => {
-						match (&instruction.polarization, &instruction.direction) {
-							(Some(_), Direction::Advance) => (),
-							_ => match operation.reversible().is_some() {
-								false => {
-									let error = ParserError::IrreversibleCall;
-									errors.push(Spanned::new(error, element.span));
-									continue;
-								}
-								_ => (),
-							}
-						}
-
-						unit.instructions.push(Instruction {
-							identifier,
-							operation,
-							direction: instruction.direction,
-							polarization: instruction.polarization,
-						});
-					}
-					Err(error) => errors.push(error),
-				};
-			}
-			_ => (),
+	collect_annotations(&mut elements, &mut context);
+	while let Some(element) = elements.next() {
+		let error_count = context.errors.len();
+		match element {
+			Ok(element) => parse_element(element, &mut context, &mut unit),
+			Err(error) => context.errors.push(error),
 		}
 
-		match element.node {
-			Element::Annotation(_) => (),
-			_ => {
-				for annotation in &context.pending_annotations {
-					let annotation_type = annotation_map.get(annotation.identifier).unwrap();
-					if let Err(error) = annotation_type.annotate(&annotation, &context, &mut unit) {
-						errors.push(error);
-					}
-				}
-				context.pending_annotations.clear();
-			}
+		match error_count == context.errors.len() {
+			true => process_annotations(annotations, &mut context, &mut unit),
+			false => context.pending_annotations.clear(),
 		}
+		collect_annotations(&mut elements, &mut context);
 	}
+	(unit, context.errors)
+}
 
-	match errors.is_empty() {
-		true => Ok(unit),
-		false => Err(errors),
+fn parse_element<'a>(element: Spanned<Element<'a>>, context: &mut ParserContext<'a>,
+                     unit: &mut TranslationUnit<'a>) {
+	match element.node.clone() {
+		Element::Function(identifier) => parse_function(element.span.clone(), identifier, context, unit),
+		Element::Label(label) => parse_label(element.span.clone(), label, context, unit),
+		Element::Instruction(instruction) => {
+			let instruction = Spanned::new(instruction, element.span.clone());
+			context.pending_function(unit).instructions.push(instruction);
+		}
+		Element::Annotation(_) => panic!("Annotation exists but not parsed"),
+	}
+	context.last_element = Some(element);
+}
+
+fn parse_function<'a>(span: Span, identifier: &'a str, context: &mut ParserContext<'a>,
+                      unit: &mut TranslationUnit) {
+	match unit.functions.contains_key(identifier) {
+		true => context.errors.push(Spanned::new(ParserError::DuplicateFunction(identifier), span)),
+		false => {
+			let function = TranslationFunction::default();
+			unit.functions.insert(identifier.to_owned(), function);
+			context.pending_function = Some(identifier);
+		}
 	}
 }
 
-/// Adds labels and label definitions to the `TranslationUnit`.
-fn labels<'a>(unit: &mut TranslationUnit, elements: &Vec<Spanned<Element<'a>>>)
-              -> Vec<Spanned<ParserError<'a>>> {
-	let mut errors = Vec::new();
-	let mut instruction_index = 0;
-	let mut last_label = None;
-	for element in elements {
-		if element.advances_counter() {
-			instruction_index += 1;
-		}
-
-		match element.node {
-			Element::Label(label) => match unit.labels.contains_key(label) {
-				true => errors.push(Spanned::new(ParserError::DuplicateLabel(label), element.span.clone())),
-				false => {
-					let target = InstructionTarget(instruction_index);
-					unit.labels.insert(label.to_owned(), (target, HashMap::new()));
-					last_label = Some(label);
-				}
-			}
-			Element::LocalLabel(label) => match last_label {
-				Some(last_label) => {
-					let (_, local_labels) = unit.labels.get_mut(last_label).unwrap();
-					match local_labels.contains_key(label) {
-						true => errors.push(Spanned::new(ParserError::DuplicateLocalLabel(label), element.span.clone())),
-						false => {
-							let target = InstructionTarget(instruction_index);
-							local_labels.insert(label.to_owned(), target);
-						}
-					}
-				}
-				None => errors.push(Spanned::new(ParserError::LabelMissingContext(label), element.span.clone())),
-			}
-			Element::FunctionLabel(label) => match unit.labels.contains_key(label) {
-				true => errors.push(Spanned::new(ParserError::DuplicateLabel(label), element.span.clone())),
-				false => {
-					let target = InstructionTarget(instruction_index);
-					unit.functions.insert(label.to_owned(), TranslationFunctionLabel {
-						locals: LocalTable::default(),
-						target: target.clone(),
-						reverse_target: None,
-					});
-					unit.labels.insert(label.to_owned(), (target, HashMap::new()));
-					last_label = Some(label);
-				}
-			}
-			_ => (),
+fn parse_label<'a>(span: Span, label: &'a str, context: &mut ParserContext<'a>,
+                   unit: &mut TranslationUnit<'a>) {
+	let pending_function = context.pending_function(unit);
+	let target = FunctionOffset(pending_function.instructions.len());
+	match pending_function.labels.contains_key(label) {
+		true => context.errors.push(Spanned::new(ParserError::DuplicateLabel(label), span)),
+		false => {
+			pending_function.labels.insert(label.to_owned(), target);
 		}
 	}
-	errors
 }
 
-/// Adds and verifies reverse function labels to the `TranslationUnit`.
-fn reverse_labels<'a>(unit: &mut TranslationUnit, elements: &Vec<Spanned<Element<'a>>>)
-                      -> Vec<Spanned<ParserError<'a>>> {
-	let mut errors = Vec::new();
-	let mut instruction_index = 0;
-	for element in elements {
-		if element.advances_counter() {
-			instruction_index += 1;
-		}
-
-		match element.node {
-			Element::ReverseLabel(label) => {
-				match unit.functions.get_mut(label) {
-					Some(function) => match &function.reverse_target {
-						Some(_) => errors.push(element.map(|_| ParserError::DuplicateReverseLabel(label))),
-						None => match instruction_index > 0 {
-							true => function.reverse_target = Some(InstructionTarget(instruction_index - 1)),
-							false => errors.push(element.map(|_| ParserError::InvalidReverseLabelPosition(label))),
-						}
-					}
-					None => errors.push(Spanned::new(ParserError::IsolatedReverseLabel(label), element.span.clone()))
-				}
+fn process_annotations(annotations: &AnnotationStore, context: &mut ParserContext,
+                       unit: &mut TranslationUnit) {
+	for annotation in &context.pending_annotations {
+		let annotation_type = match annotations.get(annotation.identifier) {
+			Some(annotation_type) => annotation_type,
+			None => {
+				let error = ParserError::InvalidAnnotation(annotation.identifier);
+				context.errors.push(Spanned::new(error, annotation.span.clone()));
+				continue;
 			}
-			_ => (),
+		};
+
+		if let Err(error) = annotation_type.annotate(&annotation, context, unit) {
+			context.errors.push(error);
 		}
 	}
-	errors
+	context.pending_annotations.clear();
+}
+
+fn collect_annotations<'a>(elements: &mut Peekable<ElementParser<'a>>, context: &mut ParserContext<'a>) {
+	while let Some(Ok(annotation)) = elements.peek() {
+		match annotation.node {
+			Element::Annotation(_) => match elements.next() {
+				Some(Ok(element)) => {
+					context.last_element = Some(element.clone());
+					match element.node {
+						Element::Annotation(annotation) => {
+							let annotation = Spanned::new(annotation, element.span);
+							context.pending_annotations.push(annotation);
+						}
+						_ => unreachable!(),
+					}
+				}
+				_ => unreachable!(),
+			}
+			_ => break,
+		}
+	}
 }

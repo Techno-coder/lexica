@@ -21,8 +21,8 @@ impl DropImmediate {
 }
 
 impl Operational for DropImmediate {
-	fn parse<'a>(span: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
-	             _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
+	               _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let (size, primitive) = (size(&operands[0])?, primitive(&operands[1])?);
 		Ok(Box::new(error(DropImmediate::new(size, primitive), span)?))
