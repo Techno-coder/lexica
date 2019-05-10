@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Direction, FunctionOffset, FunctionTarget, GenericOperation, OperationIdentifier, Token};
+use super::{Direction, FunctionOffset, FunctionTarget, GenericOperation, Token};
 
 pub type Operand<'a> = Spanned<Token<'a>>;
 
@@ -34,7 +34,7 @@ pub struct InstructionTarget(pub FunctionTarget, pub FunctionOffset);
 
 #[derive(Debug, Clone)]
 pub struct TranslationInstruction<'a> {
-	pub operation: OperationIdentifier,
+	pub operation: &'static str,
 	pub operands: Vec<Operand<'a>>,
 	pub direction: Direction,
 	pub polarization: Option<Direction>,

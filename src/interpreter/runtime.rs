@@ -28,13 +28,12 @@ impl Runtime {
 		}
 	}
 
-	/// Forcibly steps the runtime until a reversal hint is encountered.
+	/// Forcibly steps the runtime until a trap or halt is encountered.
 	pub fn step(&mut self, direction: Direction) -> InterpreterResult<RuntimeStep> {
 		loop {
 			let step = self.force_step(direction)?;
-			match step {
-				RuntimeStep::Pass => (),
-				_ => break Ok(step),
+			if step.pauses() {
+				break Ok(step);
 			}
 		}
 	}
@@ -47,7 +46,9 @@ impl Runtime {
 			Direction::Reverse => self.force_reverse(),
 		}?;
 
-		if self.context.is_halted() {
+		if self.context.is_trapped {
+			return Ok(RuntimeStep::Trapped);
+		} else if self.context.is_halted {
 			return Ok(RuntimeStep::Halted);
 		}
 

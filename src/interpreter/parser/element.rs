@@ -3,8 +3,8 @@ use std::iter::Peekable;
 
 use crate::source::{Span, Spanned};
 
-use super::{Annotation, AnnotationStore, AnnotationType, Argument, Direction,
-            Lexer, OperationIdentifier, ParserError, ParserResult, Token, TranslationInstruction};
+use super::{Annotation, AnnotationStore, AnnotationType, Argument, Direction, Lexer,
+            OperationStore, ParserError, ParserResult, Token, TranslationInstruction};
 
 /// A singular unit of textual code.
 #[derive(Debug, Clone)]
@@ -16,17 +16,18 @@ pub enum Element<'a> {
 }
 
 /// Parses tokens into elements.
-#[derive(Debug)]
 pub struct ElementParser<'a> {
 	lexer: Peekable<Lexer<'a>>,
 	annotations: &'a AnnotationStore,
+	operations: &'a OperationStore,
 	function: Option<Span>,
 }
 
 impl<'a> ElementParser<'a> {
-	pub fn new(text: &'a str, annotations: &'a AnnotationStore) -> Self {
+	pub fn new(text: &'a str, annotations: &'a AnnotationStore,
+	           operations: &'a OperationStore) -> Self {
 		let lexer = Lexer::new(text).peekable();
-		Self { lexer, annotations, function: None }
+		Self { lexer, annotations, operations, function: None }
 	}
 
 	/// Advances the lexer until a valid state is reached and returns
@@ -73,18 +74,16 @@ impl<'a> ElementParser<'a> {
 	}
 
 	/// Parses an instruction from the subsequent tokens.
-	/// Additionally, verifies the instruction directions and polarizations are valid.
 	fn instruction(&mut self, span: Span, identifier: &'a str, direction: Direction,
 	               polarization: Option<Direction>) -> ParserResult<'a, Spanned<Element<'a>>> {
 		self.expect_function_context(span.clone())?;
 
 		let error = ParserError::InvalidOperation(identifier);
-		let operation = OperationIdentifier::parse(identifier)
+		let (operation, _) = self.operations.get(identifier)
 			.ok_or_else(|| self.discard::<!>(span.clone(), error).unwrap_err())?;
 
-		let arguments = (0..operation.arity())
-			.map(|_| self.lexer.next())
-			.collect::<Option<Vec<_>>>();
+		let arity = self.operations.arity(identifier).unwrap();
+		let arguments = (0..arity).map(|_| self.lexer.next()).collect::<Option<Vec<_>>>();
 
 		let error = || self.discard::<!>(span.clone(), ParserError::EndOfInput).unwrap_err();
 		let operands = arguments.ok_or_else(error)?;

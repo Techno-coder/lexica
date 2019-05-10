@@ -68,9 +68,9 @@ static LEXER_TEST: &'static str = r"
 @local u32 0    # 0 : fibonacci result
 ~main {
   exit' *
-  drop.i u32 10 *
+  drop.i u32 35 *
   call fibonacci
-#  recall fibonacci
+  recall fibonacci
   *
   -reset 0 0
   restore 0
@@ -85,14 +85,14 @@ fn main() {
 	use colored::Colorize;
 
 	let text_map = TextMap::new(LEXER_TEST.to_owned());
-	let operations = OperationalStore::new();
+	let operations = OperationStore::new();
 
 	let mut annotations = AnnotationStore::default();
 	annotations.register("local".to_owned(), Box::new(crate::interpreter::annotations::LocalAnnotation));
 
 	let mut error_occurred = false;
 
-	let (unit, errors) = parse(text_map.text(), &annotations);
+	let (unit, errors) = parse(text_map.text(), &annotations, &operations);
 	for error in errors {
 		crate::source::emit(&text_map, error);
 		error_occurred = true;
@@ -112,12 +112,12 @@ fn main() {
 
 	let mut runtime = Runtime::new(unit)
 		.expect("Failed to create runtime");
-	for _ in 0..800 {
+	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
 		match runtime.force_step(Direction::Advance) {
 			Ok(RuntimeStep::Halted) => {
-//				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
-				println!("{}", "Halt".green().bold());
+				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
+				break;
 			}
 			Err(error) => {
 				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
@@ -127,15 +127,13 @@ fn main() {
 		}
 	}
 
-	println!("{:#?}", runtime.context());
-
 	println!("{}", "REVERSING".red().bold());
-	for _ in 0..800 {
+	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
 		match runtime.force_step(Direction::Reverse) {
 			Ok(RuntimeStep::Halted) => {
-//				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
-				println!("{}", "Halt".green().bold());
+				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
+				break;
 			}
 			Err(error) => {
 				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
@@ -144,6 +142,4 @@ fn main() {
 			_ => (),
 		}
 	}
-
-	println!("{:#?}", runtime.context());
 }

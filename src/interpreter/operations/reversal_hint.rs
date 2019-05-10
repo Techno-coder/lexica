@@ -19,8 +19,7 @@ impl Operational for ReversalHint {
 
 impl Operation for ReversalHint {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		let is_halted = context.is_halted();
-		context.set_is_halted(!is_halted);
+		context.is_trapped = !context.is_trapped;
 		Ok(())
 	}
 

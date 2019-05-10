@@ -21,11 +21,11 @@ impl Operation for Exit {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let frame_direction = context.frame()?.direction().clone();
 		match frame_direction {
-			Direction::Advance => context.set_is_halted(true),
-			Direction::Reverse if context.is_halted() => {
+			Direction::Advance => context.is_halted = true,
+			Direction::Reverse if context.is_halted => {
 				let InstructionTarget(function, FunctionOffset(offset)) = context.program_counter();
 				context.set_next_instruction(|| Ok(InstructionTarget(function, FunctionOffset(offset - 1))));
-				context.set_is_halted(false);
+				context.is_halted = false;
 			}
 			_ => (),
 		};
@@ -41,11 +41,11 @@ impl Reversible for Exit {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let frame_direction = context.frame()?.direction().clone();
 		match frame_direction {
-			Direction::Reverse => context.set_is_halted(true),
-			Direction::Advance if context.is_halted() => {
+			Direction::Reverse => context.is_halted = true,
+			Direction::Advance if context.is_halted => {
 				let InstructionTarget(function, FunctionOffset(offset)) = context.program_counter();
 				context.set_next_instruction(|| Ok(InstructionTarget(function, FunctionOffset(offset - 1))));
-				context.set_is_halted(false);
+				context.is_halted = false;
 			}
 			_ => (),
 		}

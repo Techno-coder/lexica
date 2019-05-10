@@ -8,14 +8,14 @@ pub type CompileFunction = for<'a, 'b> fn(&Span, &Vec<Operand<'a>>, &CompileCont
                                           -> CompileResult<'a, GenericOperation>;
 
 #[derive(Default)]
-pub struct OperationalStore {
+pub struct OperationStore {
 	compile: HashMap<&'static str, CompileFunction>,
 	arity: HashMap<&'static str, usize>,
 }
 
-impl OperationalStore {
+impl OperationStore {
 	/// Constructs an `OperationStore` with the default language operations.
-	pub fn new() -> OperationalStore {
+	pub fn new() -> OperationStore {
 		use super::operations::*;
 		let mut store = Self::default();
 		store.register::<Add>("add");
@@ -54,4 +54,5 @@ impl OperationalStore {
 		self.arity.get(identifier).cloned()
 	}
 }
+
 

@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use crate::source::Span;
 
 use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation,
-            InterpreterError, InterpreterResult, Operand, Operation, Operational, Reversible};
+            InterpreterResult, Operand, Operation, Operational, Reversible};
 
 #[derive(Debug)]
 pub struct Reverser<T> {
@@ -18,9 +18,9 @@ impl<T> Operational for Reverser<T> where T: Operational + 'static {
 	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		let operation = T::compile(span, operands, context)?;
-		match operation.reversible() {
-			Some(reversible) => Ok(Box::new(Self { operation, operational: PhantomData })),
-			None => panic!("Reverser cannot be applied on irreversible operations"),
+		match operation.reversible().is_some() {
+			true => Ok(Box::new(Self { operation, operational: PhantomData })),
+			false => panic!("Reverser cannot be applied on irreversible operations"),
 		}
 	}
 }

@@ -2,13 +2,13 @@ use std::iter::Peekable;
 
 use crate::source::{Span, Spanned};
 
-use super::{AnnotationStore, Element, ElementParser, FunctionOffset, ParserContext,
-            ParserError, TranslationFunction, TranslationUnit};
+use super::{AnnotationStore, Element, ElementParser, FunctionOffset, OperationStore,
+            ParserContext, ParserError, TranslationFunction, TranslationUnit};
 
-pub fn parse<'a>(text: &'a str, annotations: &'a AnnotationStore)
+pub fn parse<'a>(text: &'a str, annotations: &'a AnnotationStore, operations: &'a OperationStore)
                  -> (TranslationUnit<'a>, Vec<Spanned<ParserError<'a>>>) {
 	let mut unit = TranslationUnit::default();
-	let mut elements = ElementParser::new(text, annotations).peekable();
+	let mut elements = ElementParser::new(text, annotations, operations).peekable();
 	let mut context = ParserContext::default();
 
 	collect_annotations(&mut elements, &mut context);

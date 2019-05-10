@@ -1,11 +1,11 @@
 use crate::source::Spanned;
 
 use super::{CompilationUnit, CompileContext, CompileError, CompileMetadata, CompileResult, Direction,
-            Function, Instruction, OperationalStore, TranslationInstruction, TranslationUnit};
+            Function, Instruction, OperationStore, TranslationInstruction, TranslationUnit};
 
 const ENTRY_POINT: &'static str = "main";
 
-pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &OperationalStore)
+pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &OperationStore)
                    -> (CompilationUnit, CompileMetadata, Vec<Spanned<CompileError<'a>>>) {
 	let mut unit = CompilationUnit::default();
 	let mut context = CompileContext::new(translation_unit);
@@ -21,7 +21,7 @@ pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &Operation
 		}
 
 		for instruction in &function.instructions {
-			let result = compile_instruction(instruction, &mut unit_function, &context, operations);
+			let result = compile_instruction(instruction, &context, operations);
 			match result {
 				Ok(instruction) => unit_function.instructions.push(instruction),
 				Err(error) => context.errors.push(error),
@@ -35,8 +35,8 @@ pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &Operation
 }
 
 fn compile_instruction<'a, 'b>(instruction: &Spanned<TranslationInstruction<'a>>,
-                               unit_function: &mut Function, context: &CompileContext<'a, 'b>,
-                               operations: &OperationalStore) -> CompileResult<'a, Instruction> {
+                               context: &CompileContext<'a, 'b>, operations: &OperationStore)
+                               -> CompileResult<'a, Instruction> {
 	let identifier = &format!("{}", instruction.operation);
 	let (identifier, constructor) = match operations.get(identifier) {
 		Some((identifier, constructor)) => (identifier, constructor),
