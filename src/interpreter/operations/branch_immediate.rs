@@ -24,6 +24,8 @@ impl BranchImmediate {
 }
 
 impl Operational for BranchImmediate {
+	fn arity() -> usize { 4 }
+
 	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;

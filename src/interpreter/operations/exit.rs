@@ -10,6 +10,8 @@ use super::{CompilationUnit, CompileContext, CompileResult, Context, Direction, 
 pub struct Exit;
 
 impl Operational for Exit {
+	fn arity() -> usize { 0 }
+
 	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext) -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(Exit))
 	}

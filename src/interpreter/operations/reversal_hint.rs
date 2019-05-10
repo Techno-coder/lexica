@@ -9,6 +9,8 @@ use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOper
 pub struct ReversalHint;
 
 impl Operational for ReversalHint {
+	fn arity() -> usize { 0 }
+
 	fn compile<'a, 'b>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(ReversalHint))

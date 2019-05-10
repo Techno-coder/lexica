@@ -17,6 +17,8 @@ impl Jump {
 }
 
 impl Operational for Jump {
+	fn arity() -> usize { 1 }
+
 	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;

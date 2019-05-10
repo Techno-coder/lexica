@@ -38,7 +38,7 @@ impl IndexMut<&LocalTarget> for LocalTable {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct LocalTarget(pub usize);
 
 impl fmt::Display for LocalTarget {

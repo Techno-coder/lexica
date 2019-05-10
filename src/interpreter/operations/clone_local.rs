@@ -25,6 +25,8 @@ impl CloneLocal {
 }
 
 impl Operational for CloneLocal {
+	fn arity() -> usize { 2 }
+
 	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;

@@ -10,7 +10,7 @@ pub type GenericOperation = Box<dyn Operation>;
 pub trait Operation: fmt::Debug + fmt::Display {
 	/// Executes the operation on the given context by advancing.
 	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()>;
-	/// Provides a reversible variant of the operation.
+	/// Provides a reversible variant of the operation if one exists.
 	fn reversible(&self) -> Option<&Reversible> { None }
 }
 
@@ -22,6 +22,9 @@ pub trait Reversible: Operation {
 
 /// An interface that defines how an operation is constructed.
 pub trait Operational: fmt::Debug + fmt::Display {
+	/// Returns the number of arguments the constructed operation accepts.
+	fn arity() -> usize;
+	/// Constructs an operation from the provided operands.
 	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation>;
 }

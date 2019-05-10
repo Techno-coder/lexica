@@ -10,6 +10,8 @@ use super::{CompilationUnit, CompileContext, CompileResult, Context, Direction, 
 pub struct Return;
 
 impl Operational for Return {
+	fn arity() -> usize { 0 }
+
 	fn compile<'a, 'b>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(Return))

@@ -36,6 +36,8 @@ impl Add {
 }
 
 impl Operational for Add {
+	fn arity() -> usize { 2 }
+
 	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
@@ -65,7 +67,10 @@ impl Operation for Add {
 	}
 
 	fn reversible(&self) -> Option<&Reversible> {
-		Some(self)
+		match self.accumulator == self.operand {
+			false => Some(self),
+			true => None,
+		}
 	}
 }
 

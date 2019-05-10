@@ -4,12 +4,13 @@ use crate::source::Span;
 
 use super::{CompileContext, CompileResult, GenericOperation, Operand, Operational};
 
-pub type OperationParser = for<'a, 'b> fn(&Span, &Vec<Operand<'a>>, &CompileContext<'a, 'b>)
+pub type CompileFunction = for<'a, 'b> fn(&Span, &Vec<Operand<'a>>, &CompileContext<'a, 'b>)
                                           -> CompileResult<'a, GenericOperation>;
 
 #[derive(Default)]
 pub struct OperationalStore {
-	operations: HashMap<&'static str, OperationParser>,
+	compile: HashMap<&'static str, CompileFunction>,
+	arity: HashMap<&'static str, usize>,
 }
 
 impl OperationalStore {
@@ -40,12 +41,17 @@ impl OperationalStore {
 	}
 
 	pub fn register<T>(&mut self, identifier: &'static str) where T: Operational {
-		self.operations.insert(identifier, T::compile);
+		self.compile.insert(identifier, T::compile);
+		self.arity.insert(identifier, T::arity());
 	}
 
-	pub fn get(&self, identifier: &str) -> Option<(&'static str, &OperationParser)> {
-		self.operations.get_key_value(identifier)
+	pub fn get(&self, identifier: &str) -> Option<(&'static str, &CompileFunction)> {
+		self.compile.get_key_value(identifier)
 			.map(|(key, value)| (*key, value))
+	}
+
+	pub fn arity(&self, identifier: &str) -> Option<usize> {
+		self.arity.get(identifier).cloned()
 	}
 }
 

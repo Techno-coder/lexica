@@ -13,19 +13,21 @@ pub struct Reverser<T> {
 }
 
 impl<T> Operational for Reverser<T> where T: Operational + 'static {
+	fn arity() -> usize { T::arity() }
+
 	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		let operation = T::compile(span, operands, context)?;
-		Ok(Box::new(Self { operation, operational: PhantomData }))
+		match operation.reversible() {
+			Some(reversible) => Ok(Box::new(Self { operation, operational: PhantomData })),
+			None => panic!("Reverser cannot be applied on irreversible operations"),
+		}
 	}
 }
 
 impl<T> Operation for Reverser<T> where T: Operational {
 	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
-		match self.operation.reversible() {
-			Some(reversible) => reversible.reverse(context, unit),
-			None => Err(InterpreterError::Irreversible),
-		}
+		self.operation.reversible().unwrap().reverse(context, unit)
 	}
 
 	fn reversible(&self) -> Option<&Reversible> {

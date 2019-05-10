@@ -12,6 +12,8 @@ pub struct Recall {
 }
 
 impl Operational for Recall {
+	fn arity() -> usize { 1 }
+
 	fn compile<'a, 'b>(_: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;

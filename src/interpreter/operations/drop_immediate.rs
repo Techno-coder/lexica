@@ -20,6 +20,8 @@ impl DropImmediate {
 }
 
 impl Operational for DropImmediate {
+	fn arity() -> usize { 1 }
+
 	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, _: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
