@@ -84,33 +84,6 @@ impl OperationIdentifier {
 			_ => return None,
 		})
 	}
-
-	/// Returns whether the operation is reversible.
-	pub fn reversible(&self) -> bool {
-		use self::OperationIdentifier::*;
-		match self {
-			ReversalHint => true,
-			Pass => true,
-			Swap => true,
-			Add => true,
-			AddImmediate => true,
-			Minus => true,
-			MinusImmediate => true,
-			Drop => true,
-			DropImmediate => true,
-			Restore => true,
-			Discard => false,
-			Reset => false,
-			Call => true,
-			Recall => true,
-			Jump => false,
-			Branch => false,
-			BranchImmediate => false,
-			Return => true,
-			Clone => false,
-			Exit => true,
-		}
-	}
 }
 
 impl fmt::Display for OperationIdentifier {

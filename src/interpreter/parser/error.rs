@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Argument, InterpreterError, Token};
+use super::{Argument, Token};
 
 pub type ParserResult<'a, T> = Result<T, Spanned<ParserError<'a>>>;
 
@@ -11,7 +11,6 @@ pub type ParserResult<'a, T> = Result<T, Spanned<ParserError<'a>>>;
 pub enum ParserError<'a> {
 	InvalidAnnotation(&'a str),
 	InvalidApplication(&'a str),
-	MissingPolarization(&'a str),
 	UnexpectedToken(Token<'a>),
 	InvalidArgument(Token<'a>),
 	UnexpectedArgument(Argument<'a>),
@@ -23,7 +22,6 @@ pub enum ParserError<'a> {
 	DuplicateLabel(&'a str),
 	InvalidSize(&'a str),
 	InvalidOperation(&'a str),
-	IrreversibleOperation(&'a str),
 	EndOfInput,
 }
 
@@ -33,7 +31,6 @@ impl<'a> fmt::Display for ParserError<'a> {
 		match self {
 			InvalidAnnotation(identifier) => write!(f, "Annotation identifier: {}, is invalid", identifier),
 			InvalidApplication(identifier) => write!(f, "Invalid application of annotation: {}", identifier),
-			MissingPolarization(identifier) => write!(f, "Instruction operation must be polarized: {}", identifier),
 			UnexpectedToken(token) => write!(f, "Unexpected token: {:?}", token),
 			InvalidArgument(argument) => write!(f, "Invalid annotation argument token: {:?}", argument),
 			UnexpectedArgument(argument) => write!(f, "Unexpected annotation argument: {:?}", argument),
@@ -45,7 +42,6 @@ impl<'a> fmt::Display for ParserError<'a> {
 			DuplicateLabel(label) => write!(f, "Label: {}, has already been defined", label),
 			InvalidSize(size) => write!(f, "Specified size {}, is invalid", size),
 			InvalidOperation(identifier) => write!(f, "Invalid instruction operation: {}", identifier),
-			IrreversibleOperation(operation) => write!(f, "Instruction operation: {}, is not reversible", operation),
 			EndOfInput => write!(f, "Unexpected end of input"),
 		}
 	}

@@ -1,7 +1,7 @@
 use crate::source::Spanned;
 
-use super::{CompilationUnit, CompileContext, CompileError, CompileMetadata, Function,
-            GenericOperation, Instruction, OperationalStore, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileError, CompileMetadata, CompileResult, Direction,
+            Function, Instruction, OperationalStore, TranslationInstruction, TranslationUnit};
 
 const ENTRY_POINT: &'static str = "main";
 
@@ -21,32 +21,43 @@ pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &Operation
 		}
 
 		for instruction in &function.instructions {
-			let identifier = &format!("{}", instruction.operation);
-			let (identifier, constructor) = match operations.get(identifier) {
-				Some((identifier, constructor)) => (identifier, constructor),
-				None => panic!("Invalid operation encountered during compilation"),
-			};
-
-			let operation = constructor(&instruction.span, &instruction.operands, &context);
-			let operation: GenericOperation = match operation {
-				Ok(operation) => operation,
-				Err(error) => {
-					context.errors.push(error);
-					continue;
-				}
-			};
-
-			let instruction = Instruction {
-				identifier,
-				operation,
-				direction: instruction.direction,
-				polarization: instruction.polarization,
-			};
-			unit_function.instructions.push(instruction);
+			let result = compile_instruction(instruction, &mut unit_function, &context, operations);
+			match result {
+				Ok(instruction) => unit_function.instructions.push(instruction),
+				Err(error) => context.errors.push(error),
+			}
 		}
 
 		unit.functions.push(unit_function);
 	}
 
 	(unit, context.metadata, context.errors)
+}
+
+fn compile_instruction<'a, 'b>(instruction: &Spanned<TranslationInstruction<'a>>,
+                               unit_function: &mut Function, context: &CompileContext<'a, 'b>,
+                               operations: &OperationalStore) -> CompileResult<'a, Instruction> {
+	let identifier = &format!("{}", instruction.operation);
+	let (identifier, constructor) = match operations.get(identifier) {
+		Some((identifier, constructor)) => (identifier, constructor),
+		None => panic!("Invalid operation encountered during compilation"),
+	};
+
+	let operation = constructor(&instruction.span, &instruction.operands, context)?;
+	let is_reversible = operation.reversible().is_some();
+
+	match (is_reversible, instruction.direction, instruction.polarization) {
+		(false, Direction::Reverse, _) => return Err(instruction
+			.map(|_| CompileError::IrreversibleOperation(identifier))),
+		(false, _, None) => return Err(instruction
+			.map(|_| CompileError::MissingPolarization(identifier))),
+		_ => (),
+	};
+
+	Ok(Instruction {
+		identifier,
+		operation,
+		direction: instruction.direction,
+		polarization: instruction.polarization,
+	})
 }

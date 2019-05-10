@@ -77,16 +77,10 @@ impl<'a> ElementParser<'a> {
 	fn instruction(&mut self, span: Span, identifier: &'a str, direction: Direction,
 	               polarization: Option<Direction>) -> ParserResult<'a, Spanned<Element<'a>>> {
 		self.expect_function_context(span.clone())?;
-		let operation = match OperationIdentifier::parse(identifier) {
-			Some(operation) => match (operation.reversible(), direction, polarization) {
-				(false, Direction::Reverse, _) => return self
-					.discard(span, ParserError::IrreversibleOperation(identifier)),
-				(false, _, None) => return self
-					.discard(span, ParserError::MissingPolarization(identifier)),
-				_ => operation,
-			},
-			None => return self.discard(span.clone(), ParserError::InvalidOperation(identifier)),
-		};
+
+		let error = ParserError::InvalidOperation(identifier);
+		let operation = OperationIdentifier::parse(identifier)
+			.ok_or_else(|| self.discard::<!>(span.clone(), error).unwrap_err())?;
 
 		let arguments = (0..operation.arity())
 			.map(|_| self.lexer.next())
