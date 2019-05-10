@@ -15,21 +15,16 @@ pub enum ParserError<'a> {
 	UnexpectedToken(Token<'a>),
 	InvalidArgument(Token<'a>),
 	UnexpectedArgument(Argument<'a>),
-	UnexpectedOperand(Token<'a>),
 	FunctionMissingContext,
 	DuplicateFunctionContext,
 	UnmatchedFunctionClose,
 	UnmatchedFunctionOpen,
-	InvalidReverseLabelPosition(&'a str),
-	UndefinedFunction(String),
-	UndefinedLabel(String),
 	DuplicateFunction(&'a str),
 	DuplicateLabel(&'a str),
 	InvalidSize(&'a str),
 	InvalidOperation(&'a str),
 	IrreversibleOperation(&'a str),
 	EndOfInput,
-	Interpreter(InterpreterError),
 }
 
 impl<'a> fmt::Display for ParserError<'a> {
@@ -42,21 +37,16 @@ impl<'a> fmt::Display for ParserError<'a> {
 			UnexpectedToken(token) => write!(f, "Unexpected token: {:?}", token),
 			InvalidArgument(argument) => write!(f, "Invalid annotation argument token: {:?}", argument),
 			UnexpectedArgument(argument) => write!(f, "Unexpected annotation argument: {:?}", argument),
-			UnexpectedOperand(operand) => write!(f, "Unexpected instruction operand: {:?}", operand),
-			UndefinedFunction(identifier) => write!(f, "Function label: {}, does not exist", identifier),
-			UndefinedLabel(identifier) => write!(f, "Label: {}, does not exist", identifier),
 			FunctionMissingContext => write!(f, "Entity must be used within a function"),
 			DuplicateFunctionContext => write!(f, "Function declared inside of existing function"),
 			UnmatchedFunctionClose => writeln!(f, "Function close has no matching declaration"),
 			UnmatchedFunctionOpen => writeln!(f, "Function declaration has no matching close"),
-			InvalidReverseLabelPosition(label) => write!(f, "Reverse label: {}, is in an invalid position", label),
 			DuplicateFunction(identifier) => write!(f, "Function: {}, has already been defined", identifier),
 			DuplicateLabel(label) => write!(f, "Label: {}, has already been defined", label),
 			InvalidSize(size) => write!(f, "Specified size {}, is invalid", size),
 			InvalidOperation(identifier) => write!(f, "Invalid instruction operation: {}", identifier),
 			IrreversibleOperation(operation) => write!(f, "Instruction operation: {}, is not reversible", operation),
 			EndOfInput => write!(f, "Unexpected end of input"),
-			Interpreter(error) => write!(f, "Interpreter error occurred while parsing: {}", error),
 		}
 	}
 }

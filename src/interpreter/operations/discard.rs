@@ -2,8 +2,8 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, Operand, Operation, Operational,
-            ParserContext, ParserResult, Size, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterResult, Operand,
+            Operation, Operational, Size};
 
 #[derive(Debug)]
 pub struct Discard {
@@ -17,8 +17,8 @@ impl Discard {
 }
 
 impl Operational for Discard {
-	fn compile<'a>(_: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
-	               _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a, 'b>(_: &Span, operands: &Vec<Operand<'a>>, _: &CompileContext)
+	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let size = size(&operands[0])?;
 		Ok(Box::new(Discard::new(size)))

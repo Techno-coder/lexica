@@ -2,15 +2,16 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, Direction, GenericOperation, InstructionTarget, InterpreterResult,
-            Operand, Operation, Operational, ParserContext, ParserResult, Reversible, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, Direction, FunctionOffset,
+            GenericOperation, InstructionTarget, InterpreterResult, Operand, Operation, Operational,
+            Reversible};
 
 #[derive(Debug)]
 pub struct Return;
 
 impl Operational for Return {
-	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
-	             _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a, 'b>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(Return))
 	}
 }
@@ -19,11 +20,11 @@ impl Operation for Return {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let frame = context.frame()?;
 		let target = frame.return_target().clone();
-		let InstructionTarget(return_target) = target;
+		let InstructionTarget(function, FunctionOffset(return_offset)) = target;
 
 		let next_instruction = match frame.direction() {
-			&Direction::Advance => InstructionTarget(return_target + 1),
-			&Direction::Reverse => InstructionTarget(return_target - 1),
+			&Direction::Advance => InstructionTarget(function, FunctionOffset(return_offset + 1)),
+			&Direction::Reverse => InstructionTarget(function, FunctionOffset(return_offset - 1)),
 		};
 
 		context.set_next_instruction(|| Ok(next_instruction));
@@ -40,11 +41,11 @@ impl Reversible for Return {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let frame = context.frame()?;
 		let target = frame.return_target().clone();
-		let InstructionTarget(return_target) = target;
+		let InstructionTarget(function, FunctionOffset(return_offset)) = target;
 
 		let next_instruction = match frame.direction() {
-			&Direction::Advance => InstructionTarget(return_target - 1),
-			&Direction::Reverse => InstructionTarget(return_target + 1),
+			&Direction::Advance => InstructionTarget(function, FunctionOffset(return_offset - 1)),
+			&Direction::Reverse => InstructionTarget(function, FunctionOffset(return_offset + 1)),
 		};
 
 		context.set_next_instruction(|| Ok(next_instruction));

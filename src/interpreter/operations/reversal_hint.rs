@@ -2,15 +2,15 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, Operand, Operation,
-            Operational, ParserContext, ParserResult, Reversible, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterResult,
+            Operand, Operation, Operational, Reversible};
 
 #[derive(Debug)]
 pub struct ReversalHint;
 
 impl Operational for ReversalHint {
-	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
-	               _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a, 'b>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(ReversalHint))
 	}
 }

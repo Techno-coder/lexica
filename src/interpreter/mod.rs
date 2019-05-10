@@ -18,8 +18,7 @@ pub use self::runtime::*;
 pub use self::runtime_step::*;
 pub use self::size::*;
 
-// TODO
-//pub mod operations;
+pub mod operations;
 mod compiler;
 mod error;
 mod direction;

@@ -2,9 +2,8 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InterpreterResult, LocalTable,
-            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Reverser,
-            Reversible, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterResult,
+            LocalTable, LocalTarget, Operand, Operation, Operational, Reverser, Reversible};
 
 pub type Restore = Reverser<Drop>;
 
@@ -21,11 +20,11 @@ impl Drop {
 }
 
 impl Operational for Drop {
-	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let local = local(&operands[0])?;
-		let table = local_table(&base_function(context, unit, span));
+		let table = local_table(&base_function(context, span));
 		Ok(Box::new(error(Drop::new(table?, local), span)?))
 	}
 }

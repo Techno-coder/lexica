@@ -2,15 +2,15 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, Direction, GenericOperation, InstructionTarget, InterpreterResult,
-            Operand, Operation, Operational, ParserContext, ParserResult, Reversible, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, Direction, FunctionOffset,
+            GenericOperation, InstructionTarget, InterpreterResult, Operand, Operation, Operational,
+            Reversible};
 
 #[derive(Debug)]
 pub struct Exit;
 
 impl Operational for Exit {
-	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &ParserContext,
-	               _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext) -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(Exit))
 	}
 }
@@ -21,8 +21,8 @@ impl Operation for Exit {
 		match frame_direction {
 			Direction::Advance => context.set_is_halted(true),
 			Direction::Reverse if context.is_halted() => {
-				let InstructionTarget(program_counter) = context.program_counter();
-				context.set_next_instruction(|| Ok(InstructionTarget(program_counter - 1)));
+				let InstructionTarget(function, FunctionOffset(offset)) = context.program_counter();
+				context.set_next_instruction(|| Ok(InstructionTarget(function, FunctionOffset(offset - 1))));
 				context.set_is_halted(false);
 			}
 			_ => (),
@@ -41,8 +41,8 @@ impl Reversible for Exit {
 		match frame_direction {
 			Direction::Reverse => context.set_is_halted(true),
 			Direction::Advance if context.is_halted() => {
-				let InstructionTarget(program_counter) = context.program_counter();
-				context.set_next_instruction(|| Ok(InstructionTarget(program_counter - 1)));
+				let InstructionTarget(function, FunctionOffset(offset)) = context.program_counter();
+				context.set_next_instruction(|| Ok(InstructionTarget(function, FunctionOffset(offset - 1))));
 				context.set_is_halted(false);
 			}
 			_ => (),

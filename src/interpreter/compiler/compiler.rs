@@ -1,20 +1,24 @@
 use crate::source::Spanned;
 
-use super::{CompilationUnit, CompileError, CompileMetadata, CompileContext, Function,
+use super::{CompilationUnit, CompileContext, CompileError, CompileMetadata, Function,
             GenericOperation, Instruction, OperationalStore, TranslationUnit};
 
-pub fn compile(translation_unit: TranslationUnit, operations: &OperationalStore)
-               -> (CompilationUnit, CompileMetadata, Vec<Spanned<CompileError>>) {
+const ENTRY_POINT: &'static str = "main";
+
+pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &OperationalStore)
+                   -> (CompilationUnit, CompileMetadata, Vec<Spanned<CompileError<'a>>>) {
 	let mut unit = CompilationUnit::default();
 	let mut context = CompileContext::new(translation_unit);
-	let mut metadata = CompileMetadata::default();
 
 	for (identifier, function) in &context.unit.functions {
-		metadata.function_indexes.insert(identifier.clone(), unit.functions.len());
-		context.pending_function = Some(function);
-
 		let mut unit_function = Function::default();
 		unit_function.locals = function.locals.clone();
+		context.pending_function = Some(function);
+
+		if identifier == ENTRY_POINT {
+			let function_target = &context.metadata.function_targets[identifier];
+			unit.main = Some(function_target.clone());
+		}
 
 		for instruction in &function.instructions {
 			let identifier = &format!("{}", instruction.operation);
@@ -29,7 +33,7 @@ pub fn compile(translation_unit: TranslationUnit, operations: &OperationalStore)
 				Err(error) => {
 					context.errors.push(error);
 					continue;
-				},
+				}
 			};
 
 			let instruction = Instruction {
@@ -44,5 +48,5 @@ pub fn compile(translation_unit: TranslationUnit, operations: &OperationalStore)
 		unit.functions.push(unit_function);
 	}
 
-	(unit, metadata, context.errors)
+	(unit, context.metadata, context.errors)
 }

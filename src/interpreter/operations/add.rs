@@ -2,9 +2,9 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, LocalTable,
-            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Primitive,
-            Reverser, Reversible, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterError,
+            InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational, Primitive,
+            Reverser, Reversible};
 
 pub type Minus = Reverser<Add>;
 
@@ -36,10 +36,10 @@ impl Add {
 }
 
 impl Operational for Add {
-	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
-		let table = local_table(&base_function(context, unit, span));
+		let table = local_table(&base_function(context, span));
 		let (left, right) = (local(&operands[0])?, local(&operands[1])?);
 		Ok(Box::new(error(Add::new(table?, left, right), span)?))
 	}

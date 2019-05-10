@@ -2,32 +2,35 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InstructionTarget, InterpreterResult, Operand,
-            Operation, Operational, ParserContext, ParserResult, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, FunctionOffset, GenericOperation,
+            InstructionTarget, InterpreterResult, Operand, Operation, Operational};
 
 #[derive(Debug)]
 pub struct Jump {
-	target: InstructionTarget,
+	target: FunctionOffset,
 }
 
 impl Jump {
-	pub fn new(target: InstructionTarget) -> Jump {
+	pub fn new(target: FunctionOffset) -> Jump {
 		Jump { target }
 	}
 }
 
 impl Operational for Jump {
-	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
-		let target = target_label(span, &operands[0], unit, context)?;
+		let function = base_function(context, span)?;
+		let target = target_label(span, &operands[0], function)?;
 		Ok(Box::new(Jump::new(target)))
 	}
 }
 
 impl Operation for Jump {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		context.set_program_counter(self.target.clone());
+		let InstructionTarget(function, _) = context.program_counter();
+		let next_target = InstructionTarget(function, self.target.clone());
+		context.set_next_instruction(|| Ok(next_target));
 		Ok(())
 	}
 }

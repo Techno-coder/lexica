@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use super::{Function, FunctionTarget, Instruction, InstructionTarget, TranslationFunction};
 
-const ENTRY_POINT: &'static str = "main";
-
 #[derive(Debug, Default)]
 pub struct CompilationUnit {
 	pub functions: Vec<Function>,

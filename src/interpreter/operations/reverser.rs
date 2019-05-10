@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, Operand, Operation,
-            Operational, ParserContext, ParserResult, Reversible, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation,
+            InterpreterError, InterpreterResult, Operand, Operation, Operational, Reversible};
 
 #[derive(Debug)]
 pub struct Reverser<T> {
@@ -13,9 +13,9 @@ pub struct Reverser<T> {
 }
 
 impl<T> Operational for Reverser<T> where T: Operational + 'static {
-	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
-		let operation = T::compile(span, operands, context, unit)?;
+	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation> {
+		let operation = T::compile(span, operands, context)?;
 		Ok(Box::new(Self { operation, operational: PhantomData }))
 	}
 }

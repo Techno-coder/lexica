@@ -2,9 +2,8 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult, LocalTable,
-            LocalTarget, Operand, Operation, Operational, ParserContext, ParserResult, Reversible,
-            TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterError,
+            InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational, Reversible};
 
 #[derive(Debug)]
 pub struct Swap {
@@ -26,10 +25,10 @@ impl Swap {
 }
 
 impl Operational for Swap {
-	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &ParserContext,
-	               unit: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
-		let table = local_table(&base_function(context, unit, span));
+		let table = local_table(&base_function(context, span));
 		let (left, right) = (local(&operands[0])?, local(&operands[1])?);
 		Ok(Box::new(error(Swap::new(table?, left, right), span)?))
 	}

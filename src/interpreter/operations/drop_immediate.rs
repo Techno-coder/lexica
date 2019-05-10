@@ -2,9 +2,8 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, Context, GenericOperation, InterpreterError, InterpreterResult,
-            Operand, Operation, Operational, ParserContext, ParserResult, Primitive, Reversible,
-            Size, TranslationUnit};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterError,
+            InterpreterResult, Operand, Operation, Operational, Primitive, Reversible, Size};
 
 #[derive(Debug)]
 pub struct DropImmediate {
@@ -21,8 +20,8 @@ impl DropImmediate {
 }
 
 impl Operational for DropImmediate {
-	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, _: &ParserContext,
-	               _: &TranslationUnit) -> ParserResult<'a, GenericOperation> {
+	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, _: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let (size, primitive) = (size(&operands[0])?, primitive(&operands[1])?);
 		Ok(Box::new(error(DropImmediate::new(size, primitive), span)?))

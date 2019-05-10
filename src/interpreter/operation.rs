@@ -22,6 +22,6 @@ pub trait Reversible: Operation {
 
 /// An interface that defines how an operation is constructed.
 pub trait Operational: fmt::Debug + fmt::Display {
-	fn compile<'a>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext)
-	               -> CompileResult<'a, GenericOperation>;
+	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	                   -> CompileResult<'a, GenericOperation>;
 }
