@@ -4,18 +4,17 @@ use crate::source::Span;
 
 use super::{CallFrame, CompilationUnit, CompileContext, CompileError, CompileResult, Context,
             Direction, FunctionOffset, GenericOperation, InstructionTarget, InterpreterResult,
-            Operand, Operation, Operational, Reversible};
+            Operand, Operation, Operational, Reversible, FunctionTarget};
 
 #[derive(Debug)]
 pub struct Call {
-	target: InstructionTarget,
-	reverse_target: InstructionTarget,
+	target: FunctionTarget,
 	direction: Direction,
 }
 
 impl Call {
-	pub fn new(target: InstructionTarget, reverse_target: InstructionTarget, direction: Direction) -> Call {
-		Call { target, reverse_target, direction }
+	pub fn new(target: FunctionTarget, direction: Direction) -> Call {
+		Call { target, direction }
 	}
 }
 
@@ -28,21 +27,16 @@ impl Operational for Call {
 		let target = target(&operands[0])?;
 		let function_target = context.metadata.function_targets.get(&target)
 			.ok_or(operands[0].map(|_| CompileError::UndefinedFunction(target.clone())))?;
-		let function = context.unit.functions.get(&target).unwrap();
-
-		let target = InstructionTarget(function_target.clone(), FunctionOffset(0));
-		let final_instruction = FunctionOffset(function.instructions.len() - 1);
-		let reverse_target = InstructionTarget(function_target.clone(), final_instruction);
-		Ok(Box::new(Call::new(target, reverse_target, Direction::Advance)))
+		Ok(Box::new(Call::new(function_target.clone(), Direction::Advance)))
 	}
 }
 
 impl Operation for Call {
 	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
-		let InstructionTarget(function_target, _) = self.target.clone();
-		let function = unit.function(function_target).expect("Function does not exist");
+		let function = unit.function(self.target.clone()).expect("Function does not exist");
+		let target = InstructionTarget(self.target.clone(), FunctionOffset(0));
 		context.push_frame(CallFrame::construct(&function, self.direction, context.program_counter()));
-		context.set_next_instruction(|| Ok(self.target.clone()));
+		context.set_next_instruction(|| Ok(target));
 		Ok(())
 	}
 
@@ -53,10 +47,10 @@ impl Operation for Call {
 
 impl Reversible for Call {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
-		let InstructionTarget(function_target, _) = self.target.clone();
-		let function = unit.function(function_target).expect("Function does not exist");
+		let function = unit.function(self.target.clone()).expect("Function does not exist");
+		let target = InstructionTarget(self.target.clone(), FunctionOffset(function.instructions.len() - 1));
 		context.push_frame(CallFrame::construct(&function, self.direction, context.program_counter()));
-		context.set_next_instruction(|| Ok(self.reverse_target.clone()));
+		context.set_next_instruction(|| Ok(target));
 		Ok(())
 	}
 }

@@ -46,16 +46,18 @@ impl Runtime {
 			Direction::Reverse => self.force_reverse(),
 		}?;
 
-		if self.context.is_trapped {
-			return Ok(RuntimeStep::Trapped);
-		} else if self.context.is_halted {
+		if self.context.is_halted {
 			return Ok(RuntimeStep::Halted);
 		}
 
 		let frame_direction = self.context.frame()?.direction();
 		let composition = Direction::compose(frame_direction, &direction);
 		self.advance_instruction(composition)?;
-		Ok(step)
+
+		match self.context.is_trapped {
+			true => Ok(RuntimeStep::Trapped),
+			false => Ok(step),
+		}
 	}
 
 	/// Forces the runtime to advance regardless of frame direction.
