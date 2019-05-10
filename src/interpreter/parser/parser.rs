@@ -2,22 +2,19 @@ use std::iter::Peekable;
 
 use crate::source::{Span, Spanned};
 
-use super::{AnnotationStore, Element, ElementParser, FunctionOffset, OperationStore,
-            ParserContext, ParserError, TranslationFunction, TranslationUnit};
+use super::{AnnotationStore, Element, FunctionOffset, ParserContext, ParserError,
+            TranslationFunction, TranslationUnit};
 
-pub fn parse<'a>(text: &'a str, annotations: &'a AnnotationStore, operations: &'a OperationStore)
+pub fn parse<'a>(elements: Vec<Spanned<Element<'a>>>, annotations: &'a AnnotationStore)
                  -> (TranslationUnit<'a>, Vec<Spanned<ParserError<'a>>>) {
 	let mut unit = TranslationUnit::default();
-	let mut elements = ElementParser::new(text, annotations, operations).peekable();
 	let mut context = ParserContext::default();
+	let mut elements = elements.into_iter().peekable();
 
 	collect_annotations(&mut elements, &mut context);
 	while let Some(element) = elements.next() {
 		let error_count = context.errors.len();
-		match element {
-			Ok(element) => parse_element(element, &mut context, &mut unit),
-			Err(error) => context.errors.push(error),
-		}
+		parse_element(element, &mut context, &mut unit);
 
 		match error_count == context.errors.len() {
 			true => process_annotations(annotations, &mut context, &mut unit),
@@ -85,11 +82,12 @@ fn process_annotations(annotations: &AnnotationStore, context: &mut ParserContex
 	context.pending_annotations.clear();
 }
 
-fn collect_annotations<'a>(elements: &mut Peekable<ElementParser<'a>>, context: &mut ParserContext<'a>) {
-	while let Some(Ok(annotation)) = elements.peek() {
+fn collect_annotations<'a>(elements: &mut Peekable<impl Iterator<Item=Spanned<Element<'a>>>>,
+                           context: &mut ParserContext<'a>) {
+	while let Some(annotation) = elements.peek() {
 		match annotation.node {
 			Element::Annotation(_) => match elements.next() {
-				Some(Ok(element)) => {
+				Some(element) => {
 					context.last_element = Some(element.clone());
 					match element.node {
 						Element::Annotation(annotation) => {

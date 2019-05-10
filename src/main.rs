@@ -92,7 +92,17 @@ fn main() {
 
 	let mut error_occurred = false;
 
-	let (unit, errors) = parse(text_map.text(), &annotations, &operations);
+	let (elements, errors) = ElementParser::new(text_map.text(), &annotations, &operations)
+		.partition::<Vec<_>, _>(|result| result.is_ok());
+	let elements = elements.into_iter().map(|element| element.unwrap()).collect();
+	let errors: Vec<_> = errors.into_iter().map(|error| error.unwrap_err()).collect();
+	for error in errors {
+		crate::source::emit(&text_map, error);
+		error_occurred = true;
+		println!();
+	}
+
+	let (unit, errors) = parse(elements, &annotations);
 	for error in errors {
 		crate::source::emit(&text_map, error);
 		error_occurred = true;

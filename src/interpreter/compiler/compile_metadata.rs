@@ -8,7 +8,7 @@ pub struct CompileMetadata {
 }
 
 impl CompileMetadata {
-	/// Creates a metadata object with function indexes precomputed.
+	/// Creates a metadata object with function targets precomputed.
 	pub fn construct(unit: &TranslationUnit) -> CompileMetadata {
 		let mut metadata = CompileMetadata::default();
 		for (index, identifier) in unit.functions.keys().enumerate() {
