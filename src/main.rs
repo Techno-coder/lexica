@@ -86,9 +86,7 @@ fn main() {
 
 	let text_map = TextMap::new(LEXER_TEST.to_owned());
 	let operations = OperationStore::new();
-
-	let mut annotations = AnnotationStore::default();
-	annotations.register("local".to_owned(), Box::new(crate::interpreter::annotations::LocalAnnotation));
+	let annotations = AnnotationStore::new();
 
 	let mut error_occurred = false;
 

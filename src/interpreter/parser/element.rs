@@ -3,7 +3,7 @@ use std::iter::Peekable;
 
 use crate::source::{Span, Spanned};
 
-use super::{Annotation, AnnotationStore, AnnotationType, Argument, Direction, Lexer,
+use super::{Annotation, AnnotationStore, Annotator, Argument, Direction, Lexer,
             OperationStore, ParserError, ParserResult, Token, TranslationInstruction};
 
 /// A singular unit of textual code.
@@ -58,7 +58,7 @@ impl<'a> ElementParser<'a> {
 	}
 
 	/// Parses the annotation arguments from the subsequent tokens.
-	fn annotation_arguments(&mut self, span: Span, annotation: &AnnotationType)
+	fn annotation_arguments(&mut self, span: Span, annotation: &Annotator)
 	                        -> ParserResult<'a, Vec<Spanned<Argument<'a>>>> {
 		let mut arguments: Vec<Spanned<Argument>> = Vec::new();
 		for _ in 0..annotation.arity() {

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::source::Span;
 
-use super::{CompileContext, CompileResult, GenericOperation, Operand, Operational};
+use super::{CompileContext, CompileResult, GenericOperation, Operand, Operational, OperationKey};
 
 pub type CompileFunction = for<'a, 'b> fn(&Span, &Vec<Operand<'a>>, &CompileContext<'a, 'b>)
                                           -> CompileResult<'a, GenericOperation>;
@@ -18,29 +18,30 @@ impl OperationStore {
 	pub fn new() -> OperationStore {
 		use super::operations::*;
 		let mut store = Self::default();
-		store.register::<Add>("add");
-		store.register::<AddImmediate>("add.i");
-		store.register::<Branch>("branch");
-		store.register::<BranchImmediate>("branch.i");
-		store.register::<Call>("call");
-		store.register::<CloneLocal>("clone");
-		store.register::<Discard>("discard");
-		store.register::<Drop>("drop");
-		store.register::<DropImmediate>("drop.i");
-		store.register::<Exit>("exit");
-		store.register::<Jump>("jump");
-		store.register::<Recall>("recall");
-		store.register::<Reset>("reset");
-		store.register::<Return>("return");
-		store.register::<ReversalHint>("*");
-		store.register::<Swap>("swap");
-		store.register::<Minus>("minus");
-		store.register::<MinusImmediate>("minus.i");
-		store.register::<Restore>("restore");
+		store.register::<Add>(OperationKey::Add);
+		store.register::<AddImmediate>(OperationKey::AddImmediate);
+		store.register::<Branch>(OperationKey::Branch);
+		store.register::<BranchImmediate>(OperationKey::BranchImmediate);
+		store.register::<Call>(OperationKey::Call);
+		store.register::<CloneLocal>(OperationKey::Clone);
+		store.register::<Discard>(OperationKey::Discard);
+		store.register::<Drop>(OperationKey::Drop);
+		store.register::<DropImmediate>(OperationKey::DropImmediate);
+		store.register::<Exit>(OperationKey::Exit);
+		store.register::<Jump>(OperationKey::Jump);
+		store.register::<Recall>(OperationKey::Recall);
+		store.register::<Reset>(OperationKey::Reset);
+		store.register::<Return>(OperationKey::Return);
+		store.register::<ReversalHint>(OperationKey::ReversalHint);
+		store.register::<Swap>(OperationKey::Swap);
+		store.register::<Minus>(OperationKey::Minus);
+		store.register::<MinusImmediate>(OperationKey::MinusImmediate);
+		store.register::<Restore>(OperationKey::Restore);
 		store
 	}
 
-	pub fn register<T>(&mut self, identifier: &'static str) where T: Operational {
+	pub fn register<T>(&mut self, identifier: OperationKey) where T: Operational {
+		let identifier = identifier.into();
 		self.compile.insert(identifier, T::compile);
 		self.arity.insert(identifier, T::arity());
 	}

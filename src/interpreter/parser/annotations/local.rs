@@ -1,13 +1,13 @@
 use crate::source::Spanned;
 
-use super::{Annotation, AnnotationType, Argument, Element, ParserContext, ParserError,
+use super::{Annotation, Annotator, Argument, Element, ParserContext, ParserError,
             ParserResult, Size, TranslationUnit};
 
 /// Registers locals into a function label
 #[derive(Debug)]
 pub struct LocalAnnotation;
 
-impl AnnotationType for LocalAnnotation {
+impl Annotator for LocalAnnotation {
 	fn arity(&self) -> usize {
 		2
 	}

@@ -4,8 +4,8 @@ use crate::source::Spanned;
 
 use super::{Annotation, ParserContext, ParserResult, TranslationUnit};
 
-/// An interface for a byte code annotation.
-pub trait AnnotationType: fmt::Debug {
+/// An interface for a textual code annotator.
+pub trait Annotator: fmt::Debug {
 	/// Returns the number of arguments this annotation takes.
 	fn arity(&self) -> usize;
 
