@@ -1,9 +1,11 @@
 #![feature(map_get_key_value)]
 #![feature(never_type)]
 
-//mod compiler;
+use crate::node::NodeConstruct;
+
+mod compiler;
 mod interpreter;
-//mod node;
+mod node;
 mod display;
 mod source;
 
@@ -54,8 +56,8 @@ static LEXER_TEST: &'static str = r"
   *
   add.i 3 1       *
   *
-  +jump 0
   -branch.i = 3 1 0
+  +jump 0
   *
 1:
   -clone 0 3
@@ -84,7 +86,32 @@ fn main() {
 	use crate::source::TextMap;
 	use colored::Colorize;
 
-	let text_map = TextMap::new(LEXER_TEST.to_owned());
+	let mut function = crate::compiler::construct();
+	let mut visitor = crate::compiler::Translator::default();
+	let elements = function.accept(&mut visitor);
+
+	let mut code_string = String::new();
+	for element in elements {
+		code_string += &format!("{}\n", element.node);
+	}
+
+	code_string += r#"
+@local u64 0    # 0 : fibonacci result
+~main {
+  exit' *
+  drop.i u64 35 *
+  call fibonacci
+#  recall fibonacci
+  *
+  -reset 0 0
+  restore 0
+  *
+  exit
+}
+	"#;
+
+	let text_map = TextMap::new(code_string);
+//	let text_map = TextMap::new(LEXER_TEST.to_owned());
 	let operations = OperationStore::new();
 	let annotations = AnnotationStore::new();
 
@@ -120,6 +147,7 @@ fn main() {
 
 	let mut runtime = Runtime::new(unit)
 		.expect("Failed to create runtime");
+//	for _ in 0..200 {
 	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
 		match runtime.force_step(Direction::Advance) {
@@ -136,6 +164,7 @@ fn main() {
 	}
 
 	println!("{}", "REVERSING".red().bold());
+//	for _ in 0..200 {
 	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
 		match runtime.force_step(Direction::Reverse) {

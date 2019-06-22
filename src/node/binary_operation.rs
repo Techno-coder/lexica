@@ -1,9 +1,8 @@
 use std::fmt;
 
-use super::Expression;
-use super::NodeConstruct;
+use super::{Expression, NodeConstruct, NodeVisitor};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryOperator {
 	Equal,
 	Plus,
@@ -21,14 +20,18 @@ impl fmt::Display for BinaryOperator {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BinaryOperation<'a> {
 	pub left: Expression<'a>,
 	pub right: Expression<'a>,
 	pub operator: BinaryOperator,
 }
 
-impl<'a> NodeConstruct<'a> for BinaryOperation<'a> {}
+impl<'a> NodeConstruct<'a> for BinaryOperation<'a> {
+	fn accept<V: NodeVisitor<'a>>(&mut self, visitor: &mut V) -> V::Result {
+		visitor.binary_operation(self)
+	}
+}
 
 impl<'a> fmt::Display for BinaryOperation<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

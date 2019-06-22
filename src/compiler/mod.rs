@@ -1,10 +1,15 @@
-pub use self::node_construct::*;
+pub use self::translator::*;
+pub use self::element::*;
 
-mod node_construct;
+#[macro_use]
+pub mod constructor;
+mod translator;
+mod element;
 
-pub fn construct() -> crate::node::Function<'static> {
+pub fn construct<'a>() -> crate::node::Function<'a> {
 	use crate::node::*;
 	Function {
+		identifier: Identifier("fibonacci"),
 		parameters: vec![
 			Variable {
 				identifier: Identifier("n"),

@@ -3,7 +3,7 @@ use std::fmt;
 use super::ParserError;
 
 /// Represents possible data types in the interpreter.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Size {
 	Boolean,
 	Unsigned8,

@@ -24,11 +24,13 @@ impl OperationStore {
 		store.register::<BranchImmediate>(OperationKey::BranchImmediate);
 		store.register::<Call>(OperationKey::Call);
 		store.register::<CloneLocal>(OperationKey::Clone);
+		store.register::<Compare>(OperationKey::Compare);
 		store.register::<Discard>(OperationKey::Discard);
 		store.register::<Drop>(OperationKey::Drop);
 		store.register::<DropImmediate>(OperationKey::DropImmediate);
 		store.register::<Exit>(OperationKey::Exit);
 		store.register::<Jump>(OperationKey::Jump);
+		store.register::<Pass>(OperationKey::Pass);
 		store.register::<Recall>(OperationKey::Recall);
 		store.register::<Reset>(OperationKey::Reset);
 		store.register::<Return>(OperationKey::Return);

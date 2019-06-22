@@ -52,6 +52,8 @@ impl<'a> Iterator for Lexer<'a> {
 					Token::SignedInteger(signed)
 				} else if let Ok(float) = lexeme.parse::<f64>() {
 					Token::Float(float)
+				} else if let Ok(boolean) = lexeme.parse::<bool>() {
+					Token::Boolean(boolean)
 				} else {
 					Token::Identifier(lexeme)
 				}

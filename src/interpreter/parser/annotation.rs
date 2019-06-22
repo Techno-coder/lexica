@@ -30,6 +30,7 @@ impl<'a> TryFrom<Token<'a>> for Argument<'a> {
 				Token::UnsignedInteger(integer) => Primitive::Integer(Integer::Unsigned64(integer)),
 				Token::SignedInteger(integer) => Primitive::Integer(Integer::Signed64(integer)),
 				Token::Float(float) => Primitive::Float(Float::Float64(float)),
+				Token::Boolean(boolean) => Primitive::Boolean(boolean),
 				other => return Err(ParserError::InvalidArgument(other))
 			})
 		})
