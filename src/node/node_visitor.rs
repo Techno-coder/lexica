@@ -11,5 +11,4 @@ pub trait NodeVisitor<'a> {
 	fn function(&mut self, function: &mut Function<'a>) -> Self::Result;
 	fn mutation(&mut self, mutation: &mut Mutation<'a>) -> Self::Result;
 	fn statement(&mut self, statement: &mut Statement<'a>) -> Self::Result;
-	fn swap(&mut self, swap: &mut Swap<'a>) -> Self::Result;
 }

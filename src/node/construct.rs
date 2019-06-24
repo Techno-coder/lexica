@@ -10,7 +10,7 @@ impl<'a> fmt::Display for Identifier<'a> {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DataType<'a>(pub Identifier<'a>);
 
 impl<'a> fmt::Display for DataType<'a> {
@@ -20,7 +20,7 @@ impl<'a> fmt::Display for DataType<'a> {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Variable<'a> {
 	pub identifier: Identifier<'a>,
 	pub data_type: Option<DataType<'a>>,

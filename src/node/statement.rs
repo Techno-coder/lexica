@@ -1,10 +1,9 @@
 use std::fmt;
 
-use super::{Binding, ConditionalLoop, ExplicitDrop, Mutation, Swap, NodeVisitor, NodeConstruct};
+use super::{Binding, ConditionalLoop, ExplicitDrop, Mutation, NodeConstruct, NodeVisitor};
 
 #[derive(Debug)]
 pub enum Statement<'a> {
-	Swap(Swap<'a>),
 	Binding(Binding<'a>),
 	Mutation(Mutation<'a>),
 	ExplicitDrop(ExplicitDrop<'a>),
@@ -20,7 +19,6 @@ impl<'a> NodeConstruct<'a> for Statement<'a> {
 impl<'a> fmt::Display for Statement<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
 		match self {
-			Statement::Swap(swap) => write!(f, "{};", swap),
 			Statement::Binding(binding) => write!(f, "{};", binding),
 			Statement::Mutation(mutation) => write!(f, "{};", mutation),
 			Statement::ExplicitDrop(explicit_drop) => write!(f, "{};", explicit_drop),

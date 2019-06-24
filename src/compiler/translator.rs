@@ -30,7 +30,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 				let instruction = format!("compare = {} {} {}", left, right, local_index);
 				elements.push(instruction!(Advance, instruction, Span::new(0, 0)));
 			}
-			BinaryOperator::Plus => {
+			BinaryOperator::Add => {
 				self.allocation_sizes.push(self.allocation_sizes[left].clone());
 				let instruction = format!("clone {} {}", local_index, left);
 				elements.push(instruction!(Advance, Advance, instruction, Span::new(0, 0)));
@@ -44,6 +44,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 				let instruction = format!("minus {} {}", local_index, right);
 				elements.push(instruction!(Advance, instruction, Span::new(0, 0)));
 			}
+			_ => unimplemented!(),
 		};
 		elements
 	}
@@ -203,22 +204,20 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 					}, Span::new(0, 0))).collect());
 				elements
 			}
+			Mutation::Swap(left, right) => {
+				let left = self.identifier_table[&left];
+				let right = self.identifier_table[&right];
+				vec![instruction!(Advance, format!("swap {} {}", left, right), Span::new(0, 0))]
+			}
 		}
 	}
 
 	fn statement(&mut self, statement: &mut Statement<'a>) -> Self::Result {
 		match statement {
-			Statement::Swap(swap) => swap.accept(self),
 			Statement::Binding(binding) => binding.accept(self),
 			Statement::Mutation(mutation) => mutation.accept(self),
 			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
 		}
-	}
-
-	fn swap(&mut self, swap: &mut Swap<'a>) -> Self::Result {
-		let left = self.identifier_table[&swap.left];
-		let right = self.identifier_table[&swap.right];
-		vec![instruction!(Advance, format!("swap {} {}", left, right), Span::new(0, 0))]
 	}
 }

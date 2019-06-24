@@ -9,7 +9,6 @@ pub use self::mutation::*;
 pub use self::node_construct::*;
 pub use self::node_visitor::*;
 pub use self::statement::*;
-pub use self::swap::*;
 
 mod node_construct;
 mod node_visitor;
@@ -23,4 +22,3 @@ mod expression;
 mod function;
 mod mutation;
 mod statement;
-mod swap;

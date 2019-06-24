@@ -1,5 +1,5 @@
-pub use self::translator::*;
 pub use self::element::*;
+pub use self::translator::*;
 
 #[macro_use]
 pub mod constructor;
@@ -63,17 +63,11 @@ pub fn construct<'a>() -> crate::node::Function<'a> {
 						expression: Expression::BinaryOperation(Box::new(BinaryOperation {
 							left: Expression::Variable(Identifier("first")),
 							right: Expression::Variable(Identifier("second")),
-							operator: BinaryOperator::Plus,
+							operator: BinaryOperator::Add,
 						})),
 					}),
-					Statement::Swap(Swap {
-						left: Identifier("first"),
-						right: Identifier("second"),
-					}),
-					Statement::Swap(Swap {
-						left: Identifier("second"),
-						right: Identifier("summation"),
-					}),
+					Statement::Mutation(Mutation::Swap(Identifier("first"), Identifier("second"))),
+					Statement::Mutation(Mutation::Swap(Identifier("second"), Identifier("summation"))),
 					Statement::ExplicitDrop(ExplicitDrop {
 						identifier: Identifier("summation"),
 						expression: Expression::BinaryOperation(Box::new(BinaryOperation {

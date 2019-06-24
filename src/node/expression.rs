@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::{BinaryOperation, Identifier, NodeConstruct, NodeVisitor};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression<'a> {
 	Variable(Identifier<'a>),
 	LiteralInteger(i64),

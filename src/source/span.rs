@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Span {
 	byte_start: usize,
 	byte_end: usize,

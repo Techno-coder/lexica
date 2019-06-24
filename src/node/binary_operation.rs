@@ -2,25 +2,38 @@ use std::fmt;
 
 use super::{Expression, NodeConstruct, NodeVisitor};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BinaryOperator {
 	Equal,
-	Plus,
+	Add,
 	Minus,
+	Multiply,
+}
+
+impl BinaryOperator {
+	pub fn precedence(&self) -> usize {
+		match self {
+			BinaryOperator::Equal => 1,
+			BinaryOperator::Add => 2,
+			BinaryOperator::Minus => 2,
+			BinaryOperator::Multiply => 3,
+		}
+	}
 }
 
 impl fmt::Display for BinaryOperator {
 	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
 		let operator = match self {
 			BinaryOperator::Equal => "==",
-			BinaryOperator::Plus => "+",
+			BinaryOperator::Add => "+",
 			BinaryOperator::Minus => "-",
+			BinaryOperator::Multiply => "*",
 		};
 		write!(f, "{}", operator)
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BinaryOperation<'a> {
 	pub left: Expression<'a>,
 	pub right: Expression<'a>,
