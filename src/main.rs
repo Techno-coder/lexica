@@ -14,7 +14,7 @@ fn fibonacci(n: u32) //-> u32 {
   let ~first = 1;
   let ~second = 1;
 
-  let ~counter = 1;
+  let ~counter = 1
   while counter == 1 => counter == n {
     let summation = first + second;
     first <=> second;
@@ -22,7 +22,7 @@ fn fibonacci(n: u32) //-> u32 {
 
     // `summation` contains the original `first`
     drop summation = second - first;
-    counter += 1;
+    counter += 1
   }
 
   // Implicit drop of `first` and `counter`
@@ -83,109 +83,111 @@ fn fibonacci(n: u32) //-> u32 {
 
 fn main() {
 	let text_map = source::TextMap::new(PROGRAM.to_owned());
-	let function = parser::parse(text_map.text());
-	if let Err(error) = function {
-		crate::source::emit(&text_map, error);
-	} else {
-		println!("{:?}", function);
+	let function = crate::parser::parse(text_map.text());
+	let mut function = match function {
+		Ok(mut function) => function.remove(0),
+		Err(errors) => {
+			for error in errors {
+				crate::source::emit(&text_map, error);
+			}
+			return;
+		}
+	};
+
+	use crate::interpreter::*;
+	use crate::source::TextMap;
+	use colored::Colorize;
+	use crate::node::NodeConstruct;
+
+	let mut visitor = crate::compiler::Translator::default();
+	let elements = function.accept(&mut visitor);
+
+	let mut code_string = String::new();
+	for element in elements {
+		code_string += &format!("{}\n", element.node);
 	}
 
-//	use crate::interpreter::*;
-//	use crate::source::TextMap;
-//	use colored::Colorize;
-//	use crate::node::NodeConstruct;
-//
-//	let mut function = crate::compiler::construct();
-//	let mut visitor = crate::compiler::Translator::default();
-//	let elements = function.accept(&mut visitor);
-//
-//	let mut code_string = String::new();
-//	for element in elements {
-//		code_string += &format!("{}\n", element.node);
-//	}
-//
-//	code_string += r#"
-//@local u64 0    # 0 : fibonacci result
-//~main {
-//  exit' *
-//  drop.i u64 35 *
-//  call fibonacci
-//#  recall fibonacci
-//  *
-//  -reset 0 0
-//  restore 0
-//  *
-//  exit
-//}
-//	"#;
-//
-//	let text_map = TextMap::new(code_string);
-////	let text_map = TextMap::new(LEXER_TEST.to_owned());
-//	let operations = OperationStore::new();
-//	let annotations = AnnotationStore::new();
-//
-//	let mut error_occurred = false;
-//
-//	let (elements, errors) = ElementParser::new(text_map.text(), &annotations, &operations)
-//		.partition::<Vec<_>, _>(|result| result.is_ok());
-//	let elements = elements.into_iter().map(|element| element.unwrap()).collect();
-//	let errors: Vec<_> = errors.into_iter().map(|error| error.unwrap_err()).collect();
-//	for error in errors {
-//		crate::source::emit(&text_map, error);
-//		error_occurred = true;
-//		println!();
-//	}
-//
-//	let (unit, errors) = parse(elements, &annotations);
-//	for error in errors {
-//		crate::source::emit(&text_map, error);
-//		error_occurred = true;
-//		println!();
-//	}
-//
-//	let (unit, _metadata, errors) = compile(unit, &operations);
-//	for error in errors {
-//		crate::source::emit(&text_map, error);
-//		error_occurred = true;
-//		println!();
-//	}
-//
-//	if error_occurred {
-//		return;
-//	}
-//
-//	let mut runtime = Runtime::new(unit)
-//		.expect("Failed to create runtime");
-////	for _ in 0..200 {
-//	loop {
-//		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
-//		match runtime.force_step(Direction::Advance) {
-//			Ok(RuntimeStep::Halted) => {
-//				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
-//				break;
-//			}
-//			Err(error) => {
-//				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
-//				return;
-//			}
-//			_ => (),
-//		}
-//	}
-//
-//	println!("{}", "REVERSING".red().bold());
-////	for _ in 0..200 {
-//	loop {
-//		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
-//		match runtime.force_step(Direction::Reverse) {
-//			Ok(RuntimeStep::Halted) => {
-//				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
-//				break;
-//			}
-//			Err(error) => {
-//				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
-//				return;
-//			}
-//			_ => (),
-//		}
-//	}
+	code_string += r#"
+@local u64 0    # 0 : fibonacci result
+~main {
+  exit' *
+  drop.i u64 35 *
+  call fibonacci
+#  recall fibonacci
+  *
+  -reset 0 0
+  restore 0
+  *
+  exit
+}
+	"#;
+
+	let text_map = TextMap::new(code_string);
+	let operations = OperationStore::new();
+	let annotations = AnnotationStore::new();
+
+	let mut error_occurred = false;
+
+	let (elements, errors) = ElementParser::new(text_map.text(), &annotations, &operations)
+		.partition::<Vec<_>, _>(|result| result.is_ok());
+	let elements = elements.into_iter().map(|element| element.unwrap()).collect();
+	let errors: Vec<_> = errors.into_iter().map(|error| error.unwrap_err()).collect();
+	for error in errors {
+		crate::source::emit(&text_map, error);
+		error_occurred = true;
+		println!();
+	}
+
+	let (unit, errors) = crate::interpreter::parse(elements, &annotations);
+	for error in errors {
+		crate::source::emit(&text_map, error);
+		error_occurred = true;
+		println!();
+	}
+
+	let (unit, _metadata, errors) = compile(unit, &operations);
+	for error in errors {
+		crate::source::emit(&text_map, error);
+		error_occurred = true;
+		println!();
+	}
+
+	if error_occurred {
+		return;
+	}
+
+	let mut runtime = Runtime::new(unit)
+		.expect("Failed to create runtime");
+//	for _ in 0..200 {
+	loop {
+		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
+		match runtime.force_step(Direction::Advance) {
+			Ok(RuntimeStep::Halted) => {
+				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
+				break;
+			}
+			Err(error) => {
+				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
+				return;
+			}
+			_ => (),
+		}
+	}
+
+	println!("{}", "REVERSING".red().bold());
+//	for _ in 0..200 {
+	loop {
+		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
+		match runtime.force_step(Direction::Reverse) {
+			Ok(RuntimeStep::Halted) => {
+				println!("{}: {:#?}", "Halt".green().bold(), runtime.context());
+				break;
+			}
+			Err(error) => {
+				println!("{} {}", "[Error]".red().bold(), format!("{}", error).red());
+				return;
+			}
+			_ => (),
+		}
+	}
 }

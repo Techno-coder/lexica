@@ -1,11 +1,12 @@
+pub use self::block::*;
 pub use self::error::*;
+pub use self::expression::*;
+pub use self::function::*;
 pub use self::lexer::*;
 pub use self::parse::*;
+pub use self::statement::*;
 pub use self::token::*;
 pub use self::variable::*;
-pub use self::function::*;
-pub use self::expression::*;
-pub use self::statement::*;
 
 #[macro_use]
 pub mod utility;
@@ -17,3 +18,4 @@ mod variable;
 mod function;
 mod expression;
 mod statement;
+mod block;

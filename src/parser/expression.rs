@@ -27,7 +27,7 @@ pub fn parse_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	Ok(match next_token.node {
 		Token::UnsignedInteger(integer) => Expression::LiteralInteger(integer as i64),
 		Token::Identifier(identifier) => Expression::Variable(Identifier(identifier)),
-		_ => return Err(Spanned::new(ParserError::ExpectedExpression, next_token.span)),
+		_ => return Err(Spanned::new(ParserError::ExpectedExpression, next_token.span).into()),
 	})
 }
 
@@ -48,7 +48,7 @@ pub fn parse_operator<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		Token::Add => BinaryOperator::Add,
 		Token::Minus => BinaryOperator::Minus,
 		Token::Multiply => BinaryOperator::Multiply,
-		_ => return Err(Spanned::new(ParserError::ExpectedOperator, operator.span.clone())),
+		_ => return Err(Spanned::new(ParserError::ExpectedOperator, operator.span.clone()).into()),
 	};
 
 	let _ = lexer.next();

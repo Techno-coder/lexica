@@ -10,27 +10,7 @@ pub fn parse_function<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let parameters = parse_parameter_list(lexer, end_span.clone())?;
 
 	// TODO: Consider parsing return type
-	expect!(lexer, end_span, BlockOpen);
-
-	let mut statements = Vec::new();
-	let return_value = loop {
-		let statement = super::parse_statement(&mut lexer.clone(), end_span.clone());
-		match statement {
-			Ok(_) => {
-				let statement = super::parse_statement(lexer, end_span.clone());
-				statements.push(statement.unwrap());
-			}
-			Err(statement_error) => {
-				let expression = super::parse_expression_root(lexer, end_span.clone());
-				match expression {
-					Ok(expression) => break expression,
-					Err(_) => return Err(statement_error),
-				}
-			}
-		}
-	};
-
-	expect!(lexer, end_span, BlockClose);
+	let (statements, return_value) = super::parse_expression_block(lexer, end_span.clone())?;
 	Ok(Function { identifier, parameters, statements, return_value })
 }
 
@@ -53,7 +33,7 @@ pub fn parse_parameter_list<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			true => separator_taken = false,
 			false => {
 				let error = ParserError::ExpectedToken(Token::ListSeparator);
-				return Err(Spanned::new(error, token.span.clone()));
+				return Err(Spanned::new(error, token.span.clone()).into());
 			}
 		}
 

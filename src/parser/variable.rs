@@ -3,7 +3,8 @@ use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
 
-pub fn parse_variable<'a>(lexer: &mut PeekLexer<'a>, end_span: Span) -> ParserResult<'a, Variable<'a>> {
+pub fn parse_variable<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
+                          -> ParserResult<'a, Variable<'a>> {
 	let end_error = Spanned::new(ParserError::ExpectedIdentifier, end_span.clone());
 	let mut identifier = lexer.next().ok_or(end_error.clone())?;
 
@@ -18,7 +19,7 @@ pub fn parse_variable<'a>(lexer: &mut PeekLexer<'a>, end_span: Span) -> ParserRe
 			let identifier_node = Identifier(identifier_node);
 			Spanned::new(identifier_node, identifier.span)
 		}
-		_ => return Err(Spanned::new(ParserError::ExpectedIdentifier, identifier.span)),
+		_ => return Err(Spanned::new(ParserError::ExpectedIdentifier, identifier.span).into()),
 	};
 
 	let data_type = match lexer.peek() {

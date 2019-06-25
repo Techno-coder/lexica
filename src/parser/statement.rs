@@ -17,7 +17,7 @@ pub fn parse_statement<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			let conditional_loop = parse_conditional_loop(lexer, span_clone)?;
 			return Ok(Statement::ConditionalLoop(conditional_loop));
 		}
-		_ => return Err(Spanned::new(error, next_token.span.clone())),
+		_ => return Err(Spanned::new(error, next_token.span.clone()).into()),
 	};
 
 	expect!(lexer, end_span, Terminator);
@@ -47,7 +47,7 @@ pub fn parse_mutation<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			let expression = super::parse_expression_root(lexer, end_span)?;
 			Mutation::AddAssign(identifier, expression)
 		}
-		_ => return Err(Spanned::new(ParserError::ExpectedMutator, mutator.span)),
+		_ => return Err(Spanned::new(ParserError::ExpectedMutator, mutator.span).into()),
 	})
 }
 
@@ -74,16 +74,9 @@ pub fn parse_conditional_loop<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			end_condition = super::parse_expression_root(lexer, end_span.clone())?;
 		}
 		Token::BlockOpen => (),
-		_ => return Err(Spanned::new(error, next_token.span)),
+		_ => return Err(Spanned::new(error, next_token.span).into()),
 	}
 
-	let mut statements = Vec::new();
-	expect!(lexer, end_span, BlockOpen);
-	let error = Spanned::new(ParserError::ExpectedToken(Token::BlockClose), end_span.clone());
-	while lexer.peek().ok_or(error.clone())?.node != Token::BlockClose {
-		statements.push(parse_statement(lexer, end_span.clone())?);
-	}
-
-	expect!(lexer, end_span, BlockClose);
+	let statements = super::parse_block(lexer, end_span)?;
 	Ok(ConditionalLoop { start_condition, end_condition, statements })
 }

@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use crate::source::{Spanned, SplitPunctuation};
+use crate::source::{Spanned, SplitSource};
 
 use super::Token;
 
@@ -8,12 +8,12 @@ pub type PeekLexer<'a> = Peekable<Lexer<'a>>;
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
-	lexemes: SplitPunctuation<'a>,
+	lexemes: SplitSource<'a>,
 }
 
 impl<'a> Lexer<'a> {
 	pub fn new(text: &'a str) -> PeekLexer<'a> {
-		Lexer { lexemes: SplitPunctuation::new(text) }.peekable()
+		Lexer { lexemes: SplitSource::new(text) }.peekable()
 	}
 }
 

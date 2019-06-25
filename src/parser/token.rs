@@ -1,6 +1,5 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token<'a> {
-	Comment(&'a str),
 	Function,
 	Binding,
 	Drop,
@@ -26,4 +25,13 @@ pub enum Token<'a> {
 	Multiply,
 	AddAssign,
 	UnsignedInteger(u64),
+}
+
+impl<'a> Token<'a> {
+	pub fn function_separator(&self) -> bool {
+		match self {
+			Token::Function => true,
+			_ => false,
+		}
+	}
 }

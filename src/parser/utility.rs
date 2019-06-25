@@ -4,9 +4,9 @@ macro_rules! expect {
 		match $lexer.next() {
 			Some(token) => match token.node {
 				crate::parser::Token::$token => (),
-				_ => return Err(crate::source::Spanned::new(error, token.span)),
+				_ => return Err(crate::source::Spanned::new(error, token.span).into()),
 			},
-			None => return Err(crate::source::Spanned::new(error, $end_span)),
+			None => return Err(crate::source::Spanned::new(error, $end_span).into()),
 		}
 	}};
 }
@@ -20,9 +20,9 @@ macro_rules! identifier {
 					let identifier = crate::node::Identifier(identifier);
 					Spanned::new(identifier, token.span)
 				},
-				_ => return Err(crate::source::Spanned::new(error, token.span)),
+				_ => return Err(crate::source::Spanned::new(error, token.span).into()),
 			},
-			None => return Err(crate::source::Spanned::new(error, $end_span)),
+			None => return Err(crate::source::Spanned::new(error, $end_span).into()),
 		}
 	}};
 }
