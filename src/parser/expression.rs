@@ -10,10 +10,10 @@ pub fn parse_expression_root<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 
 pub fn parse_expression<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, precedence: usize)
                             -> ParserResult<'a, Expression<'a>> {
-	let mut context = parse_terminal(lexer, end_span.clone())?;
-	while let Ok(operator) = parse_operator(lexer, end_span.clone()) {
+	let mut context = parse_terminal(lexer, end_span)?;
+	while let Ok(operator) = parse_operator(lexer, end_span) {
 		match operator.precedence() > precedence {
-			true => context = parse_binder(lexer, end_span.clone(), context, operator)?,
+			true => context = parse_binder(lexer, end_span, context, operator)?,
 			false => break,
 		}
 	}
@@ -48,7 +48,7 @@ pub fn parse_operator<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		Token::Add => BinaryOperator::Add,
 		Token::Minus => BinaryOperator::Minus,
 		Token::Multiply => BinaryOperator::Multiply,
-		_ => return Err(Spanned::new(ParserError::ExpectedOperator, operator.span.clone()).into()),
+		_ => return Err(Spanned::new(ParserError::ExpectedOperator, operator.span).into()),
 	};
 
 	let _ = lexer.next();

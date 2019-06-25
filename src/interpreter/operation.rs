@@ -25,6 +25,6 @@ pub trait Operational: fmt::Debug + fmt::Display {
 	/// Returns the number of arguments the constructed operation accepts.
 	fn arity() -> usize;
 	/// Constructs an operation from the provided operands.
-	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	fn compile<'a, 'b>(span: Span, operands: &[Operand<'a>], context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation>;
 }

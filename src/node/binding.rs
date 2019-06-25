@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Expression, NodeConstruct, Variable, NodeVisitor};
+use super::{Expression, NodeConstruct, NodeVisitor, Variable};
 
 #[derive(Debug)]
 pub struct Binding<'a> {

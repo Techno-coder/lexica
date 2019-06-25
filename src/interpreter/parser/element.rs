@@ -46,7 +46,7 @@ impl<'a> ElementParser<'a> {
 	fn annotation(&mut self, span: Span, identifier: &'a str)
 	              -> Option<ParserResult<'a, Spanned<Element<'a>>>> {
 		Some(match self.annotations.get(identifier) {
-			Some(annotation) => match self.annotation_arguments(span.clone(), annotation) {
+			Some(annotation) => match self.annotation_arguments(span, annotation) {
 				Ok(arguments) => {
 					let annotation = Annotation { identifier, arguments };
 					Ok(Spanned::new(Element::Annotation(annotation), span))
@@ -67,7 +67,7 @@ impl<'a> ElementParser<'a> {
 					Ok(argument_type) => arguments.push(Spanned::new(argument_type, argument.span)),
 					Err(error) => return Err(Spanned::new(error, argument.span)),
 				}
-				None => return Err(Spanned::new(ParserError::EndOfInput, span.clone())),
+				None => return Err(Spanned::new(ParserError::EndOfInput, span)),
 			}
 		}
 		Ok(arguments)
@@ -76,16 +76,16 @@ impl<'a> ElementParser<'a> {
 	/// Parses an instruction from the subsequent tokens.
 	fn instruction(&mut self, span: Span, identifier: &'a str, direction: Direction,
 	               polarization: Option<Direction>) -> ParserResult<'a, Spanned<Element<'a>>> {
-		self.expect_function_context(span.clone())?;
+		self.expect_function_context(span)?;
 
 		let error = ParserError::InvalidOperation(identifier);
 		let (operation, _) = self.operations.get(identifier)
-			.ok_or_else(|| self.discard::<!>(span.clone(), error).unwrap_err())?;
+			.ok_or_else(|| self.discard::<!>(span, error).unwrap_err())?;
 
 		let arity = self.operations.arity(identifier).unwrap();
 		let arguments = (0..arity).map(|_| self.lexer.next()).collect::<Option<Vec<_>>>();
 
-		let error = || self.discard::<!>(span.clone(), ParserError::EndOfInput).unwrap_err();
+		let error = || self.discard::<!>(span, ParserError::EndOfInput).unwrap_err();
 		let operands = arguments.ok_or_else(error)?;
 		let instruction = TranslationInstruction { operation, operands, direction, polarization };
 		Ok(Spanned::new(Element::Instruction(instruction), span))
@@ -94,7 +94,7 @@ impl<'a> ElementParser<'a> {
 	/// Parses a reversal hint from the subsequent tokens.
 	/// If there are consecutive reversal hint tokens, only one is produced.
 	fn reversal_hint(&mut self, span: Span) -> ParserResult<'a, Spanned<Element<'a>>> {
-		self.expect_function_context(span.clone())?;
+		self.expect_function_context(span)?;
 		while let Some(token) = self.lexer.peek() {
 			let _ = match token.node {
 				Token::ReversalHint => self.lexer.next(),
@@ -116,10 +116,10 @@ impl<'a> ElementParser<'a> {
 				Token::FunctionOpen => (),
 				other => return self.discard(span, ParserError::UnexpectedToken(other)),
 			}
-			None => return Err(Spanned::new(ParserError::EndOfInput, span.clone())),
+			None => return Err(Spanned::new(ParserError::EndOfInput, span)),
 		}
 
-		self.function = Some(span.clone());
+		self.function = Some(span);
 		Ok(Spanned::new(Element::Function(identifier), span))
 	}
 

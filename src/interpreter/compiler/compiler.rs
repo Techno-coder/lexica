@@ -3,7 +3,7 @@ use crate::source::Spanned;
 use super::{CompilationUnit, CompileContext, CompileError, CompileMetadata, CompileResult, Direction,
             Function, Instruction, OperationStore, TranslationInstruction, TranslationUnit};
 
-const ENTRY_POINT: &'static str = "main";
+const ENTRY_POINT: &str = "main";
 
 pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &OperationStore)
                    -> (CompilationUnit, CompileMetadata, Vec<Spanned<CompileError<'a>>>) {
@@ -37,13 +37,13 @@ pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &Operation
 fn compile_instruction<'a, 'b>(instruction: &Spanned<TranslationInstruction<'a>>,
                                context: &CompileContext<'a, 'b>, operations: &OperationStore)
                                -> CompileResult<'a, Instruction> {
-	let identifier = &format!("{}", instruction.operation);
+	let identifier = &instruction.operation.to_string();
 	let (identifier, constructor) = match operations.get(identifier) {
 		Some((identifier, constructor)) => (identifier, constructor),
 		None => panic!("Invalid operation encountered during compilation"),
 	};
 
-	let operation = constructor(&instruction.span, &instruction.operands, context)?;
+	let operation = constructor(instruction.span, &instruction.operands, context)?;
 	let is_reversible = operation.reversible().is_some();
 
 	match (is_reversible, instruction.direction, instruction.polarization) {

@@ -41,7 +41,7 @@ impl Runtime {
 	/// Forces the runtime to step depending on the runtime and frame direction.
 	pub fn force_step(&mut self, direction: Direction) -> InterpreterResult<RuntimeStep> {
 		let frame_direction = self.context.frame()?.direction();
-		let step = match Direction::compose(frame_direction, &direction) {
+		let step = match Direction::compose(frame_direction, direction) {
 			Direction::Advance => self.force_advance(),
 			Direction::Reverse => self.force_reverse(),
 		}?;
@@ -51,7 +51,7 @@ impl Runtime {
 		}
 
 		let frame_direction = self.context.frame()?.direction();
-		let composition = Direction::compose(frame_direction, &direction);
+		let composition = Direction::compose(frame_direction, direction);
 		self.advance_instruction(composition)?;
 
 		match self.context.is_trapped {

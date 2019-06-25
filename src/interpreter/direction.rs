@@ -5,7 +5,7 @@ pub enum Direction {
 }
 
 impl Direction {
-	pub fn compose(&self, other: &Direction) -> Direction {
+	pub fn compose(self, other: Direction) -> Direction {
 		match self == other {
 			true => Direction::Advance,
 			false => Direction::Reverse,

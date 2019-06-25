@@ -5,7 +5,7 @@ use super::{ParserError, ParserResult, PeekLexer, Token};
 
 pub fn parse_variable<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
                           -> ParserResult<'a, Variable<'a>> {
-	let end_error = Spanned::new(ParserError::ExpectedIdentifier, end_span.clone());
+	let end_error = Spanned::new(ParserError::ExpectedIdentifier, end_span);
 	let mut identifier = lexer.next().ok_or(end_error.clone())?;
 
 	let mut is_mutable = false;
@@ -45,7 +45,6 @@ mod tests {
 	#[test]
 	fn test_identifier() {
 		let text = "variable\n";
-		let lexer = Lexer::new(text);
 		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
 
 		let identifier = Identifier("variable");
@@ -56,7 +55,6 @@ mod tests {
 	#[test]
 	fn test_mutable() {
 		let text = "~variable\n";
-		let lexer = Lexer::new(text);
 		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
 
 		let identifier = Identifier("variable");

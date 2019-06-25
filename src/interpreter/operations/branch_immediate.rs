@@ -26,7 +26,7 @@ impl BranchImmediate {
 impl Operational for BranchImmediate {
 	fn arity() -> usize { 4 }
 
-	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	fn compile<'a, 'b>(span: Span, operands: &[Operand<'a>], context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let function = base_function(context, span);
@@ -43,7 +43,7 @@ impl Operation for BranchImmediate {
 		let table = context.frame()?.table();
 		let local = &table[&self.local];
 		let comparison = self.comparator.compare(local, &self.immediate)?;
-		if comparison == true {
+		if comparison {
 			let InstructionTarget(function, _) = context.program_counter();
 			context.set_next_instruction(|| Ok(InstructionTarget(function, self.target.clone())));
 		}

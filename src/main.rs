@@ -14,7 +14,7 @@ fn fibonacci(n: u32) //-> u32 {
   let ~first = 1;
   let ~second = 1;
 
-  let ~counter = 1
+  let ~counter = 1;
   while counter == 1 => counter == n {
     let summation = first + second;
     first <=> second;
@@ -22,7 +22,7 @@ fn fibonacci(n: u32) //-> u32 {
 
     // `summation` contains the original `first`
     drop summation = second - first;
-    counter += 1
+    counter += 1;
   }
 
   // Implicit drop of `first` and `counter`
@@ -129,9 +129,9 @@ fn main() {
 	let mut error_occurred = false;
 
 	let (elements, errors) = ElementParser::new(text_map.text(), &annotations, &operations)
-		.partition::<Vec<_>, _>(|result| result.is_ok());
-	let elements = elements.into_iter().map(|element| element.unwrap()).collect();
-	let errors: Vec<_> = errors.into_iter().map(|error| error.unwrap_err()).collect();
+		.partition::<Vec<_>, _>(std::result::Result::is_ok);
+	let elements = elements.into_iter().map(std::result::Result::unwrap).collect();
+	let errors: Vec<_> = errors.into_iter().map(std::result::Result::unwrap_err).collect();
 	for error in errors {
 		crate::source::emit(&text_map, error);
 		error_occurred = true;

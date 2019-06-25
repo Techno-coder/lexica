@@ -1,17 +1,17 @@
 use super::*;
 
 pub use self::annotation::*;
+pub use self::annotation_key::*;
 pub use self::annotation_store::*;
 pub use self::annotator::*;
 pub use self::element::*;
 pub use self::error::*;
 pub use self::lexer::*;
+pub use self::operation_key::*;
 pub use self::operation_store::*;
 pub use self::parser::*;
 pub use self::parser_context::*;
 pub use self::token::*;
-pub use self::operation_key::*;
-pub use self::annotation_key::*;
 
 #[macro_use]
 mod annotator;

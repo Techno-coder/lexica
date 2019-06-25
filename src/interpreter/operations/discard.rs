@@ -19,7 +19,7 @@ impl Discard {
 impl Operational for Discard {
 	fn arity() -> usize { 1 }
 
-	fn compile<'a, 'b>(_: &Span, operands: &Vec<Operand<'a>>, _: &CompileContext)
+	fn compile<'a, 'b>(_: Span, operands: &[Operand<'a>], _: &CompileContext)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let size = size(&operands[0])?;

@@ -19,7 +19,7 @@ impl Annotator for LocalAnnotation {
 		let local = argument!(arguments[1], Argument::Primitive(primitive), primitive);
 
 		let size = Size::parse(size)
-			.map_err(|error| Spanned::new(error, arguments[0].span.clone()))?;
+			.map_err(|error| Spanned::new(error, arguments[0].span))?;
 		let local = local.clone().cast(size)
 			.ok_or(arguments[1].map(|node| ParserError::UnexpectedArgument(node.clone())))?;
 
@@ -30,7 +30,7 @@ impl Annotator for LocalAnnotation {
 				Ok(())
 			}
 			_ => Err(Spanned::new(ParserError::InvalidApplication(annotation.identifier),
-			                      annotation.span.clone()))
+			                      annotation.span))
 		}
 	}
 }

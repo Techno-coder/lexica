@@ -28,10 +28,10 @@ pub fn parse<'a>(elements: Vec<Spanned<Element<'a>>>, annotations: &'a Annotatio
 fn parse_element<'a>(element: Spanned<Element<'a>>, context: &mut ParserContext<'a>,
                      unit: &mut TranslationUnit<'a>) {
 	match element.node.clone() {
-		Element::Function(identifier) => parse_function(element.span.clone(), identifier, context, unit),
-		Element::Label(label) => parse_label(element.span.clone(), label, context, unit),
+		Element::Function(identifier) => parse_function(element.span, identifier, context, unit),
+		Element::Label(label) => parse_label(element.span, label, context, unit),
 		Element::Instruction(instruction) => {
-			let instruction = Spanned::new(instruction, element.span.clone());
+			let instruction = Spanned::new(instruction, element.span);
 			context.pending_function(unit).instructions.push(instruction);
 		}
 		Element::Annotation(_) => panic!("Annotation exists but not parsed"),
@@ -70,7 +70,7 @@ fn process_annotations(annotations: &AnnotationStore, context: &mut ParserContex
 			Some(annotation_type) => annotation_type,
 			None => {
 				let error = ParserError::InvalidAnnotation(annotation.identifier);
-				context.errors.push(Spanned::new(error, annotation.span.clone()));
+				context.errors.push(Spanned::new(error, annotation.span));
 				continue;
 			}
 		};

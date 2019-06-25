@@ -22,7 +22,7 @@ impl DropImmediate {
 impl Operational for DropImmediate {
 	fn arity() -> usize { 2 }
 
-	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, _: &CompileContext<'a, 'b>)
+	fn compile<'a, 'b>(span: Span, operands: &[Operand<'a>], _: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let (size, primitive) = (size(&operands[0])?, primitive(&operands[1])?);

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{TranslationUnit, FunctionTarget};
+use super::{FunctionTarget, TranslationUnit};
 
 #[derive(Debug, Default)]
 pub struct CompileMetadata {

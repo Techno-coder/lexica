@@ -26,7 +26,7 @@ impl CallFrame {
 		&self.return_target
 	}
 
-	pub fn direction(&self) -> &Direction {
-		&self.direction
+	pub fn direction(&self) -> Direction {
+		self.direction
 	}
 }

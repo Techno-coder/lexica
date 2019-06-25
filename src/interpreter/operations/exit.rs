@@ -12,14 +12,14 @@ pub struct Exit;
 impl Operational for Exit {
 	fn arity() -> usize { 0 }
 
-	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext) -> CompileResult<'a, GenericOperation> {
+	fn compile<'a>(_: Span, _: &[Operand<'a>], _: &CompileContext) -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(Exit))
 	}
 }
 
 impl Operation for Exit {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		let frame_direction = context.frame()?.direction().clone();
+		let frame_direction = context.frame()?.direction();
 		match frame_direction {
 			Direction::Advance => context.is_halted = true,
 			Direction::Reverse if context.is_halted => {
@@ -39,7 +39,7 @@ impl Operation for Exit {
 
 impl Reversible for Exit {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		let frame_direction = context.frame()?.direction().clone();
+		let frame_direction = context.frame()?.direction();
 		match frame_direction {
 			Direction::Reverse => context.is_halted = true,
 			Direction::Advance if context.is_halted => {

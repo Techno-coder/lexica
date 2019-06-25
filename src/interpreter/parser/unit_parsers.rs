@@ -5,10 +5,10 @@ use super::{Comparator, CompileContext, CompileError, CompileResult, Float, Func
             Size, Token, TranslationFunction};
 
 /// Gets the last defined function from the current context.
-pub fn base_function<'a, 'b>(context: &CompileContext<'a, 'b>, span: &Span)
+pub fn base_function<'a, 'b>(context: &CompileContext<'a, 'b>, span: Span)
                              -> CompileResult<'a, &'b TranslationFunction<'a>> {
 	let error = CompileError::Parser(ParserError::FunctionMissingContext);
-	context.pending_function.ok_or(Spanned::new(error, span.clone()))
+	context.pending_function.ok_or(Spanned::new(error, span))
 }
 
 /// Gets the local table from a potentially erroneous function.
@@ -18,8 +18,8 @@ pub fn local_table<'a, 'b>(function: &CompileResult<'a, &'b TranslationFunction>
 }
 
 /// Transforms an `InterpreterResult` into a `CompileResult`.
-pub fn error<'a, T>(result: InterpreterResult<T>, span: &Span) -> CompileResult<'a, T> {
-	result.map_err(|error| Spanned::new(CompileError::Interpreter(error), span.clone()))
+pub fn error<'a, T>(result: InterpreterResult<T>, span: Span) -> CompileResult<'a, T> {
+	result.map_err(|error| Spanned::new(CompileError::Interpreter(error), span))
 }
 
 /// Transforms the operand into a `LocalTarget`.
@@ -45,7 +45,7 @@ pub fn primitive<'a>(primitive: &Operand<'a>) -> CompileResult<'a, Primitive> {
 pub fn size<'a>(size: &Operand<'a>) -> CompileResult<'a, Size> {
 	match size.node {
 		Token::Identifier(identifier) => Size::parse(identifier)
-			.map_err(|error| Spanned::new(CompileError::Parser(error), size.span.clone())),
+			.map_err(|error| Spanned::new(CompileError::Parser(error), size.span)),
 		_ => Err(size.map(|token| CompileError::UnexpectedOperand(token.clone())))
 	}
 }
@@ -61,11 +61,11 @@ pub fn target<'a>(target: &Operand<'a>) -> CompileResult<'a, String> {
 }
 
 /// Transforms the operand into a `FunctionOffset`.
-pub fn target_label<'a>(span: &Span, target_label: &Operand<'a>, function: &TranslationFunction)
+pub fn target_label<'a>(span: Span, target_label: &Operand<'a>, function: &TranslationFunction)
                         -> CompileResult<'a, FunctionOffset> {
 	let target = target(target_label)?;
 	function.labels.get(&target).cloned()
-		.ok_or(Spanned::new(CompileError::UndefinedLabel(target), span.clone()))
+		.ok_or(Spanned::new(CompileError::UndefinedLabel(target), span))
 }
 
 /// Transforms the operand into a `Comparator`.

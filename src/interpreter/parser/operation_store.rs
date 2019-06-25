@@ -4,7 +4,7 @@ use crate::source::Span;
 
 use super::{CompileContext, CompileResult, GenericOperation, Operand, Operational, OperationKey};
 
-pub type CompileFunction = for<'a, 'b> fn(&Span, &Vec<Operand<'a>>, &CompileContext<'a, 'b>)
+pub type CompileFunction = for<'a, 'b> fn(Span, &[Operand<'a>], &CompileContext<'a, 'b>)
                                           -> CompileResult<'a, GenericOperation>;
 
 #[derive(Default)]

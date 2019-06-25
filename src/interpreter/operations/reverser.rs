@@ -15,7 +15,7 @@ pub struct Reverser<T> {
 impl<T> Operational for Reverser<T> where T: Operational + 'static {
 	fn arity() -> usize { T::arity() }
 
-	fn compile<'a, 'b>(span: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext<'a, 'b>)
+	fn compile<'a, 'b>(span: Span, operands: &[Operand<'a>], context: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		let operation = T::compile(span, operands, context)?;
 		match operation.reversible().is_some() {

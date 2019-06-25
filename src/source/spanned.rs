@@ -15,7 +15,7 @@ impl<T> Spanned<T> {
 
 	pub fn map<'a, F, R>(&'a self, function: F) -> Spanned<R> where F: FnOnce(&'a T) -> R {
 		let node = function(&self.node);
-		Spanned::new(node, self.span.clone())
+		Spanned::new(node, self.span)
 	}
 }
 

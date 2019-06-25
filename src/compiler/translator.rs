@@ -110,7 +110,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 				Element::Instruction(instruction)
 			}
 			other => other,
-		}, element.span.clone())).rev().collect();
+		}, element.span)).rev().collect();
 
 		let local_index = self.identifier_table.remove(&explicit_drop.identifier).unwrap();
 		let expression_index = self.expression_stack.pop().unwrap();
@@ -168,7 +168,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		elements.append(&mut central_elements);
 
 		let return_index = self.expression_stack.pop().unwrap();
-		for (_, identifier_index) in &self.identifier_table {
+		for identifier_index in self.identifier_table.values() {
 			if *identifier_index == return_index {
 				continue;
 			}

@@ -12,7 +12,7 @@ pub struct Return;
 impl Operational for Return {
 	fn arity() -> usize { 0 }
 
-	fn compile<'a, 'b>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext<'a, 'b>)
+	fn compile<'a, 'b>(_: Span, _: &[Operand<'a>], _: &CompileContext<'a, 'b>)
 	                   -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(Return))
 	}
@@ -25,8 +25,8 @@ impl Operation for Return {
 		let InstructionTarget(function, FunctionOffset(return_offset)) = target;
 
 		let next_instruction = match frame.direction() {
-			&Direction::Advance => InstructionTarget(function, FunctionOffset(return_offset + 1)),
-			&Direction::Reverse => InstructionTarget(function, FunctionOffset(return_offset - 1)),
+			Direction::Advance => InstructionTarget(function, FunctionOffset(return_offset + 1)),
+			Direction::Reverse => InstructionTarget(function, FunctionOffset(return_offset - 1)),
 		};
 
 		context.set_next_instruction(|| Ok(next_instruction));
@@ -46,8 +46,8 @@ impl Reversible for Return {
 		let InstructionTarget(function, FunctionOffset(return_offset)) = target;
 
 		let next_instruction = match frame.direction() {
-			&Direction::Advance => InstructionTarget(function, FunctionOffset(return_offset - 1)),
-			&Direction::Reverse => InstructionTarget(function, FunctionOffset(return_offset + 1)),
+			Direction::Advance => InstructionTarget(function, FunctionOffset(return_offset - 1)),
+			Direction::Reverse => InstructionTarget(function, FunctionOffset(return_offset + 1)),
 		};
 
 		context.set_next_instruction(|| Ok(next_instruction));

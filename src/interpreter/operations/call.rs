@@ -3,8 +3,8 @@ use std::fmt;
 use crate::source::Span;
 
 use super::{CallFrame, CompilationUnit, CompileContext, CompileError, CompileResult, Context,
-            Direction, FunctionOffset, GenericOperation, InstructionTarget, InterpreterResult,
-            Operand, Operation, Operational, Reversible, FunctionTarget};
+            Direction, FunctionOffset, FunctionTarget, GenericOperation, InstructionTarget,
+            InterpreterResult, Operand, Operation, Operational, Reversible};
 
 #[derive(Debug)]
 pub struct Call {
@@ -21,7 +21,7 @@ impl Call {
 impl Operational for Call {
 	fn arity() -> usize { 1 }
 
-	fn compile<'a, 'b>(_: &Span, operands: &Vec<Operand<'a>>, context: &CompileContext)
+	fn compile<'a, 'b>(_: Span, operands: &[Operand<'a>], context: &CompileContext)
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let target = target(&operands[0])?;

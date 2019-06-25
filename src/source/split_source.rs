@@ -35,7 +35,7 @@ impl<'a> Iterator for SplitSource<'a> {
 		let mut item_punctuation: Option<bool> = None;
 
 		while let Some((index, character)) = self.iterator.peek() {
-			let is_punctuation = Some(is_identifier(character));
+			let is_punctuation = Some(is_identifier(*character));
 			let text_change = item_punctuation.is_some() && item_punctuation != is_punctuation;
 
 			if let Some(span_start) = span_start {
@@ -47,7 +47,7 @@ impl<'a> Iterator for SplitSource<'a> {
 
 			if character.is_whitespace() || text_change {
 				if let Some(span_start) = span_start.take() {
-					let index = index.clone();
+					let index = *index;
 					return Some(self.construct_item(span_start, index));
 				}
 			} else if item_punctuation.is_none() {
@@ -61,8 +61,8 @@ impl<'a> Iterator for SplitSource<'a> {
 	}
 }
 
-pub fn is_identifier(character: &char) -> bool {
-	character == &'_' || !character.is_ascii_punctuation()
+pub fn is_identifier(character: char) -> bool {
+	character == '_' || !character.is_ascii_punctuation()
 }
 
 #[cfg(test)]

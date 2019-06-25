@@ -11,7 +11,7 @@ pub struct Pass;
 impl Operational for Pass {
 	fn arity() -> usize { 0 }
 
-	fn compile<'a>(_: &Span, _: &Vec<Operand<'a>>, _: &CompileContext) -> CompileResult<'a, GenericOperation> {
+	fn compile<'a>(_: Span, _: &[Operand<'a>], _: &CompileContext) -> CompileResult<'a, GenericOperation> {
 		Ok(Box::new(Pass))
 	}
 }
