@@ -3,7 +3,7 @@ macro_rules! expect {
 		let error = crate::parser::ParserError::ExpectedToken(crate::parser::Token::$token);
 		match $lexer.next() {
 			Some(token) => match token.node {
-				crate::parser::Token::$token => (),
+				crate::parser::Token::$token => token.span,
 				_ => return Err(crate::source::Spanned::new(error, token.span).into()),
 			},
 			None => return Err(crate::source::Spanned::new(error, $end_span).into()),

@@ -4,7 +4,7 @@ use std::fmt;
 pub struct Identifier<'a>(pub &'a str);
 
 impl<'a> fmt::Display for Identifier<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let Identifier(string) = self;
 		write!(f, "{}", string)
 	}
@@ -14,7 +14,7 @@ impl<'a> fmt::Display for Identifier<'a> {
 pub struct DataType<'a>(pub Identifier<'a>);
 
 impl<'a> fmt::Display for DataType<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let DataType(identifier) = self;
 		write!(f, "{}", identifier)
 	}
@@ -28,7 +28,7 @@ pub struct Variable<'a> {
 }
 
 impl<'a> fmt::Display for Variable<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let prefix = if self.is_mutable { "~" } else { "" };
 		if let Some(data_type) = &self.data_type {
 			write!(f, "{}{}: {}", prefix, self.identifier, data_type)

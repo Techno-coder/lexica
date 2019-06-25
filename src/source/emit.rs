@@ -4,7 +4,7 @@ use colored::*;
 
 use super::{Spanned, TextMap};
 
-pub fn emit<E>(text_map: &TextMap, error: Spanned<E>) where E: Display {
+pub fn emit<E>(text_map: &TextMap, error: &Spanned<E>) where E: Display {
 	println!("{} {}", "[Error]".bold().red(), error.node);
 
 	text_map.prefix(&error.span, 1).iter()

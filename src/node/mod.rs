@@ -7,12 +7,9 @@ pub use self::expression::*;
 pub use self::function::*;
 pub use self::mutation::*;
 pub use self::node_construct::*;
-pub use self::node_visitor::*;
 pub use self::statement::*;
 
 mod node_construct;
-mod node_visitor;
-
 mod binary_operation;
 mod binding;
 mod conditional_loop;

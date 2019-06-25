@@ -1,9 +1,9 @@
 use crate::node::Function;
-use crate::source::{ErrorCollate, Span};
+use crate::source::{ErrorCollate, Span, Spanned};
 
 use super::{Lexer, ParserResult, PeekLexer};
 
-pub fn parse(text: &str) -> ParserResult<Vec<Function>> {
+pub fn parse(text: &str) -> ParserResult<Vec<Spanned<Function>>> {
 	let mut lexer = Lexer::new(text);
 	let mut errors = ErrorCollate::new();
 	let mut functions = Vec::new();

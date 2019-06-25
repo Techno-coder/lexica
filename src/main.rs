@@ -82,17 +82,19 @@ fn fibonacci(n: u32) //-> u32 {
 //";
 
 fn main() {
-	let text_map = source::TextMap::new(PROGRAM.to_owned());
-	let function = crate::parser::parse(text_map.text());
+	let source_map = source::TextMap::new(PROGRAM.to_owned());
+	let function = crate::parser::parse(source_map.text());
 	let mut function = match function {
 		Ok(mut function) => function.remove(0),
 		Err(errors) => {
 			for error in errors {
-				crate::source::emit(&text_map, error);
+				crate::source::emit(&source_map, &error);
 			}
 			return;
 		}
 	};
+
+	println!("{:#?}", function);
 
 	use crate::interpreter::*;
 	use crate::source::TextMap;
@@ -101,12 +103,9 @@ fn main() {
 
 	let mut visitor = crate::compiler::Translator::default();
 	let elements = function.accept(&mut visitor);
+	let translation_map = crate::compiler::TranslationMap::new(elements);
 
-	let mut code_string = String::new();
-	for element in elements {
-		code_string += &format!("{}\n", element.node);
-	}
-
+	let mut code_string = translation_map.text().to_owned();
 	code_string += r#"
 @local u64 0    # 0 : fibonacci result
 ~main {
@@ -132,22 +131,31 @@ fn main() {
 		.partition::<Vec<_>, _>(std::result::Result::is_ok);
 	let elements = elements.into_iter().map(std::result::Result::unwrap).collect();
 	let errors: Vec<_> = errors.into_iter().map(std::result::Result::unwrap_err).collect();
-	for error in errors {
-		crate::source::emit(&text_map, error);
+	for mut error in errors {
+		crate::source::emit(&text_map, &error);
+		println!("{}", format!("--> Error emitted from source: ").red().bold());
+		translation_map.translate(&mut error);
+		crate::source::emit(&source_map, &error);
 		error_occurred = true;
 		println!();
 	}
 
 	let (unit, errors) = crate::interpreter::parse(elements, &annotations);
-	for error in errors {
-		crate::source::emit(&text_map, error);
+	for mut error in errors {
+		crate::source::emit(&text_map, &error);
+		println!("{}", format!("--> Error emitted from source: ").red().bold());
+		translation_map.translate(&mut error);
+		crate::source::emit(&source_map, &error);
 		error_occurred = true;
 		println!();
 	}
 
 	let (unit, _metadata, errors) = compile(unit, &operations);
-	for error in errors {
-		crate::source::emit(&text_map, error);
+	for mut error in errors {
+		crate::source::emit(&text_map, &error);
+		println!("{}", format!("--> Error emitted from source: ").red().bold());
+		translation_map.translate(&mut error);
+		crate::source::emit(&source_map, &error);
 		error_occurred = true;
 		println!();
 	}

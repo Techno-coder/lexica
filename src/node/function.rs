@@ -1,23 +1,25 @@
 use std::fmt;
 
+use crate::source::Spanned;
+
 use super::{Expression, Identifier, NodeConstruct, NodeVisitor, Statement, Variable};
 
 #[derive(Debug)]
 pub struct Function<'a> {
-	pub identifier: Identifier<'a>,
-	pub parameters: Vec<Variable<'a>>,
-	pub statements: Vec<Statement<'a>>,
-	pub return_value: Expression<'a>,
+	pub identifier: Spanned<Identifier<'a>>,
+	pub parameters: Vec<Spanned<Variable<'a>>>,
+	pub statements: Vec<Spanned<Statement<'a>>>,
+	pub return_value: Spanned<Expression<'a>>,
 }
 
-impl<'a> NodeConstruct<'a> for Function<'a> {
+impl<'a> NodeConstruct<'a> for Spanned<Function<'a>> {
 	fn accept<V: NodeVisitor<'a>>(&mut self, visitor: &mut V) -> V::Result {
 		visitor.function(self)
 	}
 }
 
 impl<'a> fmt::Display for Function<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use std::fmt::Write;
 		use crate::display::IndentWriter;
 

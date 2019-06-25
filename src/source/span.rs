@@ -2,8 +2,8 @@ use std::ops::Range;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Span {
-	byte_start: usize,
-	byte_end: usize,
+	pub byte_start: usize,
+	pub byte_end: usize,
 }
 
 impl Span {
@@ -15,4 +15,3 @@ impl Span {
 		self.byte_start..self.byte_end
 	}
 }
-

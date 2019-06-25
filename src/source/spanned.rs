@@ -1,8 +1,9 @@
+use std::fmt;
 use std::ops::{Deref, DerefMut};
 
 use super::Span;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Spanned<T> {
 	pub node: T,
 	pub span: Span,
@@ -42,5 +43,11 @@ impl<T> AsRef<T> for Spanned<T> {
 impl<T> AsMut<T> for Spanned<T> {
 	fn as_mut(&mut self) -> &mut T {
 		&mut self.node
+	}
+}
+
+impl<T> fmt::Display for Spanned<T> where T: fmt::Display {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		self.node.fmt(f)
 	}
 }
