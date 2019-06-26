@@ -27,8 +27,8 @@ impl<'a> TryFrom<Token<'a>> for Argument<'a> {
 		Ok(match value {
 			Token::Identifier(string) => Argument::String(string),
 			other => Argument::Primitive(match other {
-				Token::UnsignedInteger(integer) => Primitive::Integer(Integer::Unsigned64(integer)),
-				Token::SignedInteger(integer) => Primitive::Integer(Integer::Signed64(integer)),
+				Token::UnsignedInteger(integer) => Primitive::Integer(Integer::new_unsigned(integer)),
+				Token::SignedInteger(integer) => Primitive::Integer(Integer::new_signed(integer)),
 				Token::Float(float) => Primitive::Float(Float::Float64(float)),
 				Token::Boolean(boolean) => Primitive::Boolean(boolean),
 				other => return Err(ParserError::InvalidArgument(other))

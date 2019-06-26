@@ -33,8 +33,8 @@ pub fn local<'a>(local: &Operand<'a>) -> CompileResult<'a, LocalTarget> {
 /// Transforms the operand into a `Primitive`.
 pub fn primitive<'a>(primitive: &Operand<'a>) -> CompileResult<'a, Primitive> {
 	Ok(match primitive.node {
-		Token::UnsignedInteger(integer) => Primitive::Integer(Integer::Unsigned64(integer)),
-		Token::SignedInteger(integer) => Primitive::Integer(Integer::Signed64(integer)),
+		Token::UnsignedInteger(integer) => Primitive::Integer(Integer::new_unsigned(integer)),
+		Token::SignedInteger(integer) => Primitive::Integer(Integer::new_signed(integer)),
 		Token::Float(float) => Primitive::Float(Float::Float64(float)),
 		Token::Boolean(boolean) => Primitive::Boolean(boolean),
 		_ => return Err(primitive.map(|token| CompileError::UnexpectedOperand(token.clone())))

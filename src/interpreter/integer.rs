@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -5,145 +6,144 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use super::{DropStack, Endian, InterpreterResult, Size};
 
 #[derive(Debug, Clone)]
-pub enum Integer {
-	Unsigned8(u8),
-	Unsigned16(u16),
-	Unsigned32(u32),
-	Unsigned64(u64),
-	Signed8(i8),
-	Signed16(i16),
-	Signed32(i32),
-	Signed64(i64),
+pub struct Integer {
+	data: u64,
+	size: Size,
 }
 
 impl Integer {
+	pub fn new_unsigned(integer: u64) -> Integer {
+		Integer { data: integer, size: Size::Unsigned64 }
+	}
+
+	pub fn new_signed(integer: i64) -> Integer {
+		Integer { data: integer as u64, size: Size::Signed64 }
+	}
+
 	pub fn size(&self) -> Size {
-		match self {
-			Integer::Unsigned8(_) => Size::Unsigned8,
-			Integer::Unsigned16(_) => Size::Unsigned16,
-			Integer::Unsigned32(_) => Size::Unsigned32,
-			Integer::Unsigned64(_) => Size::Unsigned64,
-			Integer::Signed8(_) => Size::Signed8,
-			Integer::Signed16(_) => Size::Signed16,
-			Integer::Signed32(_) => Size::Signed32,
-			Integer::Signed64(_) => Size::Signed64,
-		}
+		self.size.clone()
 	}
 
 	pub fn drop(&self, drop_stack: &mut DropStack) {
 		let mut bytes = Vec::new();
-		match self {
-			Integer::Unsigned8(integer) => bytes.write_u8(*integer),
-			Integer::Unsigned16(integer) => bytes.write_u16::<Endian>(*integer),
-			Integer::Unsigned32(integer) => bytes.write_u32::<Endian>(*integer),
-			Integer::Unsigned64(integer) => bytes.write_u64::<Endian>(*integer),
-			Integer::Signed8(integer) => bytes.write_i8(*integer),
-			Integer::Signed16(integer) => bytes.write_i16::<Endian>(*integer),
-			Integer::Signed32(integer) => bytes.write_i32::<Endian>(*integer),
-			Integer::Signed64(integer) => bytes.write_i64::<Endian>(*integer),
-		}.expect("Failed to drop integer");
+		match self.size {
+			Size::Unsigned8 | Size::Signed8 => bytes.write_u8(self.data as u8),
+			Size::Unsigned16 | Size::Signed16 => bytes.write_u16::<Endian>(self.data as u16),
+			Size::Unsigned32 | Size::Signed32 => bytes.write_u32::<Endian>(self.data as u32),
+			Size::Unsigned64 | Size::Signed64 => bytes.write_u64::<Endian>(self.data as u64),
+			_ => unreachable!(),
+		}.unwrap();
 		bytes.into_iter().for_each(|byte| drop_stack.push_byte(byte));
 	}
 
 	pub fn restore(&mut self, drop_stack: &mut DropStack) -> InterpreterResult<()> {
-		let mut bytes = vec![0; self.size().byte_count()];
+		let mut bytes = vec![0; self.size.byte_count()];
 		for index in (0..bytes.len()).rev() {
 			bytes[index] = drop_stack.pop_byte()?;
 		}
 
 		let mut bytes = Cursor::new(bytes);
-		(|| -> std::io::Result<()> {
-			Ok(match self {
-				Integer::Unsigned8(integer) => *integer = bytes.read_u8()?,
-				Integer::Unsigned16(integer) => *integer = bytes.read_u16::<Endian>()?,
-				Integer::Unsigned32(integer) => *integer = bytes.read_u32::<Endian>()?,
-				Integer::Unsigned64(integer) => *integer = bytes.read_u64::<Endian>()?,
-				Integer::Signed8(integer) => *integer = bytes.read_i8()?,
-				Integer::Signed16(integer) => *integer = bytes.read_i16::<Endian>()?,
-				Integer::Signed32(integer) => *integer = bytes.read_i32::<Endian>()?,
-				Integer::Signed64(integer) => *integer = bytes.read_i64::<Endian>()?,
-			})
-		})().expect("Failed to read integer");
-		Ok(())
+		Ok(match self.size {
+			Size::Unsigned8 | Size::Signed8 => self.data = bytes.read_u8().unwrap() as u64,
+			Size::Unsigned16 | Size::Signed16 => self.data = bytes.read_u16::<Endian>().unwrap() as u64,
+			Size::Unsigned32 | Size::Signed32 => self.data = bytes.read_u32::<Endian>().unwrap() as u64,
+			Size::Unsigned64 | Size::Signed64 => self.data = bytes.read_u64::<Endian>().unwrap() as u64,
+			_ => unreachable!(),
+		})
 	}
 
-	pub fn is_signed(&self) -> bool {
-		match self {
-			Integer::Unsigned8(_) => false,
-			Integer::Unsigned16(_) => false,
-			Integer::Unsigned32(_) => false,
-			Integer::Unsigned64(_) => false,
-			_ => true,
+	/// Truncates the integer to the internal size. Returns true if overflow occurs.
+	pub fn maintain(&mut self) -> bool {
+		let original = self.data;
+		match self.size {
+			Size::Unsigned8 => self.data = self.data as u8 as u64,
+			Size::Unsigned16 => self.data = self.data as u16 as u64,
+			Size::Unsigned32 => self.data = self.data as u32 as u64,
+			Size::Signed8 => self.data = self.data as i64 as i8 as i64 as u64,
+			Size::Signed16 => self.data = self.data as i64 as i16 as i64 as u64,
+			Size::Signed32 => self.data = self.data as i64 as i32 as i64 as u64,
+			Size::Unsigned64 | Size::Signed64 => (),
+			_ => unreachable!(),
+		}
+		self.data == original
+	}
+
+	pub fn extend_unsigned(&self) -> Result<u64, i64> {
+		Ok(match self.size {
+			Size::Unsigned8 | Size::Unsigned16 => self.data,
+			Size::Unsigned32 | Size::Unsigned64 => self.data,
+			_ => return Err(self.data as i64),
+		})
+	}
+
+	pub fn cast_float(&self) -> f64 {
+		match self.extend_unsigned() {
+			Ok(integer) => integer as f64,
+			Err(integer) => integer as f64,
 		}
 	}
 
-	pub fn extend_unsigned(&self) -> u64 {
-		match self {
-			Integer::Unsigned8(integer) => *integer as u64,
-			Integer::Unsigned16(integer) => *integer as u64,
-			Integer::Unsigned32(integer) => *integer as u64,
-			Integer::Unsigned64(integer) => *integer as u64,
-			Integer::Signed8(integer) => *integer as u64,
-			Integer::Signed16(integer) => *integer as u64,
-			Integer::Signed32(integer) => *integer as u64,
-			Integer::Signed64(integer) => *integer as u64,
-		}
+	pub fn add(&mut self, other: &Self) {
+		self.data = self.data.wrapping_add(other.data);
+		self.maintain();
 	}
 
-	pub fn extend_signed(&self) -> i64 {
-		match self {
-			Integer::Unsigned8(integer) => *integer as i64,
-			Integer::Unsigned16(integer) => *integer as i64,
-			Integer::Unsigned32(integer) => *integer as i64,
-			Integer::Unsigned64(integer) => *integer as i64,
-			Integer::Signed8(integer) => *integer as i64,
-			Integer::Signed16(integer) => *integer as i64,
-			Integer::Signed32(integer) => *integer as i64,
-			Integer::Signed64(integer) => *integer as i64,
-		}
+	pub fn minus(&mut self, other: &Self) {
+		self.data = self.data.wrapping_sub(other.data);
+		self.maintain();
 	}
 
-	pub fn add(&mut self, other: &Integer) {
-		let extension = other.extend_unsigned();
-		match self {
-			Integer::Unsigned8(integer) => *integer = integer.wrapping_add(extension as u8),
-			Integer::Unsigned16(integer) => *integer = integer.wrapping_add(extension as u16),
-			Integer::Unsigned32(integer) => *integer = integer.wrapping_add(extension as u32),
-			Integer::Unsigned64(integer) => *integer = integer.wrapping_add(extension as u64),
-			Integer::Signed8(integer) => *integer = integer.wrapping_add(extension as i8),
-			Integer::Signed16(integer) => *integer = integer.wrapping_add(extension as i16),
-			Integer::Signed32(integer) => *integer = integer.wrapping_add(extension as i32),
-			Integer::Signed64(integer) => *integer = integer.wrapping_add(extension as i64),
-		}
+	// TODO: Return true if overflow occurs and set entropic fence
+	pub fn multiply(&mut self, other: &Self) -> bool {
+		unimplemented!()
 	}
 
-	pub fn minus(&mut self, other: &Integer) {
-		let extension = other.extend_unsigned();
-		match self {
-			Integer::Unsigned8(integer) => *integer = integer.wrapping_sub(extension as u8),
-			Integer::Unsigned16(integer) => *integer = integer.wrapping_sub(extension as u16),
-			Integer::Unsigned32(integer) => *integer = integer.wrapping_sub(extension as u32),
-			Integer::Unsigned64(integer) => *integer = integer.wrapping_sub(extension as u64),
-			Integer::Signed8(integer) => *integer = integer.wrapping_sub(extension as i8),
-			Integer::Signed16(integer) => *integer = integer.wrapping_sub(extension as i16),
-			Integer::Signed32(integer) => *integer = integer.wrapping_sub(extension as i32),
-			Integer::Signed64(integer) => *integer = integer.wrapping_sub(extension as i64),
-		}
-	}
-
-	pub fn cast(self, target: Size) -> Option<Integer> {
-		let mut other = match target {
-			Size::Unsigned8 => Integer::Unsigned8(0),
-			Size::Unsigned16 => Integer::Unsigned16(0),
-			Size::Unsigned32 => Integer::Unsigned32(0),
-			Size::Unsigned64 => Integer::Unsigned64(0),
-			Size::Signed8 => Integer::Signed8(0),
-			Size::Signed16 => Integer::Signed16(0),
-			Size::Signed32 => Integer::Signed32(0),
-			Size::Signed64 => Integer::Signed64(0),
+	pub fn cast(mut self, target: Size) -> Option<Self> {
+		match target {
+			Size::Unsigned8 | Size::Signed8 => (),
+			Size::Unsigned16 | Size::Signed16 => (),
+			Size::Unsigned32 | Size::Signed32 => (),
+			Size::Unsigned64 | Size::Signed64 => (),
 			_ => return None,
-		};
-		other.add(&self);
-		Some(other)
+		}
+
+		self.size = target;
+		self.maintain();
+		Some(self)
+	}
+}
+
+impl fmt::Display for Integer {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self.extend_unsigned() {
+			Ok(integer) => write!(f, "{}", integer),
+			Err(integer) => write!(f, "{}", integer),
+		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	pub fn test_add_unsigned() {
+		let mut integer = Integer::new_unsigned(1);
+		integer.add(&Integer::new_unsigned(2));
+		assert_eq!(integer.extend_unsigned(), Ok(3));
+	}
+
+	#[test]
+	pub fn test_add_signed() {
+		let mut integer = Integer::new_signed(1);
+		integer.add(&Integer::new_signed(-2));
+		assert_eq!(integer.extend_unsigned(), Err(-1));
+	}
+
+	#[test]
+	pub fn test_add_mixed() {
+		let mut integer = Integer::new_signed(1);
+		integer.add(&Integer::new_unsigned(2));
+		assert_eq!(integer.extend_unsigned(), Err(3));
 	}
 }

@@ -66,11 +66,8 @@ impl fmt::Display for Primitive {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Primitive::Boolean(boolean) => write!(f, "{}", boolean),
-			Primitive::Integer(integer) => match integer.is_signed() {
-				false => write!(f, "{}", integer.extend_unsigned()),
-				true => write!(f, "{}", integer.extend_signed()),
-			}
-			Primitive::Float(float) => write!(f, "{}", float.extend()),
+			Primitive::Integer(integer) => write!(f, "{}", integer),
+			Primitive::Float(float) => write!(f, "{}", float),
 		}
 	}
 }

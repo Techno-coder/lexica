@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -48,28 +49,18 @@ impl Float {
 	}
 
 	pub fn add_integer(&mut self, integer: &Integer) {
+		let other = integer.cast_float();
 		match self {
-			Float::Float32(float) => match integer.is_signed() {
-				false => *float += integer.extend_unsigned() as f32,
-				true => *float += integer.extend_signed() as f32,
-			},
-			Float::Float64(float) => match integer.is_signed() {
-				false => *float += integer.extend_unsigned() as f64,
-				true => *float += integer.extend_signed() as f64,
-			},
+			Float::Float32(float) => *float += other as f32,
+			Float::Float64(float) => *float += other,
 		}
 	}
 
 	pub fn minus_integer(&mut self, integer: &Integer) {
+		let other = integer.cast_float();
 		match self {
-			Float::Float32(float) => match integer.is_signed() {
-				false => *float -= integer.extend_unsigned() as f32,
-				true => *float -= integer.extend_signed() as f32,
-			},
-			Float::Float64(float) => match integer.is_signed() {
-				false => *float -= integer.extend_unsigned() as f64,
-				true => *float -= integer.extend_signed() as f64,
-			},
+			Float::Float32(float) => *float -= other as f32,
+			Float::Float64(float) => *float -= other,
 		}
 	}
 
@@ -88,12 +79,16 @@ impl Float {
 	}
 
 	pub fn cast(self, target: Size) -> Option<Float> {
-		let mut float = match target {
-			Size::Float32 => Float::Float32(0.0),
-			Size::Float64 => Float::Float64(0.0),
+		Some(match target {
+			Size::Float32 => Float::Float32(self.extend() as f32),
+			Size::Float64 => Float::Float64(self.extend()),
 			_ => return None,
-		};
-		float.add(&self);
-		Some(float)
+		})
+	}
+}
+
+impl fmt::Display for Float {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "{}", self.extend())
 	}
 }

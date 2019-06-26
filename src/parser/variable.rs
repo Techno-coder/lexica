@@ -53,7 +53,7 @@ mod tests {
 
 		let identifier = Identifier("variable");
 		let variable = Variable { identifier, data_type: None, is_mutable: false };
-		assert_eq!(parse_variable(lexer, end_span).unwrap(), variable);
+		assert_eq!(parse_variable(lexer, end_span).unwrap().node, variable);
 	}
 
 	#[test]
@@ -63,6 +63,6 @@ mod tests {
 
 		let identifier = Identifier("variable");
 		let variable = Variable { identifier, data_type: None, is_mutable: true };
-		assert_eq!(parse_variable(lexer, end_span).unwrap(), variable);
+		assert_eq!(parse_variable(lexer, end_span).unwrap().node, variable);
 	}
 }

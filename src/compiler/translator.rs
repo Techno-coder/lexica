@@ -198,6 +198,11 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
 		let span = mutation.span;
 		match &mut mutation.node {
+			Mutation::Swap(left, right) => {
+				let left = self.identifier_table[&left];
+				let right = self.identifier_table[&right];
+				vec![instruction!(Advance, format!("swap {} {}", left, right), span)]
+			}
 			Mutation::AddAssign(identifier, expression) => {
 				let expression_elements = expression.accept(self);
 				let mut elements = expression_elements.clone();
@@ -217,11 +222,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 					}, element.span)).collect());
 				elements
 			}
-			Mutation::Swap(left, right) => {
-				let left = self.identifier_table[&left];
-				let right = self.identifier_table[&right];
-				vec![instruction!(Advance, format!("swap {} {}", left, right), span)]
-			}
+			Mutation::MultiplyAssign(_, _) => unimplemented!(),
 		}
 	}
 

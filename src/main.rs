@@ -9,6 +9,20 @@ mod parser;
 mod source;
 
 static PROGRAM: &'static str = r"
+//fn factorial(n: u32) //-> u32 {
+//{
+//  let ~result = 1;
+//  let ~counter = 1;
+//  while counter == 1 => counter == n {
+//    result *= counter;
+//    counter += 1;
+//  }
+//
+//  // Implicit drop of `n`
+//  drop counter = n;
+//  result
+//}
+
 fn fibonacci(n: u32) //-> u32 {
 {
   let ~first = 1;

@@ -80,6 +80,6 @@ mod tests {
 			right: Spanned::new(multiplication, Span::new(4, 9)),
 			operator: Spanned::new(BinaryOperator::Add, Span::new(2, 3)),
 		};
-		assert_eq!(expression, Expression::BinaryOperation(Box::new(root)));
+		assert_eq!(expression.node, Expression::BinaryOperation(Box::new(root)));
 	}
 }
