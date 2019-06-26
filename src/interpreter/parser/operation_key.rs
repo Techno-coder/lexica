@@ -20,6 +20,7 @@ pub enum OperationKey {
 	Swap,
 	Minus,
 	MinusImmediate,
+	Multiply,
 	Restore,
 	Other(&'static str),
 }
@@ -47,6 +48,7 @@ impl Into<&'static str> for OperationKey {
 			OperationKey::Swap => "swap",
 			OperationKey::Minus => "minus",
 			OperationKey::MinusImmediate => "minus.i",
+			OperationKey::Multiply => "multiply",
 			OperationKey::Restore => "restore",
 			OperationKey::Other(other) => other,
 		}

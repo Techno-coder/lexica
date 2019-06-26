@@ -3,7 +3,9 @@ use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
 
-use super::{DropStack, Endian, Integer, InterpreterResult, Size};
+use crate::interpreter::InterpreterError;
+
+use super::{DropStack, Endian, InterpreterResult, Size};
 
 #[derive(Debug, Clone)]
 pub enum Float {
@@ -48,22 +50,6 @@ impl Float {
 		}
 	}
 
-	pub fn add_integer(&mut self, integer: &Integer) {
-		let other = integer.cast_float();
-		match self {
-			Float::Float32(float) => *float += other as f32,
-			Float::Float64(float) => *float += other,
-		}
-	}
-
-	pub fn minus_integer(&mut self, integer: &Integer) {
-		let other = integer.cast_float();
-		match self {
-			Float::Float32(float) => *float -= other as f32,
-			Float::Float64(float) => *float -= other,
-		}
-	}
-
 	pub fn add(&mut self, other: &Float) {
 		match self {
 			Float::Float32(float) => *float += other.extend() as f32,
@@ -76,6 +62,29 @@ impl Float {
 			Float::Float32(float) => *float -= other.extend() as f32,
 			Float::Float64(float) => *float -= other.extend(),
 		}
+	}
+
+	pub fn multiply(&mut self, other: &Float) -> InterpreterResult<()> {
+		match self {
+			Float::Float32(float) => *float *= other.extend() as f32,
+			Float::Float64(float) => *float *= other.extend(),
+		};
+
+		match other.extend() == 0.0 {
+			true => Err(InterpreterError::Irreversible),
+			false => Ok(()),
+		}
+	}
+
+	pub fn divide(&mut self, other: &Float) -> InterpreterResult<()> {
+		if other.extend() == 0.0 {
+			return Err(InterpreterError::ZeroDivision);
+		}
+
+		Ok(match self {
+			Float::Float32(float) => *float /= other.extend() as f32,
+			Float::Float64(float) => *float /= other.extend(),
+		})
 	}
 
 	pub fn cast(self, target: Size) -> Option<Float> {

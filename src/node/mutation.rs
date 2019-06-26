@@ -8,6 +8,7 @@ use super::{Expression, Identifier, NodeConstruct, NodeVisitor};
 pub enum Mutation<'a> {
 	Swap(Spanned<Identifier<'a>>, Spanned<Identifier<'a>>),
 	AddAssign(Spanned<Identifier<'a>>, Spanned<Expression<'a>>),
+	MultiplyAssign(Spanned<Identifier<'a>>, Spanned<Expression<'a>>),
 }
 
 impl<'a> NodeConstruct<'a> for Spanned<Mutation<'a>> {
@@ -21,6 +22,7 @@ impl<'a> fmt::Display for Mutation<'a> {
 		match self {
 			Mutation::Swap(left, right) => write!(f, "{} <=> {}", left, right),
 			Mutation::AddAssign(identifier, expression) => write!(f, "{} += {}", identifier, expression),
+			Mutation::MultiplyAssign(identifier, expression) => write!(f, "{} *= {}", identifier, expression),
 		}
 	}
 }

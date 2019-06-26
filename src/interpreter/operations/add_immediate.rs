@@ -2,9 +2,9 @@ use std::fmt;
 
 use crate::source::Span;
 
-use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterError,
-            InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational, Primitive,
-            Reverser, Reversible};
+use super::{CompilationUnit, CompileContext, CompileResult, Context, Float, GenericOperation,
+            InterpreterError, InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational,
+            Primitive, Reverser, Reversible};
 
 pub type MinusImmediate = Reverser<AddImmediate>;
 
@@ -56,7 +56,10 @@ impl Operation for AddImmediate {
 				_ => Err(InterpreterError::InvalidRuntime)
 			}
 			Primitive::Float(float) => match &self.immediate {
-				Primitive::Integer(other) => Ok(float.add_integer(other)),
+				Primitive::Integer(other) => {
+					let other = Float::Float64(other.cast_float());
+					Ok(float.add(&other))
+				}
 				Primitive::Float(other) => Ok(float.add(other)),
 				_ => Err(InterpreterError::InvalidRuntime)
 			}
@@ -79,7 +82,10 @@ impl Reversible for AddImmediate {
 				_ => Err(InterpreterError::InvalidRuntime)
 			}
 			Primitive::Float(float) => match &self.immediate {
-				Primitive::Integer(other) => Ok(float.minus_integer(other)),
+				Primitive::Integer(other) => {
+					let other = Float::Float64(other.cast_float());
+					Ok(float.minus(&other))
+				}
 				Primitive::Float(other) => Ok(float.minus(other)),
 				_ => Err(InterpreterError::InvalidRuntime)
 			}

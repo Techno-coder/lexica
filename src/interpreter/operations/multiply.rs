@@ -4,19 +4,17 @@ use crate::source::Span;
 
 use super::{CompilationUnit, CompileContext, CompileResult, Context, Float, GenericOperation,
             InterpreterError, InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational,
-            Primitive, Reverser, Reversible};
-
-pub type Minus = Reverser<Add>;
+            Primitive, Reversible};
 
 #[derive(Debug)]
-pub struct Add {
+pub struct Multiply {
 	accumulator: LocalTarget,
 	operand: LocalTarget,
 }
 
-impl Add {
+impl Multiply {
 	pub fn new(table: &LocalTable, accumulator: LocalTarget, operand: LocalTarget)
-	           -> InterpreterResult<Add> {
+	           -> InterpreterResult<Multiply> {
 		let operand_local = &table.local(&operand)?;
 		let accumulator_local = table.local(&accumulator)?;
 		match accumulator_local {
@@ -31,11 +29,11 @@ impl Add {
 				_ => Ok(())
 			}
 		}?;
-		Ok(Add { accumulator, operand })
+		Ok(Multiply { accumulator, operand })
 	}
 }
 
-impl Operational for Add {
+impl Operational for Multiply {
 	fn arity() -> usize { 2 }
 
 	fn compile<'a, 'b>(span: Span, operands: &[Operand<'a>], context: &CompileContext<'a, 'b>)
@@ -43,26 +41,26 @@ impl Operational for Add {
 		use super::unit_parsers::*;
 		let table = local_table(&base_function(context, span));
 		let (left, right) = (local(&operands[0])?, local(&operands[1])?);
-		Ok(Box::new(error(Add::new(table?, left, right), span)?))
+		Ok(Box::new(error(Multiply::new(table?, left, right), span)?))
 	}
 }
 
-impl Operation for Add {
+impl Operation for Multiply {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table_mut();
 		let operand = &table[&self.operand].clone();
 		let accumulator = &mut table[&self.accumulator];
 		match accumulator {
 			Primitive::Integer(integer) => match operand {
-				Primitive::Integer(other) => Ok(integer.add(other)),
+				Primitive::Integer(other) => Ok(integer.multiply(other)?),
 				_ => Err(InterpreterError::InvalidRuntime),
 			}
 			Primitive::Float(float) => match operand {
 				Primitive::Integer(other) => {
 					let other = Float::Float64(other.cast_float());
-					Ok(float.add(&other))
+					Ok(float.multiply(&other)?)
 				}
-				Primitive::Float(other) => Ok(float.add(other)),
+				Primitive::Float(other) => Ok(float.multiply(other)?),
 				_ => Err(InterpreterError::InvalidRuntime),
 			}
 			_ => Err(InterpreterError::InvalidRuntime)
@@ -77,22 +75,22 @@ impl Operation for Add {
 	}
 }
 
-impl Reversible for Add {
+impl Reversible for Multiply {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table_mut();
 		let operand = &table[&self.operand].clone();
 		let accumulator = &mut table[&self.accumulator];
 		match accumulator {
 			Primitive::Integer(integer) => match operand {
-				Primitive::Integer(other) => Ok(integer.minus(other)),
+				Primitive::Integer(other) => Ok(integer.divide(other)?),
 				_ => Err(InterpreterError::InvalidRuntime),
 			}
 			Primitive::Float(float) => match operand {
 				Primitive::Integer(other) => {
 					let other = Float::Float64(other.cast_float());
-					Ok(float.minus(&other))
+					Ok(float.divide(&other)?)
 				}
-				Primitive::Float(other) => Ok(float.minus(other)),
+				Primitive::Float(other) => Ok(float.divide(other)?),
 				_ => Err(InterpreterError::InvalidRuntime),
 			}
 			_ => Err(InterpreterError::InvalidRuntime)
@@ -100,7 +98,7 @@ impl Reversible for Add {
 	}
 }
 
-impl fmt::Display for Add {
+impl fmt::Display for Multiply {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{} {}", self.accumulator, self.operand)
 	}

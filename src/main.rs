@@ -9,40 +9,40 @@ mod parser;
 mod source;
 
 static PROGRAM: &'static str = r"
-//fn factorial(n: u32) //-> u32 {
-//{
-//  let ~result = 1;
-//  let ~counter = 1;
-//  while counter == 1 => counter == n {
-//    result *= counter;
-//    counter += 1;
-//  }
-//
-//  // Implicit drop of `n`
-//  drop counter = n;
-//  result
-//}
-
-fn fibonacci(n: u32) //-> u32 {
+fn factorial(n: u32) //-> u32 {
 {
-  let ~first = 1;
-  let ~second = 1;
-
+  let ~result = 1;
   let ~counter = 1;
-  while counter == 1 => counter == n {
-    let summation = first + second;
-    first <=> second;
-    second <=> summation;
-
-    // `summation` contains the original `first`
-    drop summation = second - first;
+  loop counter == 1 => counter == n + 1 {
+    result *= counter;
     counter += 1;
   }
 
-  // Implicit drop of `first` and `counter`
-  drop n = counter;
-  second
+  // Implicit drop of `n`
+  drop counter = n + 1;
+  result
 }
+
+//fn fibonacci(n: u32) //-> u32 {
+//{
+//  let ~first = 1;
+//  let ~second = 1;
+//
+//  let ~counter = 1;
+//  loop counter == 1 => counter == n {
+//    let summation = first + second;
+//    first <=> second;
+//    second <=> summation;
+//
+//    // `summation` contains the original `first`
+//    drop summation = second - first;
+//    counter += 1;
+//  }
+//
+//  // Implicit drop of `first` and `counter`
+//  drop n = counter;
+//  second
+//}
 ";
 
 //static LEXER_TEST: &'static str = r"
@@ -97,9 +97,9 @@ fn fibonacci(n: u32) //-> u32 {
 
 fn main() {
 	let source_map = source::TextMap::new(PROGRAM.to_owned());
-	let function = crate::parser::parse(source_map.text());
-	let mut function = match function {
-		Ok(mut function) => function.remove(0),
+	let functions = crate::parser::parse(source_map.text());
+	let functions = match functions {
+		Ok(functions) => functions,
 		Err(errors) => {
 			for error in errors {
 				crate::source::emit(&source_map, &error);
@@ -108,24 +108,31 @@ fn main() {
 		}
 	};
 
-	println!("{:#?}", function);
+	println!("{:#?}", functions);
 
 	use crate::interpreter::*;
 	use crate::source::TextMap;
 	use colored::Colorize;
 	use crate::node::NodeConstruct;
 
-	let mut visitor = crate::compiler::Translator::default();
-	let elements = function.accept(&mut visitor);
+	let mut elements = Vec::new();
+	for mut function in functions {
+		let mut visitor = crate::compiler::Translator::default();
+		elements.append(&mut function.accept(&mut visitor));
+	}
+
 	let translation_map = crate::compiler::TranslationMap::new(elements);
+	println!("{}", translation_map.text());
 
 	let mut code_string = translation_map.text().to_owned();
 	code_string += r#"
 @local u64 0    # 0 : fibonacci result
 ~main {
   exit' *
-  drop.i u64 35 *
-  call fibonacci
+  drop.i u64 5 *
+  call factorial
+#  recall factorial
+#  call fibonacci
 #  recall fibonacci
   *
   -reset 0 0
@@ -180,8 +187,8 @@ fn main() {
 
 	let mut runtime = Runtime::new(unit)
 		.expect("Failed to create runtime");
-//	for _ in 0..200 {
-	loop {
+	for _ in 0..200 {
+//	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
 		match runtime.force_step(Direction::Advance) {
 			Ok(RuntimeStep::Halted) => {
@@ -197,8 +204,8 @@ fn main() {
 	}
 
 	println!("{}", "REVERSING".red().bold());
-//	for _ in 0..200 {
-	loop {
+	for _ in 0..200 {
+//	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
 		match runtime.force_step(Direction::Reverse) {
 			Ok(RuntimeStep::Halted) => {

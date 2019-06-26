@@ -13,7 +13,7 @@ pub fn parse_statement<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		Token::Binding => Statement::Binding(parse_binding(lexer, end_span)?),
 		Token::Identifier(_) => Statement::Mutation(parse_mutation(lexer, end_span)?),
 		Token::Drop => Statement::ExplicitDrop(parse_explicit_drop(lexer, end_span)?),
-		Token::While => {
+		Token::Loop => {
 			let conditional_loop = parse_conditional_loop(lexer, end_span)?;
 			let conditional_loop_span = conditional_loop.span;
 			let statement = Statement::ConditionalLoop(conditional_loop);
@@ -54,6 +54,11 @@ pub fn parse_mutation<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			let span = Span::new(span_start, expression.span.byte_end);
 			Spanned::new(Mutation::AddAssign(identifier, expression), span)
 		}
+		Token::MultiplyAssign => {
+			let expression = super::parse_expression_root(lexer, end_span)?;
+			let span = Span::new(span_start, expression.span.byte_end);
+			Spanned::new(Mutation::MultiplyAssign(identifier, expression), span)
+		}
 		_ => return Err(Spanned::new(ParserError::ExpectedMutator, mutator.span).into()),
 	})
 }
@@ -70,7 +75,7 @@ pub fn parse_explicit_drop<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 
 pub fn parse_conditional_loop<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
                                   -> ParserResult<'a, Spanned<ConditionalLoop<'a>>> {
-	let span_start = expect!(lexer, end_span, While).byte_start;
+	let span_start = expect!(lexer, end_span, Loop).byte_start;
 	let mut end_condition = super::parse_expression_root(lexer, end_span)?;
 	let mut start_condition = None;
 

@@ -38,6 +38,7 @@ impl OperationStore {
 		store.register::<Swap>(OperationKey::Swap);
 		store.register::<Minus>(OperationKey::Minus);
 		store.register::<MinusImmediate>(OperationKey::MinusImmediate);
+		store.register::<Multiply>(OperationKey::Multiply);
 		store.register::<Restore>(OperationKey::Restore);
 		store
 	}

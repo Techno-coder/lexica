@@ -46,7 +46,13 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 				let instruction = format!("minus {} {}", local_index, right);
 				elements.push(instruction!(Advance, instruction, operation.operator.span));
 			}
-			_ => unimplemented!(), // TODO
+			BinaryOperator::Multiply => {
+				self.allocation_sizes.push(self.allocation_sizes[left].clone());
+				let instruction = format!("clone {} {}", local_index, left);
+				elements.push(instruction!(Advance, Advance, instruction, operation.span));
+				let instruction = format!("multiply {} {}", local_index, right);
+				elements.push(instruction!(Advance, instruction, operation.operator.span));
+			}
 		};
 		elements
 	}
@@ -102,6 +108,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 
 		elements.push(instruction!(Advance, Advance, format!("jump {}", start_label), node_span));
 		elements.push(Spanned::new(Element::Other(format!("{}:", end_label)), node_span));
+		elements.push(instruction!(Advance, "pass".to_owned(), node_span));
 		elements
 	}
 
@@ -209,7 +216,8 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 
 				let temporary = self.expression_stack.pop().unwrap();
 				let local_index = self.identifier_table[identifier];
-				elements.push(instruction!(Advance, format!("add {} {}", local_index, temporary), span));
+				let instruction = format!("add {} {}", local_index, temporary);
+				elements.push(instruction!(Advance, instruction, span));
 
 				elements.append(&mut expression_elements.into_iter()
 					.map(|element| Spanned::new(match element.node {
@@ -222,7 +230,27 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 					}, element.span)).collect());
 				elements
 			}
-			Mutation::MultiplyAssign(_, _) => unimplemented!(),
+			// TODO: Remove duplication
+			Mutation::MultiplyAssign(identifier, expression) => {
+				let expression_elements = expression.accept(self);
+				let mut elements = expression_elements.clone();
+
+				let temporary = self.expression_stack.pop().unwrap();
+				let local_index = self.identifier_table[identifier];
+				let instruction = format!("multiply {} {}", local_index, temporary);
+				elements.push(instruction!(Advance, instruction, span));
+
+				elements.append(&mut expression_elements.into_iter()
+					.map(|element| Spanned::new(match element.node {
+						// TODO: Identify correct method of polarization reversal
+						Element::Instruction(mut instruction) => {
+							instruction.polarization = Some(Direction::Reverse);
+							Element::Instruction(instruction)
+						}
+						other => other,
+					}, element.span)).collect());
+				elements
+			}
 		}
 	}
 

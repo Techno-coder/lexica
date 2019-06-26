@@ -40,12 +40,12 @@ impl Comparator {
 	}
 
 	pub fn compare_integer(&self, left: &Integer, right: &Integer) -> bool {
-		match left.extend_unsigned() {
-			Ok(left) => match right.extend_unsigned() {
+		match left.match_unsigned() {
+			Ok(left) => match right.match_unsigned() {
 				Ok(right) => self.compare_unsigned_integer(left, right),
 				Err(right) => self.compare_mixed_integer(left, right),
 			},
-			Err(left) => match right.extend_unsigned() {
+			Err(left) => match right.match_unsigned() {
 				Ok(right) => self.compare_mixed_integer(right, left),
 				Err(right) => self.compare_unsigned_integer(left as u64, right as u64),
 			}

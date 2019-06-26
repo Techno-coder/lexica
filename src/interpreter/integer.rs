@@ -3,6 +3,8 @@ use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
 
+use crate::interpreter::InterpreterError;
+
 use super::{DropStack, Endian, InterpreterResult, Size};
 
 #[derive(Debug, Clone)]
@@ -65,10 +67,10 @@ impl Integer {
 			Size::Unsigned64 | Size::Signed64 => (),
 			_ => unreachable!(),
 		}
-		self.data == original
+		self.data != original
 	}
 
-	pub fn extend_unsigned(&self) -> Result<u64, i64> {
+	pub fn match_unsigned(&self) -> Result<u64, i64> {
 		Ok(match self.size {
 			Size::Unsigned8 | Size::Unsigned16 => self.data,
 			Size::Unsigned32 | Size::Unsigned64 => self.data,
@@ -77,7 +79,7 @@ impl Integer {
 	}
 
 	pub fn cast_float(&self) -> f64 {
-		match self.extend_unsigned() {
+		match self.match_unsigned() {
 			Ok(integer) => integer as f64,
 			Err(integer) => integer as f64,
 		}
@@ -93,9 +95,57 @@ impl Integer {
 		self.maintain();
 	}
 
-	// TODO: Return true if overflow occurs and set entropic fence
-	pub fn multiply(&mut self, other: &Self) -> bool {
-		unimplemented!()
+	/// Multiples this integer by another. Returns an error on overflow.
+	pub fn multiply(&mut self, other: &Self) -> InterpreterResult<()> {
+		let internal_overflow: bool;
+		match (self.match_unsigned(), other.match_unsigned()) {
+			(Ok(left), Ok(right)) => {
+				let (value, overflow) = left.overflowing_mul(right);
+				internal_overflow = overflow;
+				self.data = value;
+			}
+			(Err(left), Err(right)) => {
+				let (value, overflow) = left.overflowing_mul(right);
+				internal_overflow = overflow;
+				self.data = value as u64;
+			}
+			(Ok(left), Err(right)) | (Err(right), Ok(left)) => {
+				let (value, overflow) = (left as i64).overflowing_mul(right);
+				internal_overflow = overflow;
+				self.data = value as u64;
+			}
+		}
+
+		match self.maintain() || internal_overflow || self.data == 0 {
+			true => Err(InterpreterError::Irreversible),
+			false => Ok(()),
+		}
+	}
+
+	/// Divides this integer by another. Returns an error on decimal truncation.
+	pub fn divide(&mut self, other: &Self) -> InterpreterResult<()> {
+		if other.data == 0 {
+			return Err(InterpreterError::ZeroDivision);
+		}
+
+		let reversible = match (self.match_unsigned(), other.match_unsigned()) {
+			(Ok(left), Ok(right)) => left % right == 0,
+			(Ok(left), Err(right)) => left as i64 % right == 0,
+			(Err(left), Ok(right)) => left % right as i64 == 0,
+			(Err(left), Err(right)) => left % right == 0,
+		};
+
+		match (self.match_unsigned(), other.match_unsigned()) {
+			(Ok(_), Ok(right)) => self.data /= right,
+			(Ok(_), Err(right)) => self.data = (self.data as i64 / right) as u64,
+			(Err(left), Ok(right)) => self.data = (left / right as i64) as u64,
+			(Err(left), Err(right)) => self.data = (left / right) as u64,
+		}
+
+		match reversible {
+			false => Err(InterpreterError::Irreversible),
+			true => Ok(()),
+		}
 	}
 
 	pub fn cast(mut self, target: Size) -> Option<Self> {
@@ -115,7 +165,7 @@ impl Integer {
 
 impl fmt::Display for Integer {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self.extend_unsigned() {
+		match self.match_unsigned() {
 			Ok(integer) => write!(f, "{}", integer),
 			Err(integer) => write!(f, "{}", integer),
 		}
@@ -130,20 +180,20 @@ mod tests {
 	pub fn test_add_unsigned() {
 		let mut integer = Integer::new_unsigned(1);
 		integer.add(&Integer::new_unsigned(2));
-		assert_eq!(integer.extend_unsigned(), Ok(3));
+		assert_eq!(integer.match_unsigned(), Ok(3));
 	}
 
 	#[test]
 	pub fn test_add_signed() {
 		let mut integer = Integer::new_signed(1);
 		integer.add(&Integer::new_signed(-2));
-		assert_eq!(integer.extend_unsigned(), Err(-1));
+		assert_eq!(integer.match_unsigned(), Err(-1));
 	}
 
 	#[test]
 	pub fn test_add_mixed() {
 		let mut integer = Integer::new_signed(1);
 		integer.add(&Integer::new_unsigned(2));
-		assert_eq!(integer.extend_unsigned(), Err(3));
+		assert_eq!(integer.match_unsigned(), Err(3));
 	}
 }

@@ -3,7 +3,7 @@ pub enum Token<'a> {
 	Function,
 	Binding,
 	Drop,
-	While,
+	Loop,
 	ReturnSeparator,
 	Identifier(&'a str),
 	ParenthesisOpen,
@@ -24,6 +24,7 @@ pub enum Token<'a> {
 	Minus,
 	Multiply,
 	AddAssign,
+	MultiplyAssign,
 	UnsignedInteger(u64),
 }
 

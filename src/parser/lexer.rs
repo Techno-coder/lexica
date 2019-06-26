@@ -30,7 +30,7 @@ impl<'a> Iterator for Lexer<'a> {
 			"fn" => Token::Function,
 			"let" => Token::Binding,
 			"drop" => Token::Drop,
-			"while" => Token::While,
+			"loop" => Token::Loop,
 			"->" => Token::ReturnSeparator,
 			"(" => Token::ParenthesisOpen,
 			")" => Token::ParenthesisClose,
@@ -50,6 +50,7 @@ impl<'a> Iterator for Lexer<'a> {
 			"-" => Token::Minus,
 			"*" => Token::Multiply,
 			"+=" => Token::AddAssign,
+			"*=" => Token::MultiplyAssign,
 			other => {
 				if let Ok(integer) = other.parse::<u64>() {
 					Token::UnsignedInteger(integer)
