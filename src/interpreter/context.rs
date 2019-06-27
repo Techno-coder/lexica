@@ -1,9 +1,11 @@
 use super::{CallFrame, DropStack, InstructionTarget, InterpreterError, InterpreterResult};
+use crate::interpreter::Direction;
 
 #[derive(Debug)]
 pub struct Context {
 	pub is_halted: bool,
 	pub is_trapped: bool,
+	pub step_direction: Direction,
 	call_stack: Vec<CallFrame>,
 	drop_stack: DropStack,
 	program_counter: InstructionTarget,
@@ -17,6 +19,7 @@ impl Context {
 			is_trapped: false,
 			call_stack: Vec::new(),
 			drop_stack: DropStack::default(),
+			step_direction: Direction::Advance,
 			program_counter,
 			next_instruction: None,
 		}

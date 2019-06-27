@@ -126,17 +126,27 @@ fn main() {
 
 	let mut code_string = translation_map.text().to_owned();
 	code_string += r#"
+~test {
+	-return
+	pass
+	drop.i u64 1337
+	+return
+}
+
 @local u64 0    # 0 : fibonacci result
 ~main {
   exit' *
   drop.i u64 5 *
   call factorial
-#  recall factorial
+  call' factorial
 #  call fibonacci
 #  recall fibonacci
   *
-  -reset 0 0
-  restore 0
+#  -reset 0 0
+#  restore 0
+
+#  call test
+#  call' test
   *
   exit
 }

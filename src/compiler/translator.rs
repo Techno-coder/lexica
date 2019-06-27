@@ -176,7 +176,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 
 		let span = function.identifier.span;
 		elements.push(Spanned::new(Element::Other(format!("~{} {{", function.identifier)), span));
-		elements.push(instruction!(Reverse, Reverse, "return".to_owned(), function.span));
+		elements.push(instruction!(Advance, Reverse, "return".to_owned(), function.span));
 
 		for (parameter_index, parameter) in function.parameters.iter().enumerate() {
 			let instruction = format!("restore {}", parameter_index);

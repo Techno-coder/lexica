@@ -1,20 +1,20 @@
 use std::fmt;
 
+use crate::interpreter::Direction;
 use crate::source::Span;
 
 use super::{CallFrame, CompilationUnit, CompileContext, CompileError, CompileResult, Context,
-            Direction, FunctionOffset, FunctionTarget, GenericOperation, InstructionTarget,
-            InterpreterResult, Operand, Operation, Operational, Reversible};
+            FunctionOffset, FunctionTarget, GenericOperation, InstructionTarget, InterpreterResult,
+            Operand, Operation, Operational, Reversible};
 
 #[derive(Debug)]
 pub struct Call {
 	target: FunctionTarget,
-	direction: Direction,
 }
 
 impl Call {
-	pub fn new(target: FunctionTarget, direction: Direction) -> Call {
-		Call { target, direction }
+	pub fn new(target: FunctionTarget) -> Call {
+		Call { target }
 	}
 }
 
@@ -27,7 +27,7 @@ impl Operational for Call {
 		let target = target(&operands[0])?;
 		let function_target = context.metadata.function_targets.get(&target)
 			.ok_or(operands[0].map(|_| CompileError::UndefinedFunction(target.clone())))?;
-		Ok(Box::new(Call::new(function_target.clone(), Direction::Advance)))
+		Ok(Box::new(Call::new(function_target.clone())))
 	}
 }
 
@@ -35,7 +35,8 @@ impl Operation for Call {
 	fn execute(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		let function = unit.function(self.target.clone()).expect("Function does not exist");
 		let target = InstructionTarget(self.target.clone(), FunctionOffset(0));
-		context.push_frame(CallFrame::construct(&function, self.direction, context.program_counter()));
+		let frame_direction = Direction::compose(context.step_direction, Direction::Advance);
+		context.push_frame(CallFrame::construct(&function, frame_direction, context.program_counter()));
 		context.set_next_instruction(|| Ok(target));
 		Ok(())
 	}
@@ -49,7 +50,8 @@ impl Reversible for Call {
 	fn reverse(&self, context: &mut Context, unit: &CompilationUnit) -> InterpreterResult<()> {
 		let function = unit.function(self.target.clone()).expect("Function does not exist");
 		let target = InstructionTarget(self.target.clone(), FunctionOffset(function.instructions.len() - 1));
-		context.push_frame(CallFrame::construct(&function, self.direction, context.program_counter()));
+		let frame_direction = Direction::compose(context.step_direction, Direction::Reverse);
+		context.push_frame(CallFrame::construct(&function, frame_direction, context.program_counter()));
 		context.set_next_instruction(|| Ok(target));
 		Ok(())
 	}

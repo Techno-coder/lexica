@@ -31,7 +31,6 @@ impl OperationStore {
 		store.register::<Exit>(OperationKey::Exit);
 		store.register::<Jump>(OperationKey::Jump);
 		store.register::<Pass>(OperationKey::Pass);
-		store.register::<Recall>(OperationKey::Recall);
 		store.register::<Reset>(OperationKey::Reset);
 		store.register::<Return>(OperationKey::Return);
 		store.register::<ReversalHint>(OperationKey::ReversalHint);
