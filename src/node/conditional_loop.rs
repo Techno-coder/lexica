@@ -29,9 +29,7 @@ impl<'a> fmt::Display for ConditionalLoop<'a> {
 		}
 
 		let mut indent = IndentWriter::wrap(f);
-		for statement in &self.statements {
-			writeln!(indent, "{}", statement)?;
-		}
+		self.statements.iter().try_for_each(|statement| writeln!(indent, "{}", statement))?;
 		write!(f, "}}")
 	}
 }

@@ -1,4 +1,4 @@
-use crate::node::{Function, Variable};
+use crate::node::{DataType, Function, Variable};
 use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
@@ -9,11 +9,14 @@ pub fn parse_function<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let identifier = identifier!(lexer, end_span);
 	let parameters = parse_parameter_list(lexer, end_span)?;
 
-	// TODO: Consider parsing return type
+	expect!(lexer, end_span, ReturnSeparator);
+	let return_type = identifier!(lexer, end_span);
+	let return_type = Spanned::new(DataType(return_type.node), return_type.span);
+
 	let expression_block = super::parse_expression_block(lexer, end_span)?;
 	let (statements, return_value) = expression_block.node;
 
-	let function = Function { identifier, parameters, statements, return_value };
+	let function = Function { identifier, parameters, statements, return_value, return_type };
 	Ok(Spanned::new(function, Span::new(span_start, expression_block.span.byte_end)))
 }
 

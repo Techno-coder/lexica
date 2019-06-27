@@ -40,9 +40,7 @@ impl Integer {
 
 	pub fn restore(&mut self, drop_stack: &mut DropStack) -> InterpreterResult<()> {
 		let mut bytes = vec![0; self.size.byte_count()];
-		for index in (0..bytes.len()).rev() {
-			bytes[index] = drop_stack.pop_byte()?;
-		}
+		(0..bytes.len()).rev().try_for_each(|index| Ok(bytes[index] = drop_stack.pop_byte()?))?;
 
 		let mut bytes = Cursor::new(bytes);
 		Ok(match self.size {

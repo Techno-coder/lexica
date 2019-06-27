@@ -9,8 +9,7 @@ mod parser;
 mod source;
 
 static PROGRAM: &'static str = r"
-fn factorial(n: u32) //-> u32 {
-{
+fn factorial(n: u32) -> u32 {
   let ~result = 1;
   let ~counter = 1;
   loop counter == 1 => counter == n + 1 {
@@ -23,26 +22,25 @@ fn factorial(n: u32) //-> u32 {
   result
 }
 
-//fn fibonacci(n: u32) //-> u32 {
-//{
-//  let ~first = 1;
-//  let ~second = 1;
-//
-//  let ~counter = 1;
-//  loop counter == 1 => counter == n {
-//    let summation = first + second;
-//    first <=> second;
-//    second <=> summation;
-//
-//    // `summation` contains the original `first`
-//    drop summation = second - first;
-//    counter += 1;
-//  }
-//
-//  // Implicit drop of `first` and `counter`
-//  drop n = counter;
-//  second
-//}
+fn fibonacci(n: u32) -> u32 {
+  let ~first = 1;
+  let ~second = 1;
+
+  let ~counter = 1;
+  loop counter == 1 => counter == n {
+    let summation = first + second;
+    first <=> second;
+    second <=> summation;
+
+    // `summation` contains the original `first`
+    drop summation = second - first;
+    counter += 1;
+  }
+
+  // Implicit drop of `first` and `counter`
+  drop n = counter;
+  second
+}
 ";
 
 //static LEXER_TEST: &'static str = r"
@@ -108,7 +106,9 @@ fn main() {
 		}
 	};
 
-	println!("{:#?}", functions);
+	for function in &functions {
+		println!("{}", function);
+	}
 
 	use crate::interpreter::*;
 	use crate::source::TextMap;
@@ -138,12 +138,12 @@ fn main() {
   exit' *
   drop.i u64 5 *
   call factorial
-  call' factorial
+#  call' factorial
 #  call fibonacci
 #  recall fibonacci
   *
-#  -reset 0 0
-#  restore 0
+  -reset 0 0
+  restore 0
 
 #  call test
 #  call' test

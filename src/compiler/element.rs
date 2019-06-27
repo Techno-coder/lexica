@@ -39,6 +39,6 @@ impl fmt::Display for Instruction {
 			Direction::Reverse => "'",
 		};
 
-		write!(f, "{}{}{}", polarization, self.instruction, direction)
+		write!(f, "\t{}{}{}", polarization, self.instruction, direction)
 	}
 }
