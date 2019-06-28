@@ -1,9 +1,3 @@
-pub use self::element::*;
-pub use self::translation_map::*;
-pub use self::translator::*;
+pub use self::translation::Translator;
 
-#[macro_use]
-pub mod constructor;
-mod translator;
-mod element;
-mod translation_map;
+pub mod translation;

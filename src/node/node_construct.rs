@@ -18,4 +18,5 @@ pub trait NodeVisitor<'a> {
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result;
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result;
 	fn statement(&mut self, statement: &mut Spanned<Statement<'a>>) -> Self::Result;
+	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result;
 }

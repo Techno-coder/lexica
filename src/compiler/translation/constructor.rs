@@ -1,6 +1,6 @@
 macro_rules! instruction {
     ($direction: ident ; $polarization: expr, $instruction: expr, $span: expr) => {
-		Spanned::new(Element::Instruction(Instruction {
+		Spanned::new(Element::Instruction(crate::compiler::translation::Instruction {
 			direction: crate::interpreter::Direction::$direction,
 			polarization: $polarization,
 			instruction: $instruction,

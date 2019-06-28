@@ -96,7 +96,7 @@ fn fibonacci(n: u32) -> u32 {
 fn main() {
 	let source_map = source::TextMap::new(PROGRAM.to_owned());
 	let functions = crate::parser::parse(source_map.text());
-	let functions = match functions {
+	let mut functions = match functions {
 		Ok(functions) => functions,
 		Err(errors) => {
 			for error in errors {
@@ -106,7 +106,7 @@ fn main() {
 		}
 	};
 
-	for function in &functions {
+	for function in functions.functions.values() {
 		println!("{}", function);
 	}
 
@@ -115,13 +115,10 @@ fn main() {
 	use colored::Colorize;
 	use crate::node::NodeConstruct;
 
-	let mut elements = Vec::new();
-	for mut function in functions {
-		let mut visitor = crate::compiler::Translator::default();
-		elements.append(&mut function.accept(&mut visitor));
-	}
+	let mut visitor = crate::compiler::Translator::default();
+	let elements = functions.accept(&mut visitor);
 
-	let translation_map = crate::compiler::TranslationMap::new(elements);
+	let translation_map = crate::compiler::translation::TranslationMap::new(elements);
 	println!("{}", translation_map.text());
 
 	let mut code_string = translation_map.text().to_owned();
@@ -136,10 +133,10 @@ fn main() {
 @local u64 0    # 0 : fibonacci result
 ~main {
   exit' *
-  drop.i u64 5 *
-  call factorial
+  drop.i u64 35 *
+#  call factorial
 #  call' factorial
-#  call fibonacci
+  call fibonacci
 #  recall fibonacci
   *
   -reset 0 0
@@ -197,8 +194,8 @@ fn main() {
 
 	let mut runtime = Runtime::new(unit)
 		.expect("Failed to create runtime");
-	for _ in 0..200 {
-//	loop {
+//	for _ in 0..500 {
+	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
 		match runtime.force_step(Direction::Advance) {
 			Ok(RuntimeStep::Halted) => {
@@ -214,8 +211,8 @@ fn main() {
 	}
 
 	println!("{}", "REVERSING".red().bold());
-	for _ in 0..200 {
-//	loop {
+//	for _ in 0..500 {
+	loop {
 		println!("{}", format!("[ {} ]", runtime.current_instruction().unwrap()).blue().bold());
 		match runtime.force_step(Direction::Reverse) {
 			Ok(RuntimeStep::Halted) => {
