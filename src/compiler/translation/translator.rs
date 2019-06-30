@@ -1,10 +1,9 @@
 use std::ops::DerefMut;
 
-use crate::interpreter::Size;
 use crate::node::*;
 use crate::source::Spanned;
 
-use super::{Element, FunctionContext};
+use super::{Element, Evaluation, FunctionContext};
 
 #[derive(Debug, Default)]
 pub struct Translator<'a> {
@@ -22,10 +21,10 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 	}
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
-		let elements = binding.expression.accept(self);
-		let local_index = self.context.pop_expression();
+		let mut elements = binding.expression.accept(self);
 		let identifier = binding.variable.identifier.clone();
 		let identifier = Spanned::new(identifier, binding.variable.span);
+		let local_index = self.context.pop_evaluation().promote(&mut elements, &mut self.context);
 		self.context.annotate_local(local_index, identifier);
 		elements
 	}
@@ -52,8 +51,11 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		super::polarize_reverse(&mut elements);
 
 		let local_index = self.context.drop_variable(&explicit_drop.identifier);
-		let expression_index = self.context.pop_expression();
-		let instruction = format!("clone {} {}", local_index, expression_index);
+		let instruction = match self.context.pop_evaluation() {
+			Evaluation::Local(local) => format!("clone {} {}", local_index, local),
+			Evaluation::Immediate(primitive) => format!("reset {} {}", local_index, primitive),
+		};
+
 		elements.insert(0, instruction!(Advance, Reverse, instruction, explicit_drop.span));
 		elements
 	}
@@ -61,20 +63,19 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 	fn expression(&mut self, expression: &mut Spanned<Expression<'a>>) -> Self::Result {
 		match &mut expression.node {
 			Expression::Variable(variable) => {
-				self.context.push_expression(self.context.get_variable(variable));
-				Vec::new()
+				let variable = self.context.get_variable(variable);
+				self.context.push_evaluation(Evaluation::Local(variable));
 			}
-			Expression::LiteralInteger(integer) => {
-				let local_index = self.context.register_local(Size::Signed64);
-				let instruction = format!("reset {} {}", local_index, integer);
-				self.context.push_expression(local_index);
-				vec![instruction!(Advance, Advance, instruction, expression.span)]
+			Expression::Primitive(primitive) => {
+				let primitive = Spanned::new(primitive.clone(), expression.span);
+				self.context.push_evaluation(Evaluation::Immediate(primitive));
 			}
 			Expression::BinaryOperation(operation) => {
 				let operation = Box::deref_mut(operation);
-				Spanned::new(operation, expression.span).accept(self)
+				return Spanned::new(operation, expression.span).accept(self);
 			}
 		}
+		Vec::new()
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
@@ -88,9 +89,9 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		elements.append(&mut super::function_arguments(function));
 		elements.append(&mut function_elements);
 
-		let return_index = self.context.pop_expression();
-		elements.append(&mut super::function_drops(&self.context, return_index));
-		elements.append(&mut super::function_return(function, return_index));
+		let return_value = self.context.pop_evaluation();
+		elements.append(&mut super::function_drops(&self.context, &return_value));
+		elements.append(&mut super::function_return(function, return_value));
 		elements
 	}
 

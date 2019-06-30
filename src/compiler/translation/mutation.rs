@@ -1,7 +1,7 @@
 use crate::node::Identifier;
 use crate::source::{Span, Spanned};
 
-use super::{Element, FunctionContext};
+use super::{Element, Evaluation, FunctionContext};
 
 pub fn swap(span: Span, left: &Identifier, right: &Identifier, context: &FunctionContext)
             -> Vec<Spanned<Element>> {
@@ -12,11 +12,12 @@ pub fn swap(span: Span, left: &Identifier, right: &Identifier, context: &Functio
 pub fn mutation_assign(span: Span, identifier: &Identifier, mut expression: Vec<Spanned<Element>>,
                        context: &mut FunctionContext, operation: &str) -> Vec<Spanned<Element>> {
 	let mut elements = expression.clone();
-	let temporary = context.pop_expression();
-
 	let local_index = context.get_variable(identifier);
-	let instruction = format!("{} {} {}", operation, local_index, temporary);
-	elements.push(instruction!(Advance, instruction, span));
+
+	elements.push(instruction!(Advance, match context.pop_evaluation() {
+		Evaluation::Local(local) => format!("{} {} {}", operation, local_index, local),
+		Evaluation::Immediate(primitive) => format!("{}.i {} {}", operation, local_index, primitive),
+	}, span));
 
 	super::polarize_reverse(&mut expression);
 	elements.append(&mut expression);

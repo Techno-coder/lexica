@@ -14,7 +14,7 @@ pub fn loop_header(loop_span: Span, start_label: usize, end_label: usize) -> Vec
 pub fn loop_end_condition(mut elements: Vec<Spanned<Element>>, context: &mut FunctionContext,
                           condition: &Spanned<Expression>, end_label: usize) -> Vec<Spanned<Element>> {
 	super::polarize(&mut elements, Direction::Advance);
-	let expression_index = context.pop_expression();
+	let expression_index = context.pop_evaluation().promote(&mut elements, context);
 	let instruction = format!("branch.i = {} true {}", expression_index, end_label);
 	elements.push(instruction!(Advance, Advance, instruction, condition.span));
 	elements
@@ -23,7 +23,7 @@ pub fn loop_end_condition(mut elements: Vec<Spanned<Element>>, context: &mut Fun
 pub fn loop_start_condition(mut elements: Vec<Spanned<Element>>, context: &mut FunctionContext,
                             condition: &Spanned<Expression>, start_label: usize) -> Vec<Spanned<Element>> {
 	super::polarize_reverse(&mut elements);
-	let expression_index = context.pop_expression();
+	let expression_index = context.pop_evaluation().promote(&mut elements, context);
 	let instruction = format!("branch.i = {} true {}", expression_index, start_label);
 	elements.push(instruction!(Advance, Reverse, instruction, condition.span));
 	elements

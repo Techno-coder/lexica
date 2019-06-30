@@ -1,3 +1,4 @@
+use crate::interpreter::{Integer, Primitive};
 use crate::node::{BinaryOperation, BinaryOperator, Expression, Identifier};
 use crate::source::{Span, Spanned};
 
@@ -25,8 +26,11 @@ pub fn parse_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let error = Spanned::new(ParserError::ExpectedExpression, end_span);
 	let next_token = lexer.next().ok_or(error)?;
 	Ok(Spanned::new(match next_token.node {
-		Token::UnsignedInteger(integer) => Expression::LiteralInteger(integer as i64),
 		Token::Identifier(identifier) => Expression::Variable(Identifier(identifier)),
+		Token::UnsignedInteger(integer) => {
+			let integer = Integer::new_unsigned(integer);
+			Expression::Primitive(Primitive::Integer(integer))
+		}
 		_ => return Err(Spanned::new(ParserError::ExpectedExpression, next_token.span).into()),
 	}, next_token.span))
 }

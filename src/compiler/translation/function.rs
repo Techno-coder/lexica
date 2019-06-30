@@ -1,9 +1,8 @@
-use crate::compiler::translation::Element;
 use crate::interpreter::Size;
 use crate::node::Function;
 use crate::source::{Span, Spanned};
 
-use super::FunctionContext;
+use super::{Element, Evaluation, FunctionContext};
 
 pub fn function_parameters<'a>(function: &Function<'a>, context: &mut FunctionContext<'a>) {
 	for parameter in &function.parameters {
@@ -40,11 +39,13 @@ pub fn function_arguments(function: &Function) -> Vec<Spanned<Element>> {
 	elements
 }
 
-pub fn function_drops(context: &FunctionContext, return_index: usize) -> Vec<Spanned<Element>> {
+pub fn function_drops(context: &FunctionContext, return_value: &Evaluation) -> Vec<Spanned<Element>> {
 	let mut elements = Vec::new();
 	for (_, (identifier_index, span)) in context.identifier_table() {
-		if *identifier_index == return_index {
-			continue;
+		if let Evaluation::Local(local) = return_value {
+			if local == identifier_index {
+				continue;
+			}
 		}
 
 		let instruction = format!("drop {}", identifier_index);
@@ -53,10 +54,14 @@ pub fn function_drops(context: &FunctionContext, return_index: usize) -> Vec<Spa
 	elements
 }
 
-pub fn function_return(function: &Spanned<Function>, return_index: usize) -> Vec<Spanned<Element>> {
+pub fn function_return(function: &Spanned<Function>, return_value: Evaluation) -> Vec<Spanned<Element>> {
 	let mut elements = Vec::new();
 	let return_span = function.return_value.span;
-	elements.push(instruction!(Advance, format!("drop {}", return_index), return_span));
+	elements.push(instruction!(Advance, match return_value {
+		Evaluation::Local(local) => format!("drop {}", local),
+		Evaluation::Immediate(primitive) => format!("drop.i {}", primitive),
+	}, return_span));
+
 	elements.push(instruction!(Advance, Advance, "return".to_owned(), return_span));
 	elements.push(Spanned::new(Element::Other("}".to_owned()), function.span));
 	elements

@@ -35,7 +35,7 @@ impl fmt::Display for BinaryOperator {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct BinaryOperation<'a> {
 	pub left: Spanned<Expression<'a>>,
 	pub right: Spanned<Expression<'a>>,

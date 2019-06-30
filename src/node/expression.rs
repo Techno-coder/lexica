@@ -1,12 +1,14 @@
 use std::fmt;
 
-use super::{BinaryOperation, Identifier, NodeConstruct, NodeVisitor};
+use crate::interpreter::Primitive;
 use crate::source::Spanned;
 
-#[derive(Debug, Clone, PartialEq)]
+use super::{BinaryOperation, Identifier, NodeConstruct, NodeVisitor};
+
+#[derive(Debug, Clone)]
 pub enum Expression<'a> {
 	Variable(Identifier<'a>),
-	LiteralInteger(i64),
+	Primitive(Primitive),
 	BinaryOperation(Box<BinaryOperation<'a>>),
 }
 
@@ -20,7 +22,7 @@ impl<'a> fmt::Display for Expression<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Expression::Variable(identifier) => write!(f, "{}", identifier),
-			Expression::LiteralInteger(integer) => write!(f, "{}", integer),
+			Expression::Primitive(primitive) => write!(f, "{}", primitive),
 			Expression::BinaryOperation(operation) => write!(f, "{}", operation),
 		}
 	}

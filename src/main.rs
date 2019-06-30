@@ -10,36 +10,36 @@ mod source;
 
 static PROGRAM: &'static str = r"
 fn factorial(n: u32) -> u32 {
-  let ~result = 1;
-  let ~counter = 1;
-  loop counter == 1 => counter == n + 1 {
-    result *= counter;
-    counter += 1;
-  }
+	let ~result = 1;
+	let ~counter = 1;
+	loop counter == 1 => counter == n + 1 {
+		result *= counter;
+		counter += 1;
+	}
 
-  // Implicit drop of `n`
-  drop counter = n + 1;
-  result
+	// Implicit drop of `n`
+	drop counter = n + 1;
+	result
 }
 
 fn fibonacci(n: u32) -> u32 {
-  let ~first = 1;
-  let ~second = 1;
+	let ~first = 1;
+	let ~second = 1;
 
-  let ~counter = 1;
-  loop counter == 1 => counter == n {
-    let summation = first + second;
-    first <=> second;
-    second <=> summation;
+	let ~counter = 1;
+	loop counter == 1 => counter == n {
+		let summation = first + second;
+		first <=> second;
+		second <=> summation;
 
-    // `summation` contains the original `first`
-    drop summation = second - first;
-    counter += 1;
-  }
+		// `summation` contains the original `first`
+		drop summation = second - first;
+		counter += 1;
+	}
 
-  // Implicit drop of `first` and `counter`
-  drop n = counter;
-  second
+	// Implicit drop of `first` and `counter`
+	drop n = counter;
+	second
 }
 ";
 

@@ -4,11 +4,13 @@ use crate::interpreter::Size;
 use crate::node::Identifier;
 use crate::source::{Span, Spanned};
 
+use super::Evaluation;
+
 #[derive(Debug, Default)]
 pub struct FunctionContext<'a> {
 	label_index: usize,
 	local_sizes: Vec<Size>,
-	expression_stack: Vec<usize>,
+	evaluation_stack: Vec<Evaluation>,
 	identifier_table: HashMap<Identifier<'a>, (usize, Span)>,
 }
 
@@ -43,12 +45,12 @@ impl<'a> FunctionContext<'a> {
 		self.identifier_table.insert(identifier.node, (local_index, identifier.span));
 	}
 
-	pub fn push_expression(&mut self, local_index: usize) {
-		self.expression_stack.push(local_index);
+	pub fn push_evaluation(&mut self, evaluation: Evaluation) {
+		self.evaluation_stack.push(evaluation);
 	}
 
-	pub fn pop_expression(&mut self) -> usize {
-		self.expression_stack.pop().expect("Expression stack is empty")
+	pub fn pop_evaluation(&mut self) -> Evaluation {
+		self.evaluation_stack.pop().expect("Expression stack is empty")
 	}
 
 	pub fn pair_labels(&mut self) -> (usize, usize) {
