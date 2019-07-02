@@ -1,5 +1,5 @@
 # Lexica
-The reversible programming language.
+A reversible programming language.
 
 ```lx
 fn main() -> u32 {
@@ -33,3 +33,10 @@ Lexica source files can be executed with:
 cargo run <source file>
 ```
 Example source files can be found in the `examples` directory.
+
+## Influence
+Lexica has been influenced by:
+- [Rust](https://github.com/rust-lang/rust)
+- [Arrow](https://etd.ohiolink.edu/!etd.send_file?accession=oberlin1443226400)
+
+and many other languages.
