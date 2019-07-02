@@ -1,12 +1,19 @@
 use std::fmt::Display;
 
-use colored::*;
+use colored::Colorize;
 
 use super::{Spanned, TextMap};
 
 pub fn emit<E>(text_map: &TextMap, error: &Spanned<E>) where E: Display {
-	println!("{} {}", "[Error]".bold().red(), error.node);
+	emit_header(error);
+	emit_content(text_map, error);
+}
 
+pub fn emit_header<E>(error: &Spanned<E>) where E: Display {
+	println!("{} {}", "[Error]".bold().red(), error.node);
+}
+
+pub fn emit_content<E>(text_map: &TextMap, error: &Spanned<E>) {
 	text_map.prefix(&error.span, 1).iter()
 		.for_each(|(line_index, line)| println!("{} | {}", format!("{:4}", line_index)
 			.bright_blue().bold(), line));

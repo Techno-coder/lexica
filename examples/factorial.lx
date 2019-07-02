@@ -1,0 +1,16 @@
+fn factorial(n: u32) -> u32 {
+	let ~result = 1;
+	let ~counter = 1;
+	loop counter == 1 => counter == n + 1 {
+		result *= counter;
+		counter += 1;
+	}
+
+	// Implicit drop of `n`
+	drop counter = n + 1;
+	result
+}
+
+fn main() -> u32 {
+	factorial(7)
+}
