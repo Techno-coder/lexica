@@ -1,9 +1,8 @@
 use std::fmt;
 
-use crate::node::DataType;
 use crate::source::Spanned;
 
-use super::{Expression, Identifier, NodeConstruct, NodeVisitor, Statement, Variable};
+use super::{DataType, Expression, Identifier, NodeConstruct, NodeVisitor, Statement, Variable};
 
 #[derive(Debug)]
 pub struct Function<'a> {

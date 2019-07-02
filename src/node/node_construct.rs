@@ -16,6 +16,7 @@ pub trait NodeVisitor<'a> {
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result;
 	fn expression(&mut self, expression: &mut Spanned<Expression<'a>>) -> Self::Result;
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result;
+	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result;
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result;
 	fn statement(&mut self, statement: &mut Spanned<Statement<'a>>) -> Self::Result;
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result;

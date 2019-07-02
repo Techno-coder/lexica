@@ -3,13 +3,14 @@ use std::fmt;
 use crate::interpreter::Primitive;
 use crate::source::Spanned;
 
-use super::{BinaryOperation, Identifier, NodeConstruct, NodeVisitor};
+use super::{BinaryOperation, FunctionCall, Identifier, NodeConstruct, NodeVisitor};
 
 #[derive(Debug, Clone)]
 pub enum Expression<'a> {
 	Variable(Identifier<'a>),
 	Primitive(Primitive),
 	BinaryOperation(Box<BinaryOperation<'a>>),
+	FunctionCall(Box<FunctionCall<'a>>),
 }
 
 impl<'a> NodeConstruct<'a> for Spanned<Expression<'a>> {
@@ -24,6 +25,7 @@ impl<'a> fmt::Display for Expression<'a> {
 			Expression::Variable(identifier) => write!(f, "{}", identifier),
 			Expression::Primitive(primitive) => write!(f, "{}", primitive),
 			Expression::BinaryOperation(operation) => write!(f, "{}", operation),
+			Expression::FunctionCall(function_call) => write!(f, "{}", function_call),
 		}
 	}
 }

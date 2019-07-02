@@ -3,7 +3,7 @@ use crate::source::Spanned;
 use super::{CompilationUnit, CompileContext, CompileError, CompileMetadata, CompileResult, Direction,
             Function, Instruction, OperationStore, TranslationInstruction, TranslationUnit};
 
-const ENTRY_POINT: &str = "main";
+pub const ENTRY_POINT: &str = "main";
 
 pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &OperationStore)
                    -> (CompilationUnit, CompileMetadata, Vec<Spanned<CompileError<'a>>>) {

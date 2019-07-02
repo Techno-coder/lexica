@@ -1,5 +1,5 @@
-use crate::interpreter::Size;
-use crate::node::Function;
+use crate::interpreter::{ENTRY_POINT, Size};
+use crate::node::{Function, Identifier};
 use crate::source::{Span, Spanned};
 
 use super::{Element, Evaluation, FunctionContext};
@@ -26,7 +26,10 @@ pub fn function_locals(function_span: Span, context: &FunctionContext) -> Vec<Sp
 pub fn function_header(function: &Spanned<Function>) -> Vec<Spanned<Element>> {
 	let (mut elements, span) = (Vec::new(), function.identifier.span);
 	elements.push(Spanned::new(Element::Other(format!("~{} {{", function.identifier)), span));
-	elements.push(instruction!(Advance, Reverse, "return".to_owned(), function.span));
+	elements.push(match function.identifier.node {
+		Identifier(ENTRY_POINT) => instruction!(Reverse, "exit".to_owned(), function.span),
+		_ => instruction!(Advance, Reverse, "return".to_owned(), function.span),
+	});
 	elements
 }
 
@@ -62,7 +65,11 @@ pub fn function_return(function: &Spanned<Function>, return_value: Evaluation) -
 		Evaluation::Immediate(primitive) => format!("drop.i {}", primitive),
 	}, return_span));
 
-	elements.push(instruction!(Advance, Advance, "return".to_owned(), return_span));
+	elements.push(match function.identifier.node {
+		Identifier(ENTRY_POINT) => instruction!(Advance, "exit".to_owned(), function.span),
+		_ => instruction!(Advance, Advance, "return".to_owned(), function.span),
+	});
+
 	elements.push(Spanned::new(Element::Other("}".to_owned()), function.span));
 	elements
 }

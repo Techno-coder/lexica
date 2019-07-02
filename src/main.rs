@@ -41,6 +41,13 @@ fn fibonacci(n: u32) -> u32 {
 	drop n = counter;
 	second
 }
+
+fn main() -> u32 {
+	let iteration = 35;
+	let result = fibonacci(iteration);
+	drop iteration = 35;
+	result
+}
 ";
 
 //static LEXER_TEST: &'static str = r"
@@ -121,33 +128,33 @@ fn main() {
 	let translation_map = crate::compiler::translation::TranslationMap::new(elements);
 	println!("{}", translation_map.text());
 
-	let mut code_string = translation_map.text().to_owned();
-	code_string += r#"
-~test {
-	-return
-	pass
-	drop.i u64 1337
-	+return
-}
-
-@local u64 0    # 0 : fibonacci result
-~main {
-  exit' *
-  drop.i u64 35 *
-#  call factorial
-#  call' factorial
-  call fibonacci
-#  recall fibonacci
-  *
-  -reset 0 0
-  restore 0
-
-#  call test
-#  call' test
-  *
-  exit
-}
-	"#;
+	let code_string = translation_map.text().to_owned();
+//	code_string += r#"
+//~test {
+//	-return
+//	pass
+//	drop.i u64 1337
+//	+return
+//}
+//
+//@local u64 0    # 0 : fibonacci result
+//~main {
+//  exit' *
+//  drop.i u64 35 *
+//#  call factorial
+//#  call' factorial
+//  call fibonacci
+//#  recall fibonacci
+//  *
+//  -reset 0 0
+//  restore 0
+//
+//#  call test
+//#  call' test
+//  *
+//  exit
+//}
+//	"#;
 
 	let text_map = TextMap::new(code_string);
 	let operations = OperationStore::new();

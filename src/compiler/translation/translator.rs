@@ -74,6 +74,10 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 				let operation = Box::deref_mut(operation);
 				return Spanned::new(operation, expression.span).accept(self);
 			}
+			Expression::FunctionCall(function_call) => {
+				let function_call = Box::deref_mut(function_call);
+				return Spanned::new(function_call, expression.span).accept(self);
+			}
 		}
 		Vec::new()
 	}
@@ -92,6 +96,14 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		let return_value = self.context.pop_evaluation();
 		elements.append(&mut super::function_drops(&self.context, &return_value));
 		elements.append(&mut super::function_return(function, return_value));
+		elements
+	}
+
+	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
+		let mut elements: Vec<_> = function_call.arguments.iter_mut()
+			.flat_map(|argument| argument.accept(self)).collect();
+		elements.append(&mut super::function_call_arguments(function_call, &mut self.context));
+		elements.append(&mut super::function_call_value(function_call, &mut self.context));
 		elements
 	}
 

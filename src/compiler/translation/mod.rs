@@ -8,6 +8,7 @@ pub use self::function_context::*;
 pub use self::mutation::*;
 pub use self::translation_map::*;
 pub use self::translator::*;
+pub use self::function_call::*;
 
 #[macro_use]
 pub mod constructor;
@@ -21,3 +22,4 @@ mod element;
 mod function;
 mod mutation;
 mod evaluation;
+mod function_call;
