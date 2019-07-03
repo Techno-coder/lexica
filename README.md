@@ -30,9 +30,12 @@ fn fibonacci(n: u32) -> u32 {
 ## Execution
 Lexica source files can be executed with:
 ```
-cargo run <source file>
+cargo run -- <source file>
 ```
 Example source files can be found in the `examples` directory.
+
+## Flags
+- `-b` - Emits the translated bytecode
 
 ## Influence
 Lexica has been influenced by:

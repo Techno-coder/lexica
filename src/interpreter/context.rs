@@ -1,5 +1,6 @@
-use super::{CallFrame, DropStack, InstructionTarget, InterpreterError, InterpreterResult};
 use crate::interpreter::Direction;
+
+use super::{CallFrame, DropStack, InstructionTarget, InterpreterError, InterpreterResult};
 
 #[derive(Debug)]
 pub struct Context {
