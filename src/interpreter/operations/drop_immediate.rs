@@ -32,7 +32,7 @@ impl Operational for DropImmediate {
 
 impl Operation for DropImmediate {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		Ok(self.immediate.drop(context.drop_stack()))
+		Ok(self.immediate.clone().drop(context.drop_stack()))
 	}
 
 	fn reversible(&self) -> Option<&Reversible> {

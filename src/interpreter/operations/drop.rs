@@ -7,6 +7,7 @@ use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOper
 
 pub type Restore = Reverser<Drop>;
 
+/// Pushes a local to the drop stack and zeroes it.
 #[derive(Debug)]
 pub struct Drop {
 	local: LocalTarget,
@@ -33,8 +34,9 @@ impl Operational for Drop {
 
 impl Operation for Drop {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		let local = context.frame()?.table()[&self.local].clone();
+		let mut local = context.frame()?.table()[&self.local].clone();
 		local.drop(context.drop_stack());
+		context.frame()?.table_mut()[&self.local] = local.size().primitive();
 		Ok(())
 	}
 

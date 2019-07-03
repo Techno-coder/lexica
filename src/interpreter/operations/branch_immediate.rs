@@ -6,6 +6,7 @@ use super::{Comparator, CompilationUnit, CompileContext, CompileResult, Context,
             GenericOperation, InstructionTarget, InterpreterResult, LocalTable, LocalTarget, Operand,
             Operation, Operational, Primitive};
 
+/// Branches within the function depending on a condition on an immediate.
 #[derive(Debug)]
 pub struct BranchImmediate {
 	comparator: Comparator,

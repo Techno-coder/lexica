@@ -6,6 +6,7 @@ use super::{CompilationUnit, CompileContext, CompileResult, Context, Float, Gene
             InterpreterError, InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational,
             Primitive, Reversible};
 
+/// Multiplies two locals together and stores the result in the first.
 #[derive(Debug)]
 pub struct Multiply {
 	accumulator: LocalTarget,

@@ -5,6 +5,7 @@ use crate::source::Span;
 use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterResult,
             Operand, Operation, Operational, Reversible};
 
+/// Traps the interpreter.
 #[derive(Debug)]
 pub struct ReversalHint;
 

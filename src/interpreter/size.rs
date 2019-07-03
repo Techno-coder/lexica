@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::ParserError;
+use super::{ParserError, Primitive};
 
 /// Represents possible data types in the interpreter.
 #[derive(Debug, Clone, PartialEq)]
@@ -58,6 +58,26 @@ impl Size {
 			Size::Float32 => 4,
 			Size::Float64 => 8,
 			Size::Box => 2, // TODO, Confirm size of box
+		}
+	}
+
+	/// Creates a zero primitive of this size.
+	pub fn primitive(&self) -> Primitive {
+		use super::{Integer, Float};
+		let target = self.clone();
+		match self {
+			Size::Boolean => Primitive::Boolean(false),
+			Size::Unsigned8 | Size::Unsigned16 | Size::Unsigned32 | Size::Unsigned64 => {
+				let integer = Integer::new_unsigned(0).cast(target);
+				Primitive::Integer(integer.unwrap())
+			}
+			Size::Signed8 | Size::Signed16 | Size::Signed32 | Size::Signed64 => {
+				let integer = Integer::new_signed(0).cast(target);
+				Primitive::Integer(integer.unwrap())
+			}
+			Size::Float32 => Primitive::Float(Float::Float32(0.0)),
+			Size::Float64 => Primitive::Float(Float::Float64(0.0)),
+			Size::Box => unimplemented!(),
 		}
 	}
 }

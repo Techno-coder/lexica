@@ -8,6 +8,7 @@ use super::{CompilationUnit, CompileContext, CompileResult, Context, Float, Gene
 
 pub type MinusImmediate = Reverser<AddImmediate>;
 
+/// Adds an immediate value to the local.
 #[derive(Debug)]
 pub struct AddImmediate {
 	accumulator: LocalTarget,

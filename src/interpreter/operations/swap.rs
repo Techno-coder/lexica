@@ -5,6 +5,7 @@ use crate::source::Span;
 use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterError,
             InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational, Reversible};
 
+/// Swaps the values of two locals with the same size.
 #[derive(Debug)]
 pub struct Swap {
 	left: LocalTarget,

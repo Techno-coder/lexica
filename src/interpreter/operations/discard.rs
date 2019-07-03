@@ -5,6 +5,7 @@ use crate::source::Span;
 use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterResult, Operand,
             Operation, Operational, Size};
 
+/// Discards a certain amount of bytes from the drop stack.
 #[derive(Debug)]
 pub struct Discard {
 	size: Size,

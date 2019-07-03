@@ -14,11 +14,8 @@ pub fn function_parameters<'a>(function: &Function<'a>, context: &mut FunctionCo
 pub fn function_locals(function_span: Span, context: &FunctionContext) -> Vec<Spanned<Element>> {
 	let mut elements = Vec::new();
 	for local_size in context.local_sizes() {
-		let annotation = match local_size {
-			Size::Boolean => format!("@local {} false", local_size),
-			_ => format!("@local {} 0", local_size),
-		};
-		elements.push(Spanned::new(Element::Other(annotation), function_span));
+		let annotation = Element::Other(format!("@local {}", local_size));
+		elements.push(Spanned::new(annotation, function_span));
 	}
 	elements
 }

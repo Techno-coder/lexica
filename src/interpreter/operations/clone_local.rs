@@ -5,6 +5,7 @@ use crate::source::Span;
 use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterError,
             InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational};
 
+/// Clones the right local into the first.
 #[derive(Debug)]
 pub struct CloneLocal {
 	left: LocalTarget,

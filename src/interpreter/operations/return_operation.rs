@@ -5,6 +5,8 @@ use crate::source::Span;
 use super::{CompilationUnit, CompileContext, CompileResult, Context, Direction, FunctionOffset,
             GenericOperation, InstructionTarget, InterpreterResult, Operand, Operation, Operational};
 
+/// Returns to the previous stack frame.
+/// The return offset is dependent on the step direction.
 #[derive(Debug)]
 pub struct Return;
 

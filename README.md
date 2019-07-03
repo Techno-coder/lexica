@@ -2,10 +2,6 @@
 A reversible programming language.
 
 ```lx
-fn main() -> u32 {
-	fibonacci(35)
-}
-
 fn fibonacci(n: u32) -> u32 {
 	let ~first = 1;
 	let ~second = 1;

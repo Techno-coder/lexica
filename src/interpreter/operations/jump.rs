@@ -5,6 +5,7 @@ use crate::source::Span;
 use super::{CompilationUnit, CompileContext, CompileResult, Context, FunctionOffset, GenericOperation,
             InstructionTarget, InterpreterResult, Operand, Operation, Operational};
 
+/// Unconditionally jumps within the function.
 #[derive(Debug)]
 pub struct Jump {
 	target: FunctionOffset,

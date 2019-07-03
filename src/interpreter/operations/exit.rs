@@ -6,6 +6,7 @@ use super::{CompilationUnit, CompileContext, CompileResult, Context, Direction, 
             GenericOperation, InstructionTarget, InterpreterResult, Operand, Operation, Operational,
             Reversible};
 
+/// Halts the runtime if the step direction is the same as exit direction.
 #[derive(Debug)]
 pub struct Exit;
 

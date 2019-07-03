@@ -7,6 +7,7 @@ use super::{CallFrame, CompilationUnit, CompileContext, CompileError, CompileRes
             FunctionOffset, FunctionTarget, GenericOperation, InstructionTarget, InterpreterResult,
             Operand, Operation, Operational, Reversible};
 
+/// Calls a function.
 #[derive(Debug)]
 pub struct Call {
 	target: FunctionTarget,

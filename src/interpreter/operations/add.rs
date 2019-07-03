@@ -8,6 +8,8 @@ use super::{CompilationUnit, CompileContext, CompileResult, Context, Float, Gene
 
 pub type Minus = Reverser<Add>;
 
+/// Adds two locals and stores the result in the first.
+/// Wraps on overflow.
 #[derive(Debug)]
 pub struct Add {
 	accumulator: LocalTarget,

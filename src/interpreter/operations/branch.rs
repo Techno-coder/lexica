@@ -6,6 +6,7 @@ use super::{Comparator, CompilationUnit, CompileContext, CompileResult, Context,
             GenericOperation, InstructionTarget, InterpreterResult, LocalTable, LocalTarget, Operand, Operation,
             Operational};
 
+/// Branches within the function depending on a condition.
 #[derive(Debug)]
 pub struct Branch {
 	comparator: Comparator,

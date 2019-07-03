@@ -5,6 +5,7 @@ use crate::source::Span;
 use super::{CompilationUnit, CompileContext, CompileResult, Context, GenericOperation, InterpreterError,
             InterpreterResult, LocalTable, LocalTarget, Operand, Operation, Operational, Primitive};
 
+/// Sets a local to the specified immediate.
 #[derive(Debug)]
 pub struct Reset {
 	local: LocalTarget,

@@ -6,6 +6,7 @@ use super::{Comparator, CompilationUnit, CompileContext, CompileResult, Context,
             InterpreterError, InterpreterResult, LocalTable, LocalTarget, Operand, Operation,
             Operational, Primitive};
 
+/// Compares two locals and stores the result in the target.
 #[derive(Debug)]
 pub struct Compare {
 	comparator: Comparator,
