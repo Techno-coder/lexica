@@ -13,6 +13,28 @@ pub enum Expression<'a> {
 	FunctionCall(Box<FunctionCall<'a>>),
 }
 
+impl<'a> Spanned<Expression<'a>> {
+	pub fn binary_operation(&mut self) -> Spanned<&mut BinaryOperation<'a>> {
+		match &mut self.node {
+			Expression::BinaryOperation(operation) => {
+				let operation = Box::as_mut(operation);
+				Spanned::new(operation, self.span)
+			}
+			_ => panic!("Expression is not a binary operation")
+		}
+	}
+
+	pub fn function_call(&mut self) -> Spanned<&mut FunctionCall<'a>> {
+		match &mut self.node {
+			Expression::FunctionCall(function_call) => {
+				let function_call = Box::as_mut(function_call);
+				Spanned::new(function_call, self.span)
+			}
+			_ => panic!("Expression is not a function call")
+		}
+	}
+}
+
 impl<'a> NodeConstruct<'a> for Spanned<Expression<'a>> {
 	fn accept<V: NodeVisitor<'a>>(&mut self, visitor: &mut V) -> V::Result {
 		visitor.expression(self)

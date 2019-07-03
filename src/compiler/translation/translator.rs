@@ -1,5 +1,3 @@
-use std::ops::DerefMut;
-
 use crate::node::*;
 use crate::source::Spanned;
 
@@ -70,14 +68,8 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 				let primitive = Spanned::new(primitive.clone(), expression.span);
 				self.context.push_evaluation(Evaluation::Immediate(primitive));
 			}
-			Expression::BinaryOperation(operation) => {
-				let operation = Box::deref_mut(operation);
-				return Spanned::new(operation, expression.span).accept(self);
-			}
-			Expression::FunctionCall(function_call) => {
-				let function_call = Box::deref_mut(function_call);
-				return Spanned::new(function_call, expression.span).accept(self);
-			}
+			Expression::BinaryOperation(_) => return expression.binary_operation().accept(self),
+			Expression::FunctionCall(_) => return expression.function_call().accept(self),
 		}
 		Vec::new()
 	}

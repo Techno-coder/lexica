@@ -43,6 +43,23 @@ impl Size {
 		})
 	}
 
+	pub fn to_string(&self) -> &'static str {
+		match self {
+			Size::Boolean => "bool",
+			Size::Unsigned8 => "u8",
+			Size::Unsigned16 => "u16",
+			Size::Unsigned32 => "u32",
+			Size::Unsigned64 => "u64",
+			Size::Signed8 => "i8",
+			Size::Signed16 => "i16",
+			Size::Signed32 => "i32",
+			Size::Signed64 => "i64",
+			Size::Float32 => "f32",
+			Size::Float64 => "f64",
+			Size::Box => "box",
+		}
+	}
+
 	/// Returns the number of bytes this size takes.
 	pub fn byte_count(&self) -> usize {
 		match self {
@@ -84,19 +101,6 @@ impl Size {
 
 impl fmt::Display for Size {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self {
-			Size::Boolean => write!(f, "bool"),
-			Size::Unsigned8 => write!(f, "u8"),
-			Size::Unsigned16 => write!(f, "u16"),
-			Size::Unsigned32 => write!(f, "u32"),
-			Size::Unsigned64 => write!(f, "u64"),
-			Size::Signed8 => write!(f, "i8"),
-			Size::Signed16 => write!(f, "i16"),
-			Size::Signed32 => write!(f, "i32"),
-			Size::Signed64 => write!(f, "i64"),
-			Size::Float32 => write!(f, "f32"),
-			Size::Float64 => write!(f, "f64"),
-			Size::Box => write!(f, "box"),
-		}
+		write!(f, "{}", self.to_string())
 	}
 }

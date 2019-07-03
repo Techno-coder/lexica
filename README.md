@@ -2,7 +2,7 @@
 A reversible programming language.
 
 ```lx
-fn fibonacci(n: u32) -> u32 {
+fn fibonacci(n: u64) -> u64 {
 	let ~first = 1;
 	let ~second = 1;
 

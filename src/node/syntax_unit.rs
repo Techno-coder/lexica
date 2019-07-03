@@ -18,6 +18,6 @@ impl<'a> NodeConstruct<'a> for Spanned<SyntaxUnit<'a>> {
 
 impl<'a> fmt::Display for SyntaxUnit<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		self.functions.values().try_for_each(|function| write!(f, "{}", function))
+		self.functions.values().try_for_each(|function| writeln!(f, "{}\n", function))
 	}
 }
