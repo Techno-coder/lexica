@@ -34,7 +34,7 @@ impl Operational for Drop {
 
 impl Operation for Drop {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		let mut local = context.frame()?.table()[&self.local].clone();
+		let local = context.frame()?.table()[&self.local].clone();
 		local.drop(context.drop_stack());
 		context.frame()?.table_mut()[&self.local] = local.size().primitive();
 		Ok(())

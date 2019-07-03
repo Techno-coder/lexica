@@ -1,5 +1,5 @@
 use crate::interpreter::{Integer, Primitive};
-use crate::node::{BinaryOperation, BinaryOperator, Expression, FunctionCall, Identifier};
+use crate::node::{BinaryOperation, BinaryOperator, Expression, FunctionCall, Identifier, DataType};
 use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
@@ -68,7 +68,9 @@ pub fn parse_function_call<'a>(lexer: &mut PeekLexer<'a>, function: Spanned<Iden
 	};
 
 	let span = Span::new(function.span.byte_start, byte_end);
-	let function_call = Box::new(FunctionCall { function, arguments });
+	// TODO: Type check return type
+	let return_type = Some(DataType(Identifier("u64")));
+	let function_call = Box::new(FunctionCall { function, arguments, return_type });
 	Ok(Spanned::new(Expression::FunctionCall(function_call), span))
 }
 

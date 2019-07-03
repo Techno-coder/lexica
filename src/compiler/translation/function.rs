@@ -1,13 +1,16 @@
 use crate::interpreter::{ENTRY_POINT, Size};
-use crate::node::{Function, Identifier};
+use crate::node::{DataType, Function, Identifier};
 use crate::source::{Span, Spanned};
 
 use super::{Element, Evaluation, FunctionContext};
 
 pub fn function_parameters<'a>(function: &Function<'a>, context: &mut FunctionContext<'a>) {
 	for parameter in &function.parameters {
-		let parameter = Spanned::new(parameter.identifier.clone(), parameter.span);
-		context.register_variable(parameter, Size::Unsigned64); // TODO: Parse parameter type
+		let identifier = Spanned::new(parameter.identifier.clone(), parameter.span);
+		let DataType(Identifier(data_type)) = parameter.data_type.as_ref()
+			.expect("Parameter type not specified");
+		context.register_variable(identifier, Size::parse(data_type)
+			.expect("Invalid parameter type"));
 	}
 }
 

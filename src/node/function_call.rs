@@ -2,12 +2,13 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Expression, Identifier, NodeConstruct, NodeVisitor};
+use super::{DataType, Expression, Identifier, NodeConstruct, NodeVisitor};
 
 #[derive(Debug, Clone)]
 pub struct FunctionCall<'a> {
 	pub function: Spanned<Identifier<'a>>,
 	pub arguments: Vec<Spanned<Expression<'a>>>,
+	pub return_type: Option<DataType<'a>>,
 }
 
 impl<'a> NodeConstruct<'a> for Spanned<&mut FunctionCall<'a>> {

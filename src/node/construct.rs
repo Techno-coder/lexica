@@ -10,7 +10,7 @@ impl<'a> fmt::Display for Identifier<'a> {
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DataType<'a>(pub Identifier<'a>);
 
 impl<'a> fmt::Display for DataType<'a> {

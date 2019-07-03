@@ -1,4 +1,4 @@
-fn factorial(n: u32) -> u32 {
+fn factorial(n: u64) -> u64 {
 	let ~result = 1;
 	let ~counter = 1;
 	loop counter == 1 => counter == n + 1 {
@@ -11,6 +11,6 @@ fn factorial(n: u32) -> u32 {
 	result
 }
 
-fn main() -> u32 {
+fn main() -> u64 {
 	factorial(7)
 }

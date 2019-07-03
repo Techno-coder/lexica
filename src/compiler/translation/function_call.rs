@@ -1,5 +1,5 @@
 use crate::interpreter::Size;
-use crate::node::FunctionCall;
+use crate::node::{DataType, FunctionCall, Identifier};
 use crate::source::Spanned;
 
 use super::{Element, Evaluation, FunctionContext};
@@ -10,8 +10,11 @@ pub fn function_call_value(function_call: &Spanned<&mut FunctionCall>, context: 
 	let instruction = format!("call {}", function_call.function);
 	elements.push(instruction!(Advance, instruction, function_call.span));
 
-	// TODO: Parse function return size
-	let local = context.register_local(Size::Unsigned64);
+	let DataType(Identifier(data_type)) = function_call.return_type.as_ref()
+		.expect("Return type not specified");
+	let local = context.register_local(Size::parse(data_type)
+		.expect("Invalid return type"));
+
 	elements.push(instruction!(Advance, format!("restore {}", local), function_call.span));
 	context.push_evaluation(Evaluation::Local(local));
 	elements
