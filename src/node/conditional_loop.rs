@@ -2,12 +2,12 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Expression, NodeConstruct, NodeVisitor, Statement};
+use super::{ExpressionNode, NodeConstruct, NodeVisitor, Statement};
 
 #[derive(Debug)]
 pub struct ConditionalLoop<'a> {
-	pub start_condition: Option<Spanned<Expression<'a>>>,
-	pub end_condition: Spanned<Expression<'a>>,
+	pub start_condition: Option<Spanned<ExpressionNode<'a>>>,
+	pub end_condition: Spanned<ExpressionNode<'a>>,
 	pub statements: Vec<Spanned<Statement<'a>>>,
 }
 

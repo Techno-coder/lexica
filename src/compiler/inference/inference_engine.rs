@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use polytype::{Context, tp, Type, UnificationError};
 
+use crate::interpreter::Size;
 use crate::node::*;
 use crate::source::{ErrorCollate, Spanned};
 
 use super::TypeAnnotator;
-use crate::interpreter::Size;
 
 // TODO: Type inference based on identifiers can result in overlapping identifiers for different
 // TODO: variables; may require high level representation lowering
@@ -34,13 +34,13 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
 		let binding_type = match &binding.variable.data_type {
-			Some(data_type) => {
+			Type::Constructed(data_type) => {
 				let DataType(Identifier(binding_type)) = data_type;
 				// TODO: Let us pretend it is static ...
 				let binding_type = Size::parse(binding_type).unwrap().to_string();
 				Type::Constructed(binding_type, Vec::new())
 			}
-			None => self.context.new_variable(),
+			Type::Variable(_) => self.context.new_variable(),
 		};
 
 		let identifier = binding.variable.identifier.clone();
@@ -146,7 +146,8 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 			let _ = function.accept(self)?;
 			let mut environment = HashMap::new();
 
-			for (identifier, data_type) in self.environment.drain() {
+			for (identifier, mut data_type) in self.environment.drain() {
+				data_type.apply_mut(&self.context);
 				environment.insert(identifier.clone(), match data_type {
 					Type::Constructed(data_type, _) => DataType(Identifier(data_type)),
 					Type::Variable(_) => panic!("Type could not be inferred for variable: {}", identifier),

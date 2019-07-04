@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Expression, NodeConstruct, NodeVisitor};
+use super::{ExpressionNode, NodeConstruct, NodeVisitor};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BinaryOperator {
@@ -37,8 +37,8 @@ impl fmt::Display for BinaryOperator {
 
 #[derive(Debug, Clone)]
 pub struct BinaryOperation<'a> {
-	pub left: Spanned<Expression<'a>>,
-	pub right: Spanned<Expression<'a>>,
+	pub left: Spanned<ExpressionNode<'a>>,
+	pub right: Spanned<ExpressionNode<'a>>,
 	pub operator: Spanned<BinaryOperator>,
 }
 

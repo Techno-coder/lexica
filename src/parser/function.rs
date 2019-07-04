@@ -11,7 +11,7 @@ pub fn parse_function<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 
 	expect!(lexer, end_span, ReturnSeparator);
 	let return_type = identifier!(lexer, end_span);
-	let return_type = Spanned::new(DataType(return_type.node), return_type.span);
+	let return_type = Spanned::new(DataType::new(return_type.node), return_type.span);
 
 	let expression_block = super::parse_expression_block(lexer, end_span)?;
 	let (statements, return_value) = expression_block.node;

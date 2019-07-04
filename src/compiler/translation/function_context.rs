@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::interpreter::Size;
-use crate::node::Identifier;
+use crate::node::VariableTarget;
 use crate::source::{Span, Spanned};
 
 use super::Evaluation;
@@ -11,24 +11,24 @@ pub struct FunctionContext<'a> {
 	label_index: usize,
 	local_sizes: Vec<Size>,
 	evaluation_stack: Vec<Evaluation>,
-	identifier_table: HashMap<Identifier<'a>, (usize, Span)>,
+	variable_table: HashMap<VariableTarget<'a>, (usize, Span)>,
 }
 
 impl<'a> FunctionContext<'a> {
-	pub fn register_variable(&mut self, identifier: Spanned<Identifier<'a>>, size: Size) -> usize {
+	pub fn register_variable(&mut self, target: Spanned<VariableTarget<'a>>, size: Size) -> usize {
 		let local_index = self.register_local(size);
-		self.annotate_local(local_index, identifier);
+		self.annotate_local(local_index, target);
 		local_index
 	}
 
-	pub fn get_variable(&self, variable: &Identifier<'a>) -> usize {
-		let (local_index, _) = &self.identifier_table[variable];
+	pub fn get_variable(&self, target: &VariableTarget<'a>) -> usize {
+		let (local_index, _) = &self.variable_table[target];
 		*local_index
 	}
 
-	pub fn drop_variable(&mut self, variable: &Identifier<'a>) -> usize {
-		let (local_index, _) = self.identifier_table.remove(&variable).unwrap();
-		self.identifier_table.remove(&variable);
+	pub fn drop_variable(&mut self, target: &VariableTarget<'a>) -> usize {
+		let (local_index, _) = self.variable_table.remove(&target).unwrap();
+		self.variable_table.remove(&target);
 		local_index
 	}
 
@@ -41,8 +41,8 @@ impl<'a> FunctionContext<'a> {
 		self.register_local(self.local_sizes[local_index].clone())
 	}
 
-	pub fn annotate_local(&mut self, local_index: usize, identifier: Spanned<Identifier<'a>>) {
-		self.identifier_table.insert(identifier.node, (local_index, identifier.span));
+	pub fn annotate_local(&mut self, local_index: usize, target: Spanned<VariableTarget<'a>>) {
+		self.variable_table.insert(target.node, (local_index, target.span));
 	}
 
 	pub fn push_evaluation(&mut self, evaluation: Evaluation) {
@@ -63,7 +63,7 @@ impl<'a> FunctionContext<'a> {
 		&self.local_sizes
 	}
 
-	pub fn identifier_table(&self) -> impl Iterator<Item=(&Identifier, &(usize, Span))> {
-		self.identifier_table.iter()
+	pub fn variable_table(&self) -> impl Iterator<Item=(&VariableTarget, &(usize, Span))> {
+		self.variable_table.iter()
 	}
 }

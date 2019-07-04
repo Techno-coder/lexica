@@ -2,12 +2,12 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Expression, NodeConstruct, NodeVisitor, Variable};
+use super::{ExpressionNode, NodeConstruct, NodeVisitor, Variable};
 
 #[derive(Debug)]
 pub struct Binding<'a> {
 	pub variable: Spanned<Variable<'a>>,
-	pub expression: Spanned<Expression<'a>>,
+	pub expression: Spanned<ExpressionNode<'a>>,
 }
 
 impl<'a> NodeConstruct<'a> for Spanned<Binding<'a>> {

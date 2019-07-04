@@ -15,9 +15,10 @@ pub fn compile(source_map: &TextMap) -> Option<TranslationMap> {
 		}
 	};
 
-	syntax_unit.accept(&mut crate::compiler::InferenceEngine::default())
-		.expect("Type checking failed");
-	println!("{}", syntax_unit);
+	// TODO
+//	syntax_unit.accept(&mut crate::compiler::InferenceEngine::default())
+//		.expect("Type checking failed");
+//	println!("{}", syntax_unit);
 	let elements = syntax_unit.accept(&mut crate::compiler::Translator::default());
 	Some(crate::compiler::TranslationMap::new(elements))
 }

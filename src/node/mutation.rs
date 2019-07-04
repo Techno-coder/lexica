@@ -2,13 +2,13 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Expression, Identifier, NodeConstruct, NodeVisitor};
+use super::{ExpressionNode, NodeConstruct, NodeVisitor, VariableTarget};
 
 #[derive(Debug)]
 pub enum Mutation<'a> {
-	Swap(Spanned<Identifier<'a>>, Spanned<Identifier<'a>>),
-	AddAssign(Spanned<Identifier<'a>>, Spanned<Expression<'a>>),
-	MultiplyAssign(Spanned<Identifier<'a>>, Spanned<Expression<'a>>),
+	Swap(Spanned<VariableTarget<'a>>, Spanned<VariableTarget<'a>>),
+	AddAssign(Spanned<VariableTarget<'a>>, Spanned<ExpressionNode<'a>>),
+	MultiplyAssign(Spanned<VariableTarget<'a>>, Spanned<ExpressionNode<'a>>),
 }
 
 impl<'a> NodeConstruct<'a> for Spanned<Mutation<'a>> {

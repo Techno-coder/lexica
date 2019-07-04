@@ -1,4 +1,4 @@
-use crate::node::{DataType, Identifier, Variable};
+use crate::node::{DataType, Identifier, Variable, VariableTarget};
 use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
@@ -14,29 +14,29 @@ pub fn parse_variable<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		is_mutable = true;
 	}
 
-	let identifier = match identifier.node {
+	let variable_target: Spanned<VariableTarget> = match identifier.node {
 		Token::Identifier(identifier_node) => {
-			let identifier_node = Identifier(identifier_node);
-			Spanned::new(identifier_node, identifier.span)
+			let variable_target = Identifier(identifier_node).into();
+			Spanned::new(variable_target, identifier.span)
 		}
 		_ => return Err(Spanned::new(ParserError::ExpectedIdentifier, identifier.span).into()),
 	};
 
-	let mut span = identifier.span;
+	let mut span = variable_target.span;
 	let data_type = match lexer.peek() {
 		Some(separator) => match separator.node {
 			Token::VariableSeparator => {
 				let _ = lexer.next();
 				let identifier = identifier!(lexer, end_span);
 				span.byte_end = identifier.span.byte_end;
-				Some(DataType(identifier.node))
+				DataType::new(identifier.node)
 			}
-			_ => None,
+			_ => DataType::default(),
 		}
-		None => None,
+		None => DataType::default(),
 	};
 
-	let variable = Variable { identifier: identifier.node, data_type, is_mutable };
+	let variable = Variable { target: variable_target.node, data_type, is_mutable };
 	Ok(Spanned::new(variable, span))
 }
 
@@ -52,7 +52,7 @@ mod tests {
 		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
 
 		let identifier = Identifier("variable");
-		let variable = Variable { identifier, data_type: None, is_mutable: false };
+		let variable = Variable { target: identifier, data_type: None, is_mutable: false };
 		assert_eq!(parse_variable(lexer, end_span).unwrap().node, variable);
 	}
 
@@ -62,7 +62,7 @@ mod tests {
 		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
 
 		let identifier = Identifier("variable");
-		let variable = Variable { identifier, data_type: None, is_mutable: true };
+		let variable = Variable { target: identifier, data_type: None, is_mutable: true };
 		assert_eq!(parse_variable(lexer, end_span).unwrap().node, variable);
 	}
 }

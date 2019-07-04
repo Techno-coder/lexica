@@ -1,14 +1,13 @@
 use crate::interpreter::{ENTRY_POINT, Size};
-use crate::node::{DataType, Function, Identifier};
+use crate::node::{Function, Identifier};
 use crate::source::{Span, Spanned};
 
 use super::{Element, Evaluation, FunctionContext};
 
 pub fn function_parameters<'a>(function: &Function<'a>, context: &mut FunctionContext<'a>) {
 	for parameter in &function.parameters {
-		let identifier = Spanned::new(parameter.identifier.clone(), parameter.span);
-		let DataType(Identifier(data_type)) = parameter.data_type.as_ref()
-			.expect("Parameter type not specified");
+		let identifier = Spanned::new(parameter.target.clone(), parameter.span);
+		let data_type = parameter.data_type.resolved().unwrap();
 		context.register_variable(identifier, Size::parse(data_type)
 			.expect("Invalid parameter type"));
 	}
@@ -44,7 +43,7 @@ pub fn function_arguments(function: &Function) -> Vec<Spanned<Element>> {
 
 pub fn function_drops(context: &FunctionContext, return_value: &Evaluation) -> Vec<Spanned<Element>> {
 	let mut elements = Vec::new();
-	for (_, (identifier_index, span)) in context.identifier_table() {
+	for (_, (identifier_index, span)) in context.variable_table() {
 		if let Evaluation::Local(local) = return_value {
 			if local == identifier_index {
 				continue;

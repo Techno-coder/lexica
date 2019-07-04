@@ -20,7 +20,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
 		let mut elements = binding.expression.accept(self);
-		let identifier = binding.variable.identifier.clone();
+		let identifier = binding.variable.target.clone();
 		let identifier = Spanned::new(identifier, binding.variable.span);
 		let local_index = self.context.pop_evaluation().promote(&mut elements, &mut self.context);
 		self.context.annotate_local(local_index, identifier);
@@ -48,7 +48,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		let mut elements = explicit_drop.expression.accept(self);
 		super::polarize_reverse(&mut elements);
 
-		let local_index = self.context.drop_variable(&explicit_drop.identifier);
+		let local_index = self.context.drop_variable(&explicit_drop.target);
 		let instruction = match self.context.pop_evaluation() {
 			Evaluation::Local(local) => format!("clone {} {}", local_index, local),
 			Evaluation::Immediate(primitive) => format!("reset {} {}", local_index, primitive),
@@ -58,8 +58,8 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		elements
 	}
 
-	fn expression(&mut self, expression: &mut Spanned<Expression<'a>>) -> Self::Result {
-		match &mut expression.node {
+	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
+		match &mut expression.expression {
 			Expression::Variable(variable) => {
 				let variable = self.context.get_variable(variable);
 				self.context.push_evaluation(Evaluation::Local(variable));

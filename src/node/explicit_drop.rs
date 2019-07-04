@@ -2,12 +2,12 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Expression, Identifier, NodeConstruct, NodeVisitor};
+use super::{ExpressionNode, NodeConstruct, NodeVisitor, VariableTarget};
 
 #[derive(Debug)]
 pub struct ExplicitDrop<'a> {
-	pub identifier: Spanned<Identifier<'a>>,
-	pub expression: Spanned<Expression<'a>>,
+	pub target: Spanned<VariableTarget<'a>>,
+	pub expression: Spanned<ExpressionNode<'a>>,
 }
 
 impl<'a> NodeConstruct<'a> for Spanned<ExplicitDrop<'a>> {
@@ -18,6 +18,6 @@ impl<'a> NodeConstruct<'a> for Spanned<ExplicitDrop<'a>> {
 
 impl<'a> fmt::Display for ExplicitDrop<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "drop {} = {}", self.identifier, self.expression)
+		write!(f, "drop {} = {}", self.target, self.expression)
 	}
 }

@@ -1,16 +1,17 @@
 use crate::interpreter::{Integer, Primitive};
-use crate::node::{BinaryOperation, BinaryOperator, Expression, FunctionCall, Identifier, DataType};
+use crate::node::{BinaryOperation, BinaryOperator, DataType, Expression, ExpressionNode,
+                  FunctionCall, Identifier};
 use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
 
 pub fn parse_expression_root<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
-                                 -> ParserResult<'a, Spanned<Expression<'a>>> {
+                                 -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	parse_expression(lexer, end_span, 0)
 }
 
 pub fn parse_expression<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, precedence: usize)
-                            -> ParserResult<'a, Spanned<Expression<'a>>> {
+                            -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	let mut context = parse_terminal(lexer, end_span)?;
 	while let Ok(operator) = parse_operator(lexer, end_span) {
 		match operator.precedence() > precedence {
@@ -22,7 +23,7 @@ pub fn parse_expression<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, precedenc
 }
 
 pub fn parse_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
-                          -> ParserResult<'a, Spanned<Expression<'a>>> {
+                          -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	let error = Spanned::new(ParserError::ExpectedExpression, end_span);
 	let next_token = lexer.next().ok_or(error)?;
 	Ok(Spanned::new(match next_token.node {
@@ -35,22 +36,23 @@ pub fn parse_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			Expression::Primitive(Primitive::Integer(integer))
 		}
 		_ => return Err(Spanned::new(ParserError::ExpectedExpression, next_token.span).into()),
-	}, next_token.span))
+	}.into(), next_token.span))
 }
 
 pub fn match_identifier_terminal<'a>(lexer: &mut PeekLexer<'a>, identifier: Spanned<Identifier<'a>>,
-                                     end_span: Span) -> ParserResult<'a, Spanned<Expression<'a>>> {
+                                     end_span: Span) -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
+	let expression_variable = Expression::Variable(identifier.node.clone().into());
 	Ok(match lexer.peek() {
 		Some(token) => match token.node {
 			Token::ParenthesisOpen => parse_function_call(lexer, identifier, end_span)?,
-			_ => Spanned::new(Expression::Variable(identifier.node), identifier.span),
+			_ => Spanned::new(expression_variable.into(), identifier.span),
 		}
-		None => Spanned::new(Expression::Variable(identifier.node), identifier.span),
+		None => Spanned::new(expression_variable.into(), identifier.span),
 	})
 }
 
 pub fn parse_function_call<'a>(lexer: &mut PeekLexer<'a>, function: Spanned<Identifier<'a>>,
-                               end_span: Span) -> ParserResult<'a, Spanned<Expression<'a>>> {
+                               end_span: Span) -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	let end_error = Spanned::new(ParserError::ExpectedToken(Token::ParenthesisClose), end_span);
 	expect!(lexer, end_span, ParenthesisOpen);
 
@@ -69,17 +71,17 @@ pub fn parse_function_call<'a>(lexer: &mut PeekLexer<'a>, function: Spanned<Iden
 
 	let span = Span::new(function.span.byte_start, byte_end);
 	// TODO: Type check return type
-	let return_type = Some(DataType(Identifier("u64")));
+	let return_type = DataType::new(Identifier("u64"));
 	let function_call = Box::new(FunctionCall { function, arguments, return_type });
-	Ok(Spanned::new(Expression::FunctionCall(function_call), span))
+	Ok(Spanned::new(Expression::FunctionCall(function_call).into(), span))
 }
 
-pub fn parse_binder<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, context: Spanned<Expression<'a>>,
-                        operator: Spanned<BinaryOperator>) -> ParserResult<'a, Spanned<Expression<'a>>> {
+pub fn parse_binder<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, context: Spanned<ExpressionNode<'a>>,
+                        operator: Spanned<BinaryOperator>) -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	let terminal = parse_expression(lexer, end_span, operator.precedence())?;
 	let span = Span::new(context.span.byte_start, terminal.span.byte_end);
 	let binder = BinaryOperation { left: context, right: terminal, operator };
-	Ok(Spanned::new(Expression::BinaryOperation(Box::new(binder)), span))
+	Ok(Spanned::new(Expression::BinaryOperation(Box::new(binder)).into(), span))
 }
 
 pub fn parse_operator<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
@@ -97,32 +99,4 @@ pub fn parse_operator<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 
 	let _ = lexer.next();
 	Ok(operator)
-}
-
-#[cfg(test)]
-mod tests {
-	use crate::parser::{end_span, Lexer};
-
-	use super::*;
-
-	#[test]
-	fn test_precedence() {
-		let text = "1 + 2 * 3\n";
-		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
-		let expression = parse_expression_root(lexer, end_span).unwrap();
-
-		let multiplication = BinaryOperation {
-			left: Spanned::new(Expression::LiteralInteger(2), Span::new(4, 5)),
-			right: Spanned::new(Expression::LiteralInteger(3), Span::new(8, 9)),
-			operator: Spanned::new(BinaryOperator::Multiply, Span::new(6, 7)),
-		};
-		let multiplication = Expression::BinaryOperation(Box::new(multiplication));
-
-		let root = BinaryOperation {
-			left: Spanned::new(Expression::LiteralInteger(1), Span::new(0, 1)),
-			right: Spanned::new(multiplication, Span::new(4, 9)),
-			operator: Spanned::new(BinaryOperator::Add, Span::new(2, 3)),
-		};
-		assert_eq!(expression.node, Expression::BinaryOperation(Box::new(root)));
-	}
 }

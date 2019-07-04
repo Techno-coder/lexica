@@ -1,4 +1,4 @@
-use crate::node::{Binding, ConditionalLoop, ExplicitDrop, Mutation, Statement};
+use crate::node::{Binding, ConditionalLoop, ExplicitDrop, Mutation, Statement, VariableTarget};
 use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
@@ -38,26 +38,26 @@ pub fn parse_binding<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 
 pub fn parse_mutation<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
                           -> ParserResult<'a, Spanned<Mutation<'a>>> {
-	let identifier = identifier!(lexer, end_span);
+	let target: Spanned<VariableTarget> = identifier!(lexer, end_span).into();
 	let error = Spanned::new(ParserError::ExpectedMutator, end_span);
 	let mutator = lexer.next().ok_or(error)?;
 
-	let span_start = identifier.span.byte_start;
+	let span_start = target.span.byte_start;
 	Ok(match mutator.node {
 		Token::Swap => {
 			let other = identifier!(lexer, end_span);
 			let span = Span::new(span_start, other.span.byte_end);
-			Spanned::new(Mutation::Swap(identifier, other), span)
+			Spanned::new(Mutation::Swap(target, other.into()), span)
 		}
 		Token::AddAssign => {
 			let expression = super::parse_expression_root(lexer, end_span)?;
 			let span = Span::new(span_start, expression.span.byte_end);
-			Spanned::new(Mutation::AddAssign(identifier, expression), span)
+			Spanned::new(Mutation::AddAssign(target, expression), span)
 		}
 		Token::MultiplyAssign => {
 			let expression = super::parse_expression_root(lexer, end_span)?;
 			let span = Span::new(span_start, expression.span.byte_end);
-			Spanned::new(Mutation::MultiplyAssign(identifier, expression), span)
+			Spanned::new(Mutation::MultiplyAssign(target, expression), span)
 		}
 		_ => return Err(Spanned::new(ParserError::ExpectedMutator, mutator.span).into()),
 	})
@@ -66,11 +66,11 @@ pub fn parse_mutation<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 pub fn parse_explicit_drop<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
                                -> ParserResult<'a, Spanned<ExplicitDrop<'a>>> {
 	let span_start = expect!(lexer, end_span, Drop).byte_start;
-	let identifier = identifier!(lexer, end_span);
+	let target = identifier!(lexer, end_span).into();
 	expect!(lexer, end_span, Assign);
 	let expression = super::parse_expression_root(lexer, end_span)?;
 	let span = Span::new(span_start, expression.span.byte_end);
-	Ok(Spanned::new(ExplicitDrop { identifier, expression }, span))
+	Ok(Spanned::new(ExplicitDrop { target, expression }, span))
 }
 
 pub fn parse_conditional_loop<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
