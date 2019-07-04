@@ -126,7 +126,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
 		let mut error_collate = ErrorCollate::new();
-		for (_, function) in &mut syntax_unit.functions {
+		for function in &mut syntax_unit.functions.values_mut() {
 			if let Err(errors) = function.accept(self) {
 				error_collate.combine(errors);
 			}

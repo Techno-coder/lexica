@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use polytype::{Context, Type};
 
+use crate::compiler::TypeAnnotator;
 use crate::node::*;
 use crate::source::{ErrorCollate, Spanned};
 
@@ -134,16 +135,15 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
 		let mut error_collate = ErrorCollate::new();
-		for (_, function) in &mut syntax_unit.functions {
+		for function in syntax_unit.functions.values_mut() {
 			if let Err(errors) = function.accept(self) {
 				error_collate.combine(errors);
 			}
 
-			*self = Self::default();
+			let context = std::mem::replace(&mut self.context, Context::default());
+			function.accept(&mut TypeAnnotator::new(context));
+			self.environment = HashMap::new();
 		}
-
-		// TODO
-//			function.accept(&mut TypeAnnotator::new(environment));
 		error_collate.collapse(())
 	}
 }

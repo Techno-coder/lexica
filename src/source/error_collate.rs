@@ -31,9 +31,7 @@ impl<T> ErrorCollate<T> {
 
 	pub fn promote(&mut self) {
 		if let ErrorCollate::Atomic(_) = self {
-			let mut promotion = ErrorCollate::new();
-			std::mem::swap(self, &mut promotion);
-
+			let promotion = std::mem::replace(self, ErrorCollate::new());
 			match self {
 				ErrorCollate::Multiple(errors) => match promotion {
 					ErrorCollate::Atomic(error) => errors.push(error),

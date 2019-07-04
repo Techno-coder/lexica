@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use polytype::Context;
 
 use crate::node::*;
@@ -8,15 +7,20 @@ use crate::source::Spanned;
 #[derive(Debug)]
 pub struct TypeAnnotator<'a> {
 	context: Context<Identifier<'a>>,
-	environment: HashMap<Identifier<'a>, DataType<'a>>,
 }
 
 impl<'a> TypeAnnotator<'a> {
-	pub fn new(environment: HashMap<Identifier<'a>, DataType<'a>>) -> Self {
-		Self { environment }
+	pub fn new(context: Context<Identifier<'a>>) -> Self {
+		Self { context }
+	}
+
+	pub fn apply(&self, data_type: &mut DataType<'a>) {
+		let DataType(data_type) = data_type;
+		data_type.apply_mut(&self.context);
 	}
 }
 
+// TODO: Check for unresolved types
 impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 	type Result = ();
 
@@ -26,10 +30,8 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 	}
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
-		let identifier = &binding.variable.identifier;
-		if let Some(data_type) = self.environment.get(identifier) {
-			binding.variable.data_type = Some(data_type.clone());
-		}
+		self.apply(&mut binding.variable.data_type);
+		binding.expression.accept(self);
 	}
 
 	fn conditional_loop(&mut self, conditional_loop: &mut Spanned<ConditionalLoop<'a>>) -> Self::Result {
@@ -42,8 +44,9 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 		explicit_drop.expression.accept(self);
 	}
 
-	fn expression(&mut self, expression: &mut Spanned<Expression<'a>>) -> Self::Result {
-		match expression.node {
+	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
+		self.apply(&mut expression.evaluation_type);
+		match expression.expression {
 			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
 			Expression::FunctionCall(_) => expression.function_call().accept(self),
 			_ => (),
@@ -52,18 +55,18 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
 		function.statements.iter_mut().for_each(|statement| statement.accept(self));
+		function.return_value.accept(self);
 	}
 
 	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
-		// TODO: Accept syntax unit to type annotate function call return type
 		function_call.arguments.iter_mut().for_each(|expression| expression.accept(self));
 	}
 
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
 		match &mut mutation.node {
-			Mutation::Swap(_, _) => (),
-			Mutation::AddAssign(_, expression) => expression.accept(self),
+			Mutation::AddAssign(_, expression) |
 			Mutation::MultiplyAssign(_, expression) => expression.accept(self),
+			_ => (),
 		}
 	}
 
@@ -76,7 +79,7 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 		}
 	}
 
-	fn syntax_unit(&mut self, _: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
-		panic!("Types cannot be annotated on a syntax unit")
+	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
+		syntax_unit.functions.values_mut().for_each(|function| function.accept(self));
 	}
 }

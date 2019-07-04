@@ -6,9 +6,9 @@ pub fn translate(source_map: &TextMap) -> Option<TranslationMap> {
 	let mut syntax_unit = emit_errors(source_map, crate::parser::parse(source_map.text()))?;
 	emit_errors(source_map, syntax_unit.accept(&mut crate::compiler::VariableExposition::default()))?;
 
+	let mut inference_engine = crate::compiler::InferenceEngine::default();
 	syntax_unit.accept(&mut crate::compiler::TypeLocaliser::default());
-	emit_errors(source_map, syntax_unit.accept(&mut crate::compiler::InferenceEngine::default()))?;
-	// tODO: Type annotator
+	emit_errors(source_map, syntax_unit.accept(&mut inference_engine))?;
 
 	// TODO
 	println!("{}", syntax_unit);
