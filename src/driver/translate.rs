@@ -6,10 +6,12 @@ pub fn translate(source_map: &TextMap) -> Option<TranslationMap> {
 	let mut syntax_unit = emit_errors(source_map, crate::parser::parse(source_map.text()))?;
 	emit_errors(source_map, syntax_unit.accept(&mut crate::compiler::VariableExposition::default()))?;
 
+	syntax_unit.accept(&mut crate::compiler::TypeLocaliser::default());
+	emit_errors(source_map, syntax_unit.accept(&mut crate::compiler::InferenceEngine::default()))?;
+	// tODO: Type annotator
+
 	// TODO
-//	syntax_unit.accept(&mut crate::compiler::InferenceEngine::default())
-//		.expect("Type checking failed");
-//	println!("{}", syntax_unit);
+	println!("{}", syntax_unit);
 	let elements = syntax_unit.accept(&mut crate::compiler::Translator::default());
 	Some(crate::compiler::TranslationMap::new(elements))
 }

@@ -10,7 +10,7 @@ pub fn function_call_value(function_call: &Spanned<&mut FunctionCall>, context: 
 	let instruction = format!("call {}", function_call.function);
 	elements.push(instruction!(Advance, instruction, function_call.span));
 
-	let return_type = function_call.return_type.resolved().unwrap();
+	let return_type = function_call.evaluation_type.resolved().unwrap();
 	let local = context.register_local(Size::parse(return_type)
 		.expect("Invalid return type"));
 

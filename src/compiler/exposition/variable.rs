@@ -16,22 +16,18 @@ pub struct VariableExposition<'a> {
 }
 
 impl<'a> VariableExposition<'a> {
-	pub fn frame(&self) -> &GenerationFrame<'a> {
-		self.generation_frames.last().expect("Generation frame does not exist")
-	}
-
-	pub fn frame_mut(&mut self) -> &mut GenerationFrame<'a> {
+	pub fn frame(&mut self) -> &mut GenerationFrame<'a> {
 		self.generation_frames.last_mut().expect("Generation frame does not exist")
 	}
 
 	pub fn register_target(&mut self, target: &mut VariableTarget<'a>) {
 		let VariableTarget(identifier, generation) = target;
-		match self.frame_mut().get_mut(identifier) {
+		match self.frame().get_mut(identifier) {
 			Some(current_generation) => {
 				*current_generation += 1;
 				return *generation = *current_generation;
 			}
-			None => self.frame_mut().insert(identifier.clone(), 0),
+			None => self.frame().insert(identifier.clone(), 0),
 		};
 	}
 
@@ -64,6 +60,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 	}
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
+		binding.expression.accept(self)?;
 		Ok(self.register_target(&mut binding.variable.node.target))
 	}
 
@@ -96,7 +93,8 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 		function.parameters.iter_mut()
 			.for_each(|parameter| self.register_target(&mut parameter.target));
 		function.statements.iter_mut()
-			.try_for_each(|statement| statement.accept(self))
+			.try_for_each(|statement| statement.accept(self))?;
+		function.return_value.accept(self)
 	}
 
 	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {

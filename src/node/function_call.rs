@@ -8,7 +8,7 @@ use super::{DataType, ExpressionNode, Identifier, NodeConstruct, NodeVisitor};
 pub struct FunctionCall<'a> {
 	pub function: Spanned<Identifier<'a>>,
 	pub arguments: Vec<Spanned<ExpressionNode<'a>>>,
-	pub return_type: DataType<'a>,
+	pub evaluation_type: DataType<'a>,
 }
 
 impl<'a> NodeConstruct<'a> for Spanned<&mut FunctionCall<'a>> {

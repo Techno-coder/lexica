@@ -1,5 +1,5 @@
 pub use self::error::ExpositionError;
-pub use self::variable_shadow::VariableExposition;
+pub use self::variable::VariableExposition;
 
-mod variable_shadow;
+mod variable;
 mod error;

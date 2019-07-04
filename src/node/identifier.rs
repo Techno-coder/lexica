@@ -16,6 +16,10 @@ impl<'a> Name for Identifier<'a> {
 	fn arrow() -> Self {
 		Identifier("->")
 	}
+
+	fn show(&self) -> String {
+		self.to_string()
+	}
 }
 
 #[derive(Debug, Clone, PartialEq)]

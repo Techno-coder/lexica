@@ -1,7 +1,7 @@
 pub use self::exposition::*;
-//pub use self::inference::InferenceEngine;
-pub use self::translation::{TranslationMap, Translator};
+pub use self::inference::*;
+pub use self::translation::{Translator, TranslationMap};
 
 pub mod translation;
 pub mod exposition;
-//pub mod inference;
+pub mod inference;

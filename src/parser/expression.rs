@@ -69,10 +69,9 @@ pub fn parse_function_call<'a>(lexer: &mut PeekLexer<'a>, function: Spanned<Iden
 		}
 	};
 
+	let evaluation_type = DataType::default();
 	let span = Span::new(function.span.byte_start, byte_end);
-	// TODO: Type check return type
-	let return_type = DataType::new(Identifier("u64"));
-	let function_call = Box::new(FunctionCall { function, arguments, return_type });
+	let function_call = Box::new(FunctionCall { function, arguments, evaluation_type });
 	Ok(Spanned::new(Expression::FunctionCall(function_call).into(), span))
 }
 
