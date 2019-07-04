@@ -27,7 +27,7 @@ macro_rules! argument {
 		match &$argument.node {
 			$pattern => $return,
 			_ => return Err($crate::source::Spanned::new(
-					$crate::interpreter::ParserError::UnexpectedArgument($argument.node.clone()),
+					$crate::interpreter::parser::ParserError::UnexpectedArgument($argument.node.clone()),
 					$argument.span)),
 		};
     };

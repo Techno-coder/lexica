@@ -1,6 +1,7 @@
 use std::fmt;
 
-use super::{ParserError, Primitive};
+use super::parser::ParserError;
+use super::Primitive;
 
 /// Represents possible data types in the interpreter.
 #[derive(Debug, Clone, PartialEq)]

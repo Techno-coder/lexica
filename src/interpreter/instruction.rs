@@ -2,7 +2,8 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Direction, FunctionOffset, FunctionTarget, GenericOperation, Token};
+use super::{Direction, FunctionOffset, FunctionTarget, GenericOperation};
+use super::parser::Token;
 
 pub type Operand<'a> = Spanned<Token<'a>>;
 

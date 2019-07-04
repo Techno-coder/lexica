@@ -1,31 +1,13 @@
 use colored::Colorize;
 
 use crate::compiler::TranslationMap;
-use crate::interpreter::{AnnotationStore, CompilationUnit, ElementParser, OperationStore,
-                         TranslationUnit};
-use crate::node::NodeConstruct;
+use crate::interpreter::{CompilationUnit, TranslationUnit};
+use crate::interpreter::parser::{AnnotationStore, ElementParser, OperationStore};
 use crate::source::{Spanned, TextMap};
 
-pub fn compile(source_map: &TextMap) -> Option<TranslationMap> {
-	let mut syntax_unit = match crate::parser::parse(source_map.text()) {
-		Ok(syntax_unit) => syntax_unit,
-		Err(errors) => {
-			errors.into_iter().for_each(|error| crate::source::emit(&source_map, &error));
-			return None;
-		}
-	};
-
-	// TODO
-//	syntax_unit.accept(&mut crate::compiler::InferenceEngine::default())
-//		.expect("Type checking failed");
-//	println!("{}", syntax_unit);
-	let elements = syntax_unit.accept(&mut crate::compiler::Translator::default());
-	Some(crate::compiler::TranslationMap::new(elements))
-}
-
-pub fn compile_translation(source_map: &TextMap, translation_map: TranslationMap,
-                           operations: &OperationStore, annotations: &AnnotationStore)
-                           -> Option<CompilationUnit> {
+pub fn compile(source_map: &TextMap, translation_map: TranslationMap,
+               operations: &OperationStore, annotations: &AnnotationStore)
+               -> Option<CompilationUnit> {
 	let text_map = TextMap::new(translation_map.text().to_owned());
 	let unit = parse_bytecode(&source_map, &text_map, &translation_map, operations, annotations)?;
 	let (unit, _metadata, errors) = crate::interpreter::compile(unit, operations);
@@ -50,7 +32,7 @@ pub fn parse_bytecode<'a>(source_map: &TextMap, text_map: &TextMap, translation_
 		Err(error) => parser_errors.push(error),
 	});
 
-	let (unit, mut errors) = crate::interpreter::parse(elements, annotations);
+	let (unit, mut errors) = crate::interpreter::parser::parse(elements, annotations);
 	parser_errors.append(&mut errors);
 
 	match parser_errors.is_empty() {

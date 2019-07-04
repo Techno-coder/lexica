@@ -1,7 +1,8 @@
 use crate::source::Spanned;
 
+use super::parser::OperationStore;
 use super::{CompilationUnit, CompileContext, CompileError, CompileMetadata, CompileResult, Direction,
-            Function, Instruction, OperationStore, TranslationInstruction, TranslationUnit};
+            Function, Instruction, TranslationInstruction, TranslationUnit};
 
 pub const ENTRY_POINT: &str = "main";
 

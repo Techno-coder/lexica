@@ -43,6 +43,13 @@ impl<T> ErrorCollate<T> {
 			}
 		}
 	}
+
+	pub fn collapse<V>(self, value: V) -> Result<V, ErrorCollate<T>> {
+		match self.empty() {
+			true => Ok(value),
+			false => Err(self),
+		}
+	}
 }
 
 impl<T> From<T> for ErrorCollate<T> {

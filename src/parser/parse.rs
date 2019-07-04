@@ -24,13 +24,9 @@ pub fn parse(text: &str) -> ParserResult<Spanned<SyntaxUnit>> {
 		}
 	}
 
-	match errors.empty() {
-		true => {
-			let syntax_unit = SyntaxUnit { functions };
-			Ok(Spanned::new(syntax_unit, Span::new(0, text.len())))
-		}
-		false => Err(errors),
-	}
+	let span = Span::new(0, text.len());
+	let syntax_unit = Spanned::new(SyntaxUnit { functions }, span);
+	errors.collapse(syntax_unit)
 }
 
 pub fn end_span(text: &str) -> Span {

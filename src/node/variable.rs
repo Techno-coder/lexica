@@ -23,7 +23,7 @@ impl<'a> fmt::Display for Variable<'a> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct VariableTarget<'a>(Identifier<'a>, usize);
+pub struct VariableTarget<'a>(pub Identifier<'a>, pub usize);
 
 impl<'a> From<Identifier<'a>> for VariableTarget<'a> {
 	fn from(identifier: Identifier<'a>) -> Self {

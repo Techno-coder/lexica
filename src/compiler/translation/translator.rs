@@ -20,10 +20,10 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
 		let mut elements = binding.expression.accept(self);
-		let identifier = binding.variable.target.clone();
-		let identifier = Spanned::new(identifier, binding.variable.span);
+		let target = binding.variable.target.clone();
+		let target = Spanned::new(target, binding.variable.span);
 		let local_index = self.context.pop_evaluation().promote(&mut elements, &mut self.context);
-		self.context.annotate_local(local_index, identifier);
+		self.context.annotate_local(local_index, target);
 		elements
 	}
 
@@ -103,13 +103,13 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		let span = mutation.span;
 		match &mut mutation.node {
 			Mutation::Swap(left, right) => super::swap(span, left, right, &self.context),
-			Mutation::AddAssign(identifier, expression) => {
+			Mutation::AddAssign(target, expression) => {
 				let expression = expression.accept(self);
-				super::add_assign(span, identifier, expression, &mut self.context)
+				super::add_assign(span, target, expression, &mut self.context)
 			}
-			Mutation::MultiplyAssign(identifier, expression) => {
+			Mutation::MultiplyAssign(target, expression) => {
 				let expression = expression.accept(self);
-				super::multiply_assign(span, identifier, expression, &mut self.context)
+				super::multiply_assign(span, target, expression, &mut self.context)
 			}
 		}
 	}

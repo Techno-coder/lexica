@@ -2,7 +2,8 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{InterpreterError, ParserError, Token};
+use super::parser::{ParserError, Token};
+use super::InterpreterError;
 
 pub type CompileResult<'a, T> = Result<T, Spanned<CompileError<'a>>>;
 
