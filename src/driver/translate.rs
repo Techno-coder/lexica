@@ -23,7 +23,10 @@ pub fn emit_errors<T, E>(source_map: &TextMap, result: Result<T, ErrorCollate<Sp
 	match result {
 		Ok(value) => Some(value),
 		Err(errors) => {
-			errors.into_iter().for_each(|error| crate::source::emit(&source_map, &error));
+			for error in errors {
+				crate::source::emit(&source_map, &error);
+				println!()
+			}
 			return None;
 		}
 	}

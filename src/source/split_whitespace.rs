@@ -48,3 +48,20 @@ impl<'a> Iterator for SplitWhitespace<'a> {
 		None
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_split_whitespace() {
+		let text = "@local u64\n~main {\n";
+		let lexemes: Vec<_> = SplitWhitespace::new(text).collect();
+		assert_eq!(&lexemes, &[
+			(Span::new(0, 6), "@local"),
+			(Span::new(7, 10), "u64"),
+			(Span::new(11, 16), "~main"),
+			(Span::new(17, 18), "{"),
+		]);
+	}
+}

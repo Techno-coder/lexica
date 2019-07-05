@@ -51,8 +51,8 @@ mod tests {
 		let text = "variable\n";
 		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
 
-		let identifier = Identifier("variable");
-		let variable = Variable { target: identifier, data_type: None, is_mutable: false };
+		let target = Identifier("variable").into();
+		let variable = Variable { target, data_type: DataType::default(), is_mutable: false };
 		assert_eq!(parse_variable(lexer, end_span).unwrap().node, variable);
 	}
 
@@ -61,8 +61,8 @@ mod tests {
 		let text = "~variable\n";
 		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
 
-		let identifier = Identifier("variable");
-		let variable = Variable { target: identifier, data_type: None, is_mutable: true };
+		let target = Identifier("variable").into();
+		let variable = Variable { target, data_type: DataType::default(), is_mutable: true };
 		assert_eq!(parse_variable(lexer, end_span).unwrap().node, variable);
 	}
 }

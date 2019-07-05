@@ -14,23 +14,22 @@ pub fn emit_header<E>(error: &Spanned<E>) where E: Display {
 }
 
 pub fn emit_content<E>(text_map: &TextMap, error: &Spanned<E>) {
-	text_map.prefix(&error.span, 1).iter()
+	text_map.prefix(error.span, 1).iter()
 		.for_each(|(line_index, line)| println!("{} | {}", format!("{:4}", line_index)
 			.bright_blue().bold(), line));
-	text_map.lines(&error.span).iter()
+	text_map.lines(error.span).iter()
 		.for_each(|(line_index, line)| println!("{} | {}", format!("{:4}", line_index)
 			.bright_blue().bold(), line));
 
-	let (line_prefix, specific) = text_map.line_offsets(&error.span);
-	let line_prefix: String = line_prefix
-		.chars()
+	let (line_prefix, specific) = text_map.line_offsets(error.span);
+	let line_prefix: String = line_prefix.chars()
 		.map(|character| match character.is_whitespace() {
 			true => character,
 			false => ' ',
 		}).collect();
 	println!("     | {}{}", line_prefix, "^".repeat(specific.chars().count()).red());
 
-	text_map.suffix(&error.span, 1).iter()
+	text_map.suffix(error.span, 1).iter()
 		.for_each(|(line_index, line)| println!("{} | {}", format!("{:4}", line_index)
 			.bright_blue().bold(), line));
 }
