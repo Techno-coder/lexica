@@ -1,7 +1,9 @@
 use polytype::Context;
 
 use crate::node::*;
-use crate::source::Spanned;
+use crate::source::{ErrorCollate, Span, Spanned};
+
+use super::{TypeError, TypeResult};
 
 /// Applies resolved types from a type context.
 #[derive(Debug)]
@@ -14,59 +16,65 @@ impl<'a> TypeAnnotator<'a> {
 		Self { context }
 	}
 
-	pub fn apply(&self, data_type: &mut DataType<'a>) {
-		let DataType(data_type) = data_type;
-		data_type.apply_mut(&self.context);
+	pub fn apply(&self, data_type: &mut DataType<'a>, span: Span) -> TypeResult<'a, ()> {
+		let DataType(internal_type) = data_type;
+		internal_type.apply_mut(&self.context);
+
+		let type_error = TypeError::UnresolvedType(internal_type.clone());
+		data_type.resolved().ok_or(Spanned::new(type_error, span))?;
+		Ok(())
 	}
 }
 
-// TODO: Check for unresolved types
 impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
-	type Result = ();
+	type Result = TypeResult<'a, ()>;
 
 	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
-		operation.left.accept(self);
-		operation.right.accept(self);
+		operation.left.accept(self)?;
+		operation.right.accept(self)?;
+		Ok(())
 	}
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
-		self.apply(&mut binding.variable.data_type);
-		binding.expression.accept(self);
+		let variable_span = binding.variable.span.clone();
+		self.apply(&mut binding.variable.data_type, variable_span)?;
+		binding.expression.accept(self)
 	}
 
 	fn conditional_loop(&mut self, conditional_loop: &mut Spanned<ConditionalLoop<'a>>) -> Self::Result {
-		conditional_loop.statements.iter_mut().for_each(|statement| statement.accept(self));
-		conditional_loop.start_condition.as_mut().unwrap().accept(self);
-		conditional_loop.end_condition.accept(self);
+		conditional_loop.statements.iter_mut().try_for_each(|statement| statement.accept(self))?;
+		conditional_loop.start_condition.as_mut().unwrap().accept(self)?;
+		conditional_loop.end_condition.accept(self)
 	}
 
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
-		explicit_drop.expression.accept(self);
+		explicit_drop.expression.accept(self)
 	}
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		self.apply(&mut expression.evaluation_type);
+		let expression_span = expression.span;
+		self.apply(&mut expression.evaluation_type, expression_span)?;
 		match expression.expression {
 			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
 			Expression::FunctionCall(_) => expression.function_call().accept(self),
-			_ => (),
+			_ => Ok(()),
 		}
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		function.statements.iter_mut().for_each(|statement| statement.accept(self));
-		function.return_value.accept(self);
+		function.statements.iter_mut().try_for_each(|statement| statement.accept(self))?;
+		function.return_value.accept(self)
 	}
 
 	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
-		function_call.arguments.iter_mut().for_each(|expression| expression.accept(self));
+		function_call.arguments.iter_mut().try_for_each(|expression| expression.accept(self))
 	}
 
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
 		match &mut mutation.node {
 			Mutation::AddAssign(_, expression) |
 			Mutation::MultiplyAssign(_, expression) => expression.accept(self),
-			_ => (),
+			_ => Ok(()),
 		}
 	}
 
@@ -80,6 +88,12 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 	}
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
-		syntax_unit.functions.values_mut().for_each(|function| function.accept(self));
+		let mut error_collate = ErrorCollate::new();
+		for function in syntax_unit.functions.values_mut() {
+			if let Err(errors) = function.accept(self) {
+				error_collate.combine(errors);
+			}
+		}
+		error_collate.collapse(())
 	}
 }

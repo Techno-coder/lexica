@@ -2,13 +2,10 @@ use std::collections::HashMap;
 
 use polytype::{Context, Type};
 
-use crate::compiler::TypeAnnotator;
 use crate::node::*;
 use crate::source::{ErrorCollate, Spanned};
 
-use super::TypeError;
-
-type Result<'a> = std::result::Result<(), ErrorCollate<Spanned<TypeError<'a>>>>;
+use super::TypeResult;
 
 /// Applies type inference and analysis.
 #[derive(Debug, Default)]
@@ -17,8 +14,14 @@ pub struct InferenceEngine<'a> {
 	context: Context<Identifier<'a>>,
 }
 
+impl<'a> InferenceEngine<'a> {
+	pub fn context(self) -> Context<Identifier<'a>> {
+		self.context
+	}
+}
+
 impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
-	type Result = Result<'a>;
+	type Result = TypeResult<'a, ()>;
 
 	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
 		operation.left.accept(self)?;
@@ -140,8 +143,6 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				error_collate.combine(errors);
 			}
 
-			let context = std::mem::replace(&mut self.context, Context::default());
-			function.accept(&mut TypeAnnotator::new(context));
 			self.environment = HashMap::new();
 		}
 		error_collate.collapse(())
