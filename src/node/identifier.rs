@@ -45,6 +45,13 @@ impl<'a> AsRef<Type<Identifier<'a>>> for DataType<'a> {
 	}
 }
 
+impl<'a> AsMut<Type<Identifier<'a>>> for DataType<'a> {
+	fn as_mut(&mut self) -> &mut Type<Identifier<'a>> {
+		let DataType(data_type) = self;
+		data_type
+	}
+}
+
 impl<'a> Default for DataType<'a> {
 	fn default() -> Self {
 		DataType(Type::Variable(0))

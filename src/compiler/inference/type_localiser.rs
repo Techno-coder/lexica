@@ -3,10 +3,11 @@ use std::collections::HashMap;
 use crate::node::*;
 use crate::source::Spanned;
 
-/// Clones data types from a global context to inner nodes.
+/// Clones data types from a global context to local nodes.
 #[derive(Debug, Default)]
 pub struct TypeLocaliser<'a> {
 	function_returns: HashMap<Identifier<'a>, DataType<'a>>,
+	function_parameters: HashMap<Identifier<'a>, Vec<DataType<'a>>>,
 }
 
 impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
@@ -47,6 +48,11 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
 		function_call.arguments.iter_mut().for_each(|argument| argument.accept(self));
 		function_call.evaluation_type = self.function_returns[&function_call.function].clone();
+
+		let parameters = self.function_parameters[&function_call.function].iter();
+		for (argument, parameter) in function_call.arguments.iter_mut().zip(parameters) {
+			argument.evaluation_type = parameter.clone();
+		}
 	}
 
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
@@ -67,11 +73,14 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 	}
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
-		self.function_returns = syntax_unit.functions.iter()
-			.map(|(identifier, function)| {
-				(identifier.clone(), function.return_type.node.clone())
-			}).collect();
-		syntax_unit.functions.values_mut()
-			.for_each(|function| function.accept(self));
+		for (identifier, function) in &syntax_unit.functions {
+			let return_type = function.return_type.node.clone();
+			self.function_returns.insert(identifier.clone(), return_type);
+
+			let parameters = function.parameters.iter().map(|parameter| &parameter.data_type);
+			self.function_parameters.insert(identifier.clone(), parameters.cloned().collect());
+		}
+
+		syntax_unit.functions.values_mut().for_each(|function| function.accept(self));
 	}
 }

@@ -61,7 +61,7 @@ pub fn function_return(function: &Spanned<Function>, return_value: Evaluation) -
 	let return_span = function.return_value.span;
 	elements.push(instruction!(Advance, match return_value {
 		Evaluation::Local(local) => format!("drop {}", local),
-		Evaluation::Immediate(primitive) => format!("drop.i {}", primitive),
+		Evaluation::Immediate(primitive) => format!("drop.i {} {}", primitive.size(), primitive),
 	}, return_span));
 
 	elements.push(match function.identifier.node {

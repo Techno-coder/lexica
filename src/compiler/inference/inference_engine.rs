@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use polytype::{Context, Type};
+use polytype::{Context, Type, UnificationError};
 
 use crate::node::*;
 use crate::source::{ErrorCollate, Spanned};
@@ -18,6 +18,15 @@ impl<'a> InferenceEngine<'a> {
 	pub fn context(self) -> Context<Identifier<'a>> {
 		self.context
 	}
+
+	// TODO: Use disjoint set structure to improve application
+	// TODO: Use mutable reference to modify syntax tree
+	pub fn unify(&mut self, mut left: Type<Identifier<'a>>, mut right: Type<Identifier<'a>>)
+	             -> Result<(), UnificationError<Identifier<'a>>> {
+		super::application::apply(&self.context, &mut left);
+		super::application::apply(&self.context, &mut right);
+		self.context.unify(&left, &right)
+	}
 }
 
 impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
@@ -29,7 +38,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 		let left = operation.left.evaluation_type.as_ref();
 		let right = operation.right.evaluation_type.as_ref();
-		Ok(self.context.unify(&left, &right)
+		Ok(self.unify(left.clone(), right.clone())
 			.map_err(|error| Spanned::new(error.into(), operation.span))?)
 	}
 
@@ -40,7 +49,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		}
 
 		let binding_type = binding.variable.data_type.as_ref();
-		self.context.unify(binding_type, binding.expression.evaluation_type.as_ref())
+		self.unify(binding_type.clone(), binding.expression.evaluation_type.as_ref().clone())
 			.map_err(|error| Spanned::new(error.into(), binding.span))?;
 		self.environment.insert(binding.variable.target.clone(), binding_type.clone());
 		Ok(())
@@ -51,10 +60,10 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		let start_condition = conditional_loop.start_condition.as_mut().unwrap();
 		start_condition.accept(self)?;
 
-		let boolean_type = Type::Constructed(Identifier("bool"), Vec::new());
-		self.context.unify(start_condition.evaluation_type.as_ref(), &boolean_type)
+		const BOOLEAN_TYPE: Type<Identifier<'static>> = super::application::BOOLEAN_TYPE;
+		self.unify(start_condition.evaluation_type.as_ref().clone(), BOOLEAN_TYPE)
 			.map_err(|error| Spanned::new(error.into(), start_condition.span))?;
-		self.context.unify(conditional_loop.end_condition.evaluation_type.as_ref(), &boolean_type)
+		self.unify(conditional_loop.end_condition.evaluation_type.as_ref().clone(), BOOLEAN_TYPE)
 			.map_err(|error| Spanned::new(error.into(), conditional_loop.end_condition.span))?;
 
 		conditional_loop.statements.iter_mut().try_for_each(|statement| statement.accept(self))?;
@@ -62,26 +71,22 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 	}
 
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
-		let identifier_type = &self.environment[&explicit_drop.target];
+		let identifier_type = self.environment[&explicit_drop.target].clone();
 		let expression_type = explicit_drop.expression.evaluation_type.as_ref();
-		Ok(self.context.unify(&identifier_type, expression_type)
+		Ok(self.unify(identifier_type, expression_type.clone())
 			.map_err(|error| Spanned::new(error.into(), explicit_drop.span))?)
 	}
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		Ok(expression.evaluation_type = match &mut expression.expression {
+		let evaluation_type = match &mut expression.expression {
 			Expression::Variable(target) => DataType(self.environment[target].clone()),
-			Expression::Primitive(primitive) => {
-				let evaluation_type = Identifier(primitive.size().to_string());
-				DataType(Type::Constructed(evaluation_type, Vec::new()))
-			}
+			Expression::Primitive(_) => DataType(self.context.new_variable()),
 			Expression::BinaryOperation(_) => {
 				let mut binary_operation = expression.binary_operation();
 				binary_operation.accept(self)?;
 
-				let boolean_type = DataType(Type::Constructed(Identifier("bool"), Vec::new()));
 				match binary_operation.operator.node {
-					BinaryOperator::Equal => boolean_type,
+					BinaryOperator::Equal => super::application::BOOLEAN_TYPE,
 					_ => binary_operation.left.evaluation_type.clone(),
 				}
 			}
@@ -90,6 +95,13 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				function_call.accept(self)?;
 				function_call.evaluation_type.clone()
 			}
+		};
+
+		let expression_type = expression.evaluation_type.as_ref();
+		Ok(match expression.evaluation_type.resolved().is_some() {
+			false => expression.evaluation_type = evaluation_type,
+			true => self.unify(expression_type.clone(), evaluation_type.as_ref().clone())
+				.map_err(|error| Spanned::new(error.into(), expression.span))?,
 		})
 	}
 
@@ -103,7 +115,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		function.return_value.accept(self)?;
 
 		let return_type = function.return_value.evaluation_type.as_ref();
-		Ok(self.context.unify(return_type, function.return_type.node.as_ref())
+		Ok(self.unify(return_type.clone(), function.return_type.node.as_ref().clone())
 			.map_err(|error| Spanned::new(error.into(), function.return_value.span))?)
 	}
 
@@ -114,15 +126,16 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
 		Ok(match &mut mutation.node {
 			Mutation::Swap(left, right) => {
-				let left = &self.environment[left];
-				let right = &self.environment[right];
-				self.context.unify(left, right)
+				let left = self.environment[left].clone();
+				let right = self.environment[right].clone();
+				self.unify(left, right)
 			}
 			Mutation::AddAssign(identifier, expression) |
 			Mutation::MultiplyAssign(identifier, expression) => {
-				let identifier_type = &self.environment[identifier];
+				expression.accept(self)?;
+				let identifier_type = self.environment[identifier].clone();
 				let evaluation_type = expression.evaluation_type.as_ref();
-				self.context.unify(identifier_type, evaluation_type)
+				self.unify(identifier_type, evaluation_type.clone())
 			}
 		}.map_err(|error| Spanned::new(error.into(), mutation.span))?)
 	}
@@ -143,7 +156,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				error_collate.combine(errors);
 			}
 
-			self.environment = HashMap::new();
+			self.environment.clear();
 		}
 		error_collate.collapse(())
 	}

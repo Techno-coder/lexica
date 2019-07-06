@@ -1,4 +1,5 @@
 #![feature(map_get_key_value)]
+#![feature(const_vec_new)]
 #![feature(never_type)]
 
 mod driver;
