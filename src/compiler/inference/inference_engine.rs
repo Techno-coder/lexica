@@ -19,8 +19,6 @@ impl<'a> InferenceEngine<'a> {
 		self.context
 	}
 
-	// TODO: Use disjoint set structure to improve application
-	// TODO: Use mutable reference to modify syntax tree
 	pub fn unify(&mut self, mut left: Type<Identifier<'a>>, mut right: Type<Identifier<'a>>)
 	             -> Result<(), UnificationError<Identifier<'a>>> {
 		super::application::apply(&self.context, &mut left);
@@ -86,7 +84,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				binary_operation.accept(self)?;
 
 				match binary_operation.operator.node {
-					BinaryOperator::Equal => super::application::BOOLEAN_TYPE,
+					BinaryOperator::Equal => DataType(super::application::BOOLEAN_TYPE),
 					_ => binary_operation.left.evaluation_type.clone(),
 				}
 			}
