@@ -20,8 +20,9 @@ impl<'a> TypeAnnotator<'a> {
 
 	pub fn apply(&mut self, data_type: &mut DataType<'a>, span: Span) -> TypeResult<'a, ()> {
 		let DataType(internal_type) = data_type;
-		super::application::apply(&self.context, internal_type);
+		assert_ne!(internal_type, &TYPE_SENTINEL);
 
+		super::application::apply(&self.context, internal_type);
 		let type_error = TypeError::UnresolvedType(internal_type.clone());
 		data_type.resolved().ok_or(Spanned::new(type_error, span))?;
 		Ok(())

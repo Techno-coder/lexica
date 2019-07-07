@@ -1,11 +1,10 @@
 use std::fmt;
 
-use crate::interpreter::Direction;
 use crate::source::Span;
 
 use super::{CallFrame, CompilationUnit, CompileContext, CompileError, CompileResult, Context,
-            FunctionOffset, FunctionTarget, GenericOperation, InstructionTarget, InterpreterResult,
-            Operand, Operation, Operational, Reversible};
+            Direction, FunctionOffset, FunctionTarget, GenericOperation, InstructionTarget,
+            InterpreterResult, Intrinsic, Operand, Operation, Operational, Reversible};
 
 /// Calls a function.
 #[derive(Debug)]
@@ -26,6 +25,10 @@ impl Operational for Call {
 	                   -> CompileResult<'a, GenericOperation> {
 		use super::unit_parsers::*;
 		let target = target(&operands[0])?;
+		if let Some(intrinsic) = Intrinsic::construct(&target, context) {
+			return Ok(Box::new(intrinsic));
+		}
+
 		let function_target = context.metadata.function_targets.get(&target)
 			.ok_or(operands[0].map(|_| CompileError::UndefinedFunction(target.clone())))?;
 		Ok(Box::new(Call::new(function_target.clone())))

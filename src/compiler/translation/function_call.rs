@@ -1,14 +1,18 @@
 use crate::interpreter::Size;
-use crate::node::FunctionCall;
+use crate::intrinsics::IntrinsicStore;
+use crate::node::{FunctionCall, Identifier};
 use crate::source::Spanned;
 
 use super::{Element, Evaluation, FunctionContext};
 
-pub fn function_call_value(function_call: &Spanned<&mut FunctionCall>, context: &mut FunctionContext)
-                           -> Vec<Spanned<Element>> {
-	let mut elements = Vec::new();
+pub fn function_call_value(function_call: &Spanned<&mut FunctionCall>, context: &mut FunctionContext,
+                           intrinsics: &IntrinsicStore) -> Vec<Spanned<Element>> {
 	let instruction = format!("call {}", function_call.function);
-	elements.push(instruction!(Advance, instruction, function_call.span));
+	let Identifier(identifier) = &function_call.function.node;
+	let mut elements = vec![match intrinsics.get(identifier) {
+		Some(_) => instruction!(Advance, Advance, instruction, function_call.span),
+		None => instruction!(Advance, instruction, function_call.span),
+	}];
 
 	let return_type = function_call.evaluation_type.resolved().unwrap();
 	let local = context.register_local(Size::parse(return_type)

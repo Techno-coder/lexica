@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::intrinsics::IntrinsicStore;
 use crate::node::*;
 use crate::source::Spanned;
 
@@ -8,6 +9,26 @@ use crate::source::Spanned;
 pub struct TypeLocaliser<'a> {
 	function_returns: HashMap<Identifier<'a>, DataType<'a>>,
 	function_parameters: HashMap<Identifier<'a>, Vec<DataType<'a>>>,
+}
+
+impl<'a> TypeLocaliser<'a> {
+	pub fn new(intrinsics: &IntrinsicStore) -> TypeLocaliser<'a> {
+		let mut function_returns = HashMap::new();
+		let mut function_parameters = HashMap::new();
+
+		for intrinsic in intrinsics.intrinsics() {
+			let identifier = Identifier(intrinsic.identifier);
+			let function_return = Identifier(intrinsic.return_type.to_string());
+			function_returns.insert(identifier.clone(), DataType::new(function_return));
+
+			let parameters = intrinsic.parameters.iter()
+				.map(|parameter| Identifier(parameter.to_string()).into())
+				.map(|parameter| DataType::new(parameter)).collect();
+			function_parameters.insert(identifier, parameters);
+		}
+
+		TypeLocaliser { function_returns, function_parameters }
+	}
 }
 
 impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {

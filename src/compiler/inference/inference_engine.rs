@@ -8,7 +8,7 @@ use crate::source::{ErrorCollate, Spanned};
 use super::TypeResult;
 
 /// Applies type inference and analysis.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct InferenceEngine<'a> {
 	environment: HashMap<VariableTarget<'a>, Type<Identifier<'a>>>,
 	context: Context<Identifier<'a>>,
@@ -69,6 +69,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 	}
 
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
+		explicit_drop.expression.accept(self)?;
 		let identifier_type = self.environment[&explicit_drop.target].clone();
 		let expression_type = explicit_drop.expression.evaluation_type.as_ref();
 		Ok(self.unify(identifier_type, expression_type.clone())
@@ -157,5 +158,13 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 			self.environment.clear();
 		}
 		error_collate.collapse(())
+	}
+}
+
+impl<'a> Default for InferenceEngine<'a> {
+	fn default() -> Self {
+		let mut context = Context::default();
+		let _ = context.new_variable();
+		Self { environment: HashMap::new(), context }
 	}
 }

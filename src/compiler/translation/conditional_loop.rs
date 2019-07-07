@@ -5,8 +5,8 @@ use crate::source::{Span, Spanned};
 use super::{Element, FunctionContext};
 
 pub fn loop_header(loop_span: Span, start_label: usize, end_label: usize) -> Vec<Spanned<Element>> {
-	let mut elements = vec![Spanned::new(Element::Other(format!("{}:", start_label)), loop_span)];
-	elements.push(instruction!(Advance, "pass".to_owned(), loop_span));
+	let mut elements = Vec::new();
+	elements.push(Spanned::new(Element::Other(format!("{}: pass", start_label)), loop_span));
 	elements.push(instruction!(Advance, Reverse, format!("jump {}", end_label), loop_span));
 	elements
 }
@@ -32,7 +32,6 @@ pub fn loop_start_condition(mut elements: Vec<Spanned<Element>>, context: &mut F
 pub fn loop_suffix(loop_span: Span, start_label: usize, end_label: usize) -> Vec<Spanned<Element>> {
 	let mut elements = Vec::new();
 	elements.push(instruction!(Advance, Advance, format!("jump {}", start_label), loop_span));
-	elements.push(Spanned::new(Element::Other(format!("{}:", end_label)), loop_span));
-	elements.push(instruction!(Advance, "pass".to_owned(), loop_span));
+	elements.push(Spanned::new(Element::Other(format!("{}: pass", end_label)), loop_span));
 	elements
 }

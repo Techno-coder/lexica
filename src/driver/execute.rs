@@ -10,7 +10,8 @@ pub fn execute() -> Option<()> {
 	let interface = super::interface();
 
 	let source_map = parse_input(&interface);
-	let translation_map = super::translate(&source_map)?;
+	let intrinsic_store = crate::intrinsics::IntrinsicStore::new();
+	let translation_map = super::translate(&source_map, &intrinsic_store)?;
 
 	if interface.is_present("bytecode") {
 		println!("{}", translation_map.text());
@@ -19,7 +20,8 @@ pub fn execute() -> Option<()> {
 
 	let operation_store = crate::interpreter::parser::OperationStore::new();
 	let annotation_store = crate::interpreter::parser::AnnotationStore::new();
-	let compilation_unit = super::compile(&source_map, translation_map, &operation_store, &annotation_store)?;
+	let compilation_unit = super::compile(&source_map, translation_map, &operation_store,
+	                                      &annotation_store, &intrinsic_store)?;
 
 	let mut runtime = crate::interpreter::Runtime::new(compilation_unit)
 		.expect("Failed to create runtime");

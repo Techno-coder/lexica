@@ -5,6 +5,7 @@
 mod driver;
 mod compiler;
 mod interpreter;
+mod intrinsics;
 mod node;
 mod display;
 mod parser;

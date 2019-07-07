@@ -1,16 +1,17 @@
 pub use self::binary_operation::*;
 pub use self::binding::*;
 pub use self::conditional_loop::*;
-pub use self::variable::*;
+pub use self::data_type::*;
 pub use self::explicit_drop::*;
 pub use self::expression::*;
 pub use self::function::*;
 pub use self::function_call::*;
+pub use self::identifier::*;
 pub use self::mutation::*;
 pub use self::node_construct::*;
 pub use self::statement::*;
 pub use self::syntax_unit::*;
-pub use self::identifier::*;
+pub use self::variable::*;
 
 mod node_construct;
 mod binary_operation;
@@ -25,3 +26,4 @@ mod statement;
 mod syntax_unit;
 mod function_call;
 mod identifier;
+mod data_type;

@@ -1,15 +1,17 @@
+use crate::intrinsics::IntrinsicStore;
 use crate::source::Spanned;
 
-use super::parser::OperationStore;
 use super::{CompilationUnit, CompileContext, CompileError, CompileMetadata, CompileResult, Direction,
             Function, Instruction, TranslationInstruction, TranslationUnit};
+use super::parser::OperationStore;
 
 pub const ENTRY_POINT: &str = "main";
 
-pub fn compile<'a>(translation_unit: TranslationUnit<'a>, operations: &OperationStore)
+pub fn compile<'a>(translation_unit: TranslationUnit<'a>,
+                   operations: &OperationStore, intrinsics: &'a IntrinsicStore)
                    -> (CompilationUnit, CompileMetadata, Vec<Spanned<CompileError<'a>>>) {
 	let mut unit = CompilationUnit::default();
-	let mut context = CompileContext::new(translation_unit);
+	let mut context = CompileContext::new(translation_unit, intrinsics);
 
 	for (identifier, function) in &context.unit.functions {
 		let mut unit_function = Function::default();

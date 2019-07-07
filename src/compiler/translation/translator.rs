@@ -1,14 +1,23 @@
+use crate::intrinsics::IntrinsicStore;
 use crate::node::*;
 use crate::source::Spanned;
 
 use super::{Element, Evaluation, FunctionContext};
 
-#[derive(Debug, Default)]
-pub struct Translator<'a> {
+#[derive(Debug)]
+pub struct Translator<'a, 'b> {
 	context: FunctionContext<'a>,
+	// TODO: Replace with any entropic function
+	intrinsics: &'b IntrinsicStore,
 }
 
-impl<'a> NodeVisitor<'a> for Translator<'a> {
+impl<'a, 'b> Translator<'a, 'b> {
+	pub fn new(intrinsics: &'b IntrinsicStore) -> Self {
+		Self { context: FunctionContext::default(), intrinsics }
+	}
+}
+
+impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 	type Result = Vec<Spanned<Element>>;
 
 	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
@@ -97,7 +106,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		let mut elements: Vec<_> = function_call.arguments.iter_mut()
 			.flat_map(|argument| argument.accept(self)).collect();
 		elements.append(&mut super::function_call_arguments(function_call, &mut self.context));
-		elements.append(&mut super::function_call_value(function_call, &mut self.context));
+		elements.append(&mut super::function_call_value(function_call, &mut self.context, self.intrinsics));
 		elements
 	}
 

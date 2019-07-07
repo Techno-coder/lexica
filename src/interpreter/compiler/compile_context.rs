@@ -1,3 +1,4 @@
+use crate::intrinsics::IntrinsicStore;
 use crate::source::Spanned;
 
 use super::{CompileError, CompileMetadata, TranslationFunction, TranslationUnit};
@@ -12,16 +13,13 @@ pub struct CompileContext<'a, 'b> {
 	pub pending_function: Option<&'b TranslationFunction<'a>>,
 	/// The errors encountered by the compiler.
 	pub errors: Vec<Spanned<CompileError<'a>>>,
+	/// The intrinsics available.
+	pub intrinsics: &'a IntrinsicStore,
 }
 
 impl<'a, 'b> CompileContext<'a, 'b> {
-	pub fn new(unit: TranslationUnit<'a>) -> Self {
+	pub fn new(unit: TranslationUnit<'a>, intrinsics: &'a IntrinsicStore) -> Self {
 		let metadata = CompileMetadata::construct(&unit);
-		Self {
-			unit,
-			metadata,
-			pending_function: None,
-			errors: Vec::new(),
-		}
+		Self { unit, metadata, pending_function: None, errors: Vec::new(), intrinsics }
 	}
 }

@@ -3,14 +3,15 @@ use colored::Colorize;
 use crate::compiler::TranslationMap;
 use crate::interpreter::{CompilationUnit, TranslationUnit};
 use crate::interpreter::parser::{AnnotationStore, ElementParser, OperationStore};
+use crate::intrinsics::IntrinsicStore;
 use crate::source::{Spanned, TextMap};
 
 pub fn compile(source_map: &TextMap, translation_map: TranslationMap,
-               operations: &OperationStore, annotations: &AnnotationStore)
+               operations: &OperationStore, annotations: &AnnotationStore, intrinsics: &IntrinsicStore)
                -> Option<CompilationUnit> {
 	let text_map = TextMap::new(translation_map.text().to_owned());
 	let unit = parse_bytecode(&source_map, &text_map, &translation_map, operations, annotations)?;
-	let (unit, _metadata, errors) = crate::interpreter::compile(unit, operations);
+	let (unit, _metadata, errors) = crate::interpreter::compile(unit, operations, intrinsics);
 	match errors.is_empty() {
 		true => Some(unit),
 		false => {

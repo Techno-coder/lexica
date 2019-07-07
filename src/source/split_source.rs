@@ -35,7 +35,7 @@ impl<'a> Iterator for SplitSource<'a> {
 		let mut item_punctuation: Option<bool> = None;
 
 		while let Some((index, character)) = self.iterator.peek() {
-			let is_punctuation = Some(is_identifier(*character));
+			let is_punctuation = Some(is_punctuation(*character));
 			let text_change = item_punctuation.is_some() && item_punctuation != is_punctuation;
 
 			if let Some(span_start) = span_start {
@@ -61,8 +61,8 @@ impl<'a> Iterator for SplitSource<'a> {
 	}
 }
 
-pub fn is_identifier(character: char) -> bool {
-	character == '_' || !character.is_ascii_punctuation()
+pub fn is_punctuation(character: char) -> bool {
+	character != '_' && character.is_ascii_punctuation()
 }
 
 #[cfg(test)]
@@ -81,5 +81,12 @@ mod tests {
 		let text = "let ~first = 3; // Comment\n";
 		let lexemes: Vec<_> = SplitSource::new(text).map(|(_, lexeme)| lexeme).collect();
 		assert_eq!(lexemes, &["let", "~", "first", "=", "3", ";", "// Comment"])
+	}
+
+	#[test]
+	fn test_underscore() {
+		let text = "let print_result = trace(variable);\n";
+		let lexemes: Vec<_> = SplitSource::new(text).map(|(_, lexeme)| lexeme).collect();
+		assert_eq!(lexemes, &["let", "print_result", "=", "trace", "(", "variable", ");"]);
 	}
 }
