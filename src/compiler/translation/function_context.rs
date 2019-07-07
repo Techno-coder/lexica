@@ -6,12 +6,14 @@ use crate::source::{Span, Spanned};
 
 use super::Evaluation;
 
+type VariableFrame<'a> = HashMap<VariableTarget<'a>, (usize, Span)>;
+
 #[derive(Debug, Default)]
 pub struct FunctionContext<'a> {
 	label_index: usize,
 	local_sizes: Vec<Size>,
 	evaluation_stack: Vec<Evaluation>,
-	variable_table: HashMap<VariableTarget<'a>, (usize, Span)>,
+	variable_stack: Vec<VariableFrame<'a>>,
 }
 
 impl<'a> FunctionContext<'a> {
@@ -22,13 +24,17 @@ impl<'a> FunctionContext<'a> {
 	}
 
 	pub fn get_variable(&self, target: &VariableTarget<'a>) -> usize {
-		let (local_index, _) = &self.variable_table[target];
-		*local_index
+		for frame in &self.variable_stack {
+			if let Some((local_index, _)) = frame.get(target) {
+				return *local_index;
+			}
+		}
+		panic!("Variable target is not bound")
 	}
 
 	pub fn drop_variable(&mut self, target: &VariableTarget<'a>) -> usize {
-		let (local_index, _) = self.variable_table.remove(&target).unwrap();
-		self.variable_table.remove(&target);
+		let (local_index, _) = self.frame().remove(&target).unwrap();
+		self.frame().remove(&target);
 		local_index
 	}
 
@@ -42,7 +48,7 @@ impl<'a> FunctionContext<'a> {
 	}
 
 	pub fn annotate_local(&mut self, local_index: usize, target: Spanned<VariableTarget<'a>>) {
-		self.variable_table.insert(target.node, (local_index, target.span));
+		self.frame().insert(target.node, (local_index, target.span));
 	}
 
 	pub fn push_evaluation(&mut self, evaluation: Evaluation) {
@@ -63,7 +69,15 @@ impl<'a> FunctionContext<'a> {
 		&self.local_sizes
 	}
 
-	pub fn variable_table(&self) -> impl Iterator<Item=(&VariableTarget, &(usize, Span))> {
-		self.variable_table.iter()
+	pub fn push_frame(&mut self) {
+		self.variable_stack.push(VariableFrame::new());
+	}
+
+	pub fn pop_frame(&mut self) -> VariableFrame {
+		self.variable_stack.pop().expect("Variable frame stack is empty")
+	}
+
+	fn frame(&mut self) -> &mut VariableFrame<'a> {
+		self.variable_stack.last_mut().unwrap()
 	}
 }

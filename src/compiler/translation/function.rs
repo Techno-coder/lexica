@@ -41,19 +41,11 @@ pub fn function_arguments(function: &Function) -> Vec<Spanned<Element>> {
 	elements
 }
 
-pub fn function_drops(context: &FunctionContext, return_value: &Evaluation) -> Vec<Spanned<Element>> {
-	let mut elements = Vec::new();
-	for (_, (identifier_index, span)) in context.variable_table() {
-		if let Evaluation::Local(local) = return_value {
-			if local == identifier_index {
-				continue;
-			}
-		}
-
-		let instruction = format!("drop {}", identifier_index);
-		elements.push(instruction!(Advance, instruction, *span));
+pub fn function_drops(context: &mut FunctionContext, return_value: &Evaluation) -> Vec<Spanned<Element>> {
+	match return_value {
+		Evaluation::Local(local) => super::drop_frame(context, &[*local]),
+		_ => super::drop_frame(context, &[]),
 	}
-	elements
 }
 
 pub fn function_return(function: &Spanned<Function>, return_value: Evaluation) -> Vec<Spanned<Element>> {

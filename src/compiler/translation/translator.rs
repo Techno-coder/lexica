@@ -28,6 +28,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 	}
 
 	fn conditional_loop(&mut self, conditional_loop: &mut Spanned<ConditionalLoop<'a>>) -> Self::Result {
+		self.context.push_frame();
 		let (start_label, end_label) = self.context.pair_labels();
 		let mut elements = super::loop_header(conditional_loop.span, start_label, end_label);
 		let end_condition = &mut conditional_loop.end_condition;
@@ -36,6 +37,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 
 		conditional_loop.statements.iter_mut()
 			.for_each(|statement| elements.append(&mut statement.accept(self)));
+		elements.append(&mut super::drop_frame(&mut self.context, &[]));
 
 		let start_condition = conditional_loop.start_condition.as_mut().unwrap();
 		let condition = start_condition.accept(self);
@@ -86,7 +88,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 		elements.append(&mut function_elements);
 
 		let return_value = self.context.pop_evaluation();
-		elements.append(&mut super::function_drops(&self.context, &return_value));
+		elements.append(&mut super::function_drops(&mut self.context, &return_value));
 		elements.append(&mut super::function_return(function, return_value));
 		elements
 	}
@@ -126,6 +128,7 @@ impl<'a> NodeVisitor<'a> for Translator<'a> {
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
 		syntax_unit.functions.iter_mut()
 			.flat_map(|(_, function)| {
+				self.context.push_frame();
 				let elements = function.accept(self);
 				self.context = FunctionContext::default();
 				elements
