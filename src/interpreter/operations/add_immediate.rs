@@ -19,19 +19,12 @@ impl AddImmediate {
 	pub fn new(table: &LocalTable, accumulator: LocalTarget, immediate: Primitive)
 	           -> InterpreterResult<AddImmediate> {
 		let accumulator_local = table.local(&accumulator)?;
-		match accumulator_local {
-			Primitive::Boolean(_) => Err(InterpreterError::NonNumerical),
-			Primitive::Integer(_) => match immediate {
-				Primitive::Boolean(_) => Err(InterpreterError::NonNumerical),
-				Primitive::Float(_) => Err(InterpreterError::FloatingCast),
-				_ => Ok(())
-			}
-			Primitive::Float(_) => match immediate {
-				Primitive::Boolean(_) => Err(InterpreterError::NonNumerical),
-				_ => Ok(())
-			}
-		}?;
-		Ok(AddImmediate { accumulator, immediate })
+		match (accumulator_local, &immediate) {
+			(Primitive::Boolean(_), _) => Err(InterpreterError::NonNumerical),
+			(_, Primitive::Boolean(_)) => Err(InterpreterError::NonNumerical),
+			(Primitive::Integer(_), Primitive::Float(_)) => Err(InterpreterError::FloatingCast),
+			_ => Ok(AddImmediate { accumulator, immediate })
+		}
 	}
 }
 
@@ -51,21 +44,15 @@ impl Operation for AddImmediate {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table_mut();
 		let accumulator = table.local_mut(&self.accumulator)?;
-		match accumulator {
-			Primitive::Integer(integer) => match &self.immediate {
-				Primitive::Integer(other) => Ok(integer.add(other)),
-				_ => Err(InterpreterError::InvalidRuntime)
-			}
-			Primitive::Float(float) => match &self.immediate {
-				Primitive::Integer(other) => {
-					let other = Float::Float64(other.cast_float());
-					Ok(float.add(&other))
-				}
-				Primitive::Float(other) => Ok(float.add(other)),
-				_ => Err(InterpreterError::InvalidRuntime)
-			}
-			_ => Err(InterpreterError::InvalidRuntime),
-		}
+		Ok(match (accumulator, &self.immediate) {
+			(Primitive::Integer(integer), Primitive::Integer(other)) =>
+				integer.add(other),
+			(Primitive::Float(float), Primitive::Integer(other)) =>
+				float.add(&Float::Float64(other.cast_float())),
+			(Primitive::Float(float), Primitive::Float(other)) =>
+				float.add(other),
+			_ => return Err(InterpreterError::InvalidRuntime)
+		})
 	}
 
 	fn reversible(&self) -> Option<&Reversible> {
@@ -77,21 +64,15 @@ impl Reversible for AddImmediate {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
 		let table = context.frame()?.table_mut();
 		let accumulator = table.local_mut(&self.accumulator)?;
-		match accumulator {
-			Primitive::Integer(integer) => match &self.immediate {
-				Primitive::Integer(other) => Ok(integer.minus(other)),
-				_ => Err(InterpreterError::InvalidRuntime)
-			}
-			Primitive::Float(float) => match &self.immediate {
-				Primitive::Integer(other) => {
-					let other = Float::Float64(other.cast_float());
-					Ok(float.minus(&other))
-				}
-				Primitive::Float(other) => Ok(float.minus(other)),
-				_ => Err(InterpreterError::InvalidRuntime)
-			}
-			_ => Err(InterpreterError::InvalidRuntime),
-		}
+		Ok(match (accumulator, &self.immediate) {
+			(Primitive::Integer(integer), Primitive::Integer(other)) =>
+				integer.minus(other),
+			(Primitive::Float(float), Primitive::Integer(other)) =>
+				float.minus(&Float::Float64(other.cast_float())),
+			(Primitive::Float(float), Primitive::Float(other)) =>
+				float.minus(other),
+			_ => return Err(InterpreterError::InvalidRuntime)
+		})
 	}
 }
 

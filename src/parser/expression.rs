@@ -43,11 +43,10 @@ pub fn match_identifier_terminal<'a>(lexer: &mut PeekLexer<'a>, identifier: Span
                                      end_span: Span) -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	let expression_variable = Expression::Variable(identifier.node.clone().into());
 	Ok(match lexer.peek() {
-		Some(token) => match token.node {
-			Token::ParenthesisOpen => parse_function_call(lexer, identifier, end_span)?,
-			_ => Spanned::new(expression_variable.into(), identifier.span),
+		Some(token) if token.node == Token::ParenthesisOpen => {
+			parse_function_call(lexer, identifier, end_span)?
 		}
-		None => Spanned::new(expression_variable.into(), identifier.span),
+		_ => Spanned::new(expression_variable.into(), identifier.span),
 	})
 }
 

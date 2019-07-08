@@ -21,19 +21,13 @@ impl Add {
 	           -> InterpreterResult<Add> {
 		let operand_local = &table.local(&operand)?;
 		let accumulator_local = table.local(&accumulator)?;
-		match accumulator_local {
-			Primitive::Boolean(_) => Err(InterpreterError::NonNumerical),
-			Primitive::Integer(_) => match operand_local {
-				Primitive::Boolean(_) => Err(InterpreterError::NonNumerical),
-				Primitive::Float(_) => Err(InterpreterError::FloatingCast),
-				_ => Ok(())
-			}
-			Primitive::Float(_) => match operand_local {
-				Primitive::Boolean(_) => Err(InterpreterError::NonNumerical),
-				_ => Ok(())
-			}
-		}?;
-		Ok(Add { accumulator, operand })
+
+		match (accumulator_local, operand_local) {
+			(Primitive::Boolean(_), _) => Err(InterpreterError::NonNumerical),
+			(_, Primitive::Boolean(_)) => Err(InterpreterError::NonNumerical),
+			(Primitive::Integer(_), Primitive::Float(_)) => Err(InterpreterError::FloatingCast),
+			_ => Ok(Add { accumulator, operand })
+		}
 	}
 }
 
@@ -54,21 +48,15 @@ impl Operation for Add {
 		let table = context.frame()?.table_mut();
 		let operand = &table[&self.operand].clone();
 		let accumulator = &mut table[&self.accumulator];
-		match accumulator {
-			Primitive::Integer(integer) => match operand {
-				Primitive::Integer(other) => Ok(integer.add(other)),
-				_ => Err(InterpreterError::InvalidRuntime),
-			}
-			Primitive::Float(float) => match operand {
-				Primitive::Integer(other) => {
-					let other = Float::Float64(other.cast_float());
-					Ok(float.add(&other))
-				}
-				Primitive::Float(other) => Ok(float.add(other)),
-				_ => Err(InterpreterError::InvalidRuntime),
-			}
-			_ => Err(InterpreterError::InvalidRuntime)
-		}
+		Ok(match (accumulator, operand) {
+			(Primitive::Integer(integer), Primitive::Integer(other)) =>
+				integer.add(other),
+			(Primitive::Float(float), Primitive::Integer(other)) =>
+				float.add(&Float::Float64(other.cast_float())),
+			(Primitive::Float(float), Primitive::Float(other)) =>
+				float.add(other),
+			_ => return Err(InterpreterError::InvalidRuntime)
+		})
 	}
 
 	fn reversible(&self) -> Option<&Reversible> {
@@ -84,21 +72,16 @@ impl Reversible for Add {
 		let table = context.frame()?.table_mut();
 		let operand = &table[&self.operand].clone();
 		let accumulator = &mut table[&self.accumulator];
-		match accumulator {
-			Primitive::Integer(integer) => match operand {
-				Primitive::Integer(other) => Ok(integer.minus(other)),
-				_ => Err(InterpreterError::InvalidRuntime),
-			}
-			Primitive::Float(float) => match operand {
-				Primitive::Integer(other) => {
-					let other = Float::Float64(other.cast_float());
-					Ok(float.minus(&other))
-				}
-				Primitive::Float(other) => Ok(float.minus(other)),
-				_ => Err(InterpreterError::InvalidRuntime),
-			}
-			_ => Err(InterpreterError::InvalidRuntime)
-		}
+
+		Ok(match (accumulator, operand) {
+			(Primitive::Integer(integer), Primitive::Integer(other)) =>
+				integer.minus(other),
+			(Primitive::Float(float), Primitive::Integer(other)) =>
+				float.minus(&Float::Float64(other.cast_float())),
+			(Primitive::Float(float), Primitive::Float(other)) =>
+				float.minus(other),
+			_ => return Err(InterpreterError::InvalidRuntime)
+		})
 	}
 }
 

@@ -24,16 +24,13 @@ pub fn parse_variable<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 
 	let mut span = variable_target.span;
 	let data_type = match lexer.peek() {
-		Some(separator) => match separator.node {
-			Token::VariableSeparator => {
-				let _ = lexer.next();
-				let identifier = identifier!(lexer, end_span);
-				span.byte_end = identifier.span.byte_end;
-				DataType::new(identifier.node)
-			}
-			_ => DataType::default(),
+		Some(separator) if separator.node == Token::VariableSeparator => {
+			let _ = lexer.next();
+			let identifier = identifier!(lexer, end_span);
+			span.byte_end = identifier.span.byte_end;
+			DataType::new(identifier.node)
 		}
-		None => DataType::default(),
+		_ => DataType::default(),
 	};
 
 	let variable = Variable { target: variable_target.node, data_type, is_mutable };
