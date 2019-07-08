@@ -23,7 +23,7 @@ impl<'a> InferenceEngine<'a> {
 	             -> Result<(), UnificationError<Identifier<'a>>> {
 		super::application::apply(&self.context, &mut left);
 		super::application::apply(&self.context, &mut right);
-		self.context.unify(&left, &right)
+		self.context.unify_fast(left, right)
 	}
 }
 
