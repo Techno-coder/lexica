@@ -11,6 +11,6 @@ fn factorial(n: u64) -> u64 {
 	result
 }
 
-fn main() -> u64 {
-	factorial(7)
+fn main() {
+	trace(factorial(7));
 }

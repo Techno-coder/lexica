@@ -32,11 +32,17 @@ impl<'a> Iterator for SplitSource<'a> {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let mut span_start: Option<usize> = None;
+		let mut item_singular: Option<bool> = None;
 		let mut item_punctuation: Option<bool> = None;
 
 		while let Some((index, character)) = self.iterator.peek() {
-			let is_punctuation = Some(is_punctuation(*character));
-			let text_change = item_punctuation.is_some() && item_punctuation != is_punctuation;
+			let is_punctuation = is_punctuation(*character);
+			let is_singular = is_punctuation && !is_multiple(*character);
+
+			let punctuation_change = item_punctuation != Some(is_punctuation);
+			let singularity_change = item_singular == Some(false) && is_singular;
+			let singularity_split = item_singular == Some(true) || singularity_change;
+			let text_change = singularity_split || (item_punctuation.is_some() && punctuation_change);
 
 			if let Some(span_start) = span_start {
 				if &self.text[span_start..*index] == "//" {
@@ -51,7 +57,8 @@ impl<'a> Iterator for SplitSource<'a> {
 					return Some(self.construct_item(span_start, index));
 				}
 			} else if item_punctuation.is_none() {
-				item_punctuation = is_punctuation;
+				item_punctuation = Some(is_punctuation);
+				item_singular = Some(is_singular);
 				span_start = Some(*index);
 			}
 
@@ -63,6 +70,14 @@ impl<'a> Iterator for SplitSource<'a> {
 
 pub fn is_punctuation(character: char) -> bool {
 	character != '_' && character.is_ascii_punctuation()
+}
+
+pub fn is_multiple(character: char) -> bool {
+	match character {
+		'+' | '-' | '*' | '/' => true,
+		'=' | '<' | '>' => true,
+		_ => false,
+	}
 }
 
 #[cfg(test)]
@@ -87,6 +102,13 @@ mod tests {
 	fn test_underscore() {
 		let text = "let print_result = trace(variable);\n";
 		let lexemes: Vec<_> = SplitSource::new(text).map(|(_, lexeme)| lexeme).collect();
-		assert_eq!(lexemes, &["let", "print_result", "=", "trace", "(", "variable", ");"]);
+		assert_eq!(lexemes, &["let", "print_result", "=", "trace", "(", "variable", ")", ";"]);
+	}
+
+	#[test]
+	pub fn test_nested() {
+		let text = "apply(apply(variable));\n";
+		let lexemes: Vec<_> = SplitSource::new(text).map(|(_, lexeme)| lexeme).collect();
+		assert_eq!(lexemes, &["apply", "(", "apply", "(", "variable", ")", ")", ";"]);
 	}
 }

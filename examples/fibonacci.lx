@@ -19,6 +19,5 @@ fn fibonacci(n: u64) -> u64 {
 }
 
 fn main() {
-	let result = fibonacci(35);
-	trace(result);
+	trace(fibonacci(35));
 }
