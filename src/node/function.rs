@@ -2,14 +2,13 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{DataType, ExpressionNode, Identifier, NodeConstruct, NodeVisitor, Statement, Variable};
+use super::{DataType, ExpressionBlock, Identifier, NodeConstruct, NodeVisitor, Variable};
 
 #[derive(Debug)]
 pub struct Function<'a> {
 	pub identifier: Spanned<Identifier<'a>>,
 	pub parameters: Vec<Spanned<Variable<'a>>>,
-	pub statements: Vec<Spanned<Statement<'a>>>,
-	pub return_value: Spanned<ExpressionNode<'a>>,
+	pub expression_block: Spanned<ExpressionBlock<'a>>,
 	pub return_type: Spanned<DataType<'a>>,
 }
 
@@ -30,11 +29,14 @@ impl<'a> fmt::Display for Function<'a> {
 			rest.iter().try_for_each(|parameter| write!(f, "{}, ", parameter))?;
 			write!(f, "{}", last)?;
 		}
-		writeln!(f, ") -> {} {{", self.return_type.resolved().unwrap())?;
+
+		match self.return_type.node == DataType::UNIT_TYPE {
+			false => writeln!(f, ") -> {} {{", self.return_type.resolved().unwrap()),
+			true => writeln!(f, ") {{"),
+		}?;
 
 		let mut indent = IndentWriter::wrap(f);
-		self.statements.iter().try_for_each(|statement| writeln!(indent, "{}", statement))?;
-		writeln!(indent, "{}", self.return_value)?;
+		write!(indent, "{}", self.expression_block)?;
 		write!(f, "}}")
 	}
 }

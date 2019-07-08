@@ -19,10 +19,9 @@ pub fn parse_function<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	};
 
 	let expression_block = super::parse_expression_block(lexer, end_span)?;
-	let (statements, return_value) = expression_block.node;
-
-	let function = Function { identifier, parameters, statements, return_value, return_type };
-	Ok(Spanned::new(function, Span::new(span_start, expression_block.span.byte_end)))
+	let span = Span::new(span_start, expression_block.span.byte_end);
+	let function = Function { identifier, parameters, expression_block, return_type };
+	Ok(Spanned::new(function, span))
 }
 
 pub fn parse_parameter_list<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)

@@ -1,9 +1,7 @@
-use crate::node::{DataType, Expression, ExpressionNode, Statement};
+use crate::node::{Block, DataType, Expression, ExpressionBlock, ExpressionNode};
 use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
-
-pub type ExpressionBlock<'a> = (Vec<Spanned<Statement<'a>>>, Spanned<ExpressionNode<'a>>);
 
 pub fn parse_expression_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
                                   -> ParserResult<'a, Spanned<ExpressionBlock<'a>>> {
@@ -33,11 +31,15 @@ pub fn parse_expression_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	};
 
 	let span_end = expect!(lexer, end_span, BlockClose).byte_end;
-	Ok(Spanned::new((statements, expression), Span::new(span_start, span_end)))
+	let span = Span::new(span_start, span_end);
+
+	let block = Spanned::new(Block { statements }, span);
+	let expression_block = ExpressionBlock { block, expression };
+	Ok(Spanned::new(expression_block, span))
 }
 
 pub fn parse_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
-                       -> ParserResult<'a, Spanned<Vec<Spanned<Statement<'a>>>>> {
+                       -> ParserResult<'a, Spanned<Block<'a>>> {
 	let span_start = expect!(lexer, end_span, BlockOpen).byte_start;
 	let mut statements = Vec::new();
 
@@ -47,5 +49,5 @@ pub fn parse_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	}
 
 	let span_end = expect!(lexer, end_span, BlockClose).byte_end;
-	Ok(Spanned::new(statements, Span::new(span_start, span_end)))
+	Ok(Spanned::new(Block { statements }, Span::new(span_start, span_end)))
 }

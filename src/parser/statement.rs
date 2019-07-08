@@ -116,8 +116,8 @@ pub fn parse_conditional_loop<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		_ => return Err(Spanned::new(error, next_token.span).into()),
 	}
 
-	let spanned_statements = super::parse_block(lexer, end_span)?;
-	let (statements, span_end) = (spanned_statements.node, spanned_statements.span.byte_end);
-	let conditional_loop = ConditionalLoop { start_condition, end_condition, statements };
-	Ok(Spanned::new(conditional_loop, Span::new(span_start, span_end)))
+	let block = super::parse_block(lexer, end_span)?;
+	let span = Span::new(span_start, block.span.byte_end);
+	let conditional_loop = ConditionalLoop { start_condition, end_condition, block };
+	Ok(Spanned::new(conditional_loop, span))
 }

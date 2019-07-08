@@ -1,5 +1,6 @@
 pub use self::binary_operation::*;
 pub use self::binding::*;
+pub use self::block::*;
 pub use self::conditional_loop::*;
 pub use self::data_type::*;
 pub use self::explicit_drop::*;
@@ -16,6 +17,7 @@ pub use self::variable::*;
 mod node_construct;
 mod binary_operation;
 mod binding;
+mod block;
 mod conditional_loop;
 mod variable;
 mod explicit_drop;

@@ -53,6 +53,43 @@ impl<'a> VariableExposition<'a> {
 impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 	type Result = Result<'a>;
 
+	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
+		let mut error_collate = ErrorCollate::new();
+		for function in &mut syntax_unit.functions.values_mut() {
+			if let Err(errors) = function.accept(self) {
+				error_collate.combine(errors);
+			}
+
+			*self = Self::default();
+		}
+		error_collate.collapse(())
+	}
+
+	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
+		function.parameters.iter_mut()
+			.for_each(|parameter| self.register_target(&mut parameter.target));
+		function.expression_block.accept(self)
+	}
+
+	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
+		let expression_span = expression.span.clone();
+		match &mut expression.expression {
+			Expression::Unit | Expression::Primitive(_) => Ok(()),
+			Expression::Variable(target) => self.resolve_target_span(target, expression_span),
+			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
+			Expression::FunctionCall(_) => expression.function_call().accept(self),
+		}
+	}
+
+	fn expression_block(&mut self, expression_block: &mut Spanned<ExpressionBlock<'a>>) -> Self::Result {
+		expression_block.block.accept(self)?;
+		expression_block.expression.accept(self)
+	}
+
+	fn block(&mut self, block: &mut Spanned<Block<'a>>) -> Self::Result {
+		block.statements.iter_mut().try_for_each(|statement| statement.accept(self))
+	}
+
 	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
 		operation.left.accept(self)?;
 		operation.right.accept(self)?;
@@ -69,7 +106,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 		conditional_loop.end_condition.accept(self)?;
 
 		self.generation_frames.push(GenerationFrame::new());
-		conditional_loop.statements.iter_mut().try_for_each(|statement| statement.accept(self))?;
+		conditional_loop.block.accept(self)?;
 		self.generation_frames.pop();
 		Ok(())
 	}
@@ -77,24 +114,6 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
 		self.resolve_target(&mut explicit_drop.target)?;
 		explicit_drop.expression.accept(self)
-	}
-
-	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		let expression_span = expression.span.clone();
-		match &mut expression.expression {
-			Expression::Unit | Expression::Primitive(_) => Ok(()),
-			Expression::Variable(target) => self.resolve_target_span(target, expression_span),
-			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
-			Expression::FunctionCall(_) => expression.function_call().accept(self),
-		}
-	}
-
-	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		function.parameters.iter_mut()
-			.for_each(|parameter| self.register_target(&mut parameter.target));
-		function.statements.iter_mut()
-			.try_for_each(|statement| statement.accept(self))?;
-		function.return_value.accept(self)
 	}
 
 	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
@@ -123,18 +142,6 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
 			Statement::Expression(expression) => expression.accept(self),
 		}
-	}
-
-	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
-		let mut error_collate = ErrorCollate::new();
-		for function in &mut syntax_unit.functions.values_mut() {
-			if let Err(errors) = function.accept(self) {
-				error_collate.combine(errors);
-			}
-
-			*self = Self::default();
-		}
-		error_collate.collapse(())
 	}
 }
 

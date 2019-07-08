@@ -20,6 +20,58 @@ impl<'a, 'b> Translator<'a, 'b> {
 impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 	type Result = Vec<Spanned<Element>>;
 
+	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
+		syntax_unit.functions.iter_mut()
+			.flat_map(|(_, function)| {
+				self.context.push_frame();
+				let elements = function.accept(self);
+				self.context = FunctionContext::default();
+				elements
+			}).collect()
+	}
+
+	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
+		super::function_parameters(function, &mut self.context);
+		let mut function_elements = function.expression_block.accept(self);
+
+		let mut elements = super::function_locals(function.span, &self.context);
+		elements.append(&mut super::function_header(function));
+		elements.append(&mut super::function_arguments(function));
+		elements.append(&mut function_elements);
+
+		let return_value = self.context.pop_evaluation();
+		elements.append(&mut super::function_drops(&mut self.context, &return_value));
+		elements.append(&mut super::function_return(function, return_value));
+		elements
+	}
+
+	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
+		match &mut expression.expression {
+			Expression::Unit => self.context.push_evaluation(Evaluation::Unit),
+			Expression::Variable(variable) => {
+				let variable = self.context.get_variable(variable);
+				self.context.push_evaluation(Evaluation::Local(variable));
+			}
+			Expression::Primitive(primitive) => {
+				let primitive = Spanned::new(primitive.clone(), expression.span);
+				self.context.push_evaluation(Evaluation::Immediate(primitive));
+			}
+			Expression::BinaryOperation(_) => return expression.binary_operation().accept(self),
+			Expression::FunctionCall(_) => return expression.function_call().accept(self),
+		}
+		Vec::new()
+	}
+
+	fn expression_block(&mut self, expression_block: &mut Spanned<ExpressionBlock<'a>>) -> Self::Result {
+		let mut elements = expression_block.block.accept(self);
+		elements.append(&mut expression_block.expression.accept(self));
+		elements
+	}
+
+	fn block(&mut self, block: &mut Spanned<Block<'a>>) -> Self::Result {
+		block.statements.iter_mut().flat_map(|statement| statement.accept(self)).collect()
+	}
+
 	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
 		let mut elements = operation.left.accept(self);
 		elements.append(&mut operation.right.accept(self));
@@ -44,8 +96,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 		let condition = end_condition.accept(self);
 		elements.append(&mut super::loop_end_condition(condition, &mut self.context, end_condition, end_label));
 
-		conditional_loop.statements.iter_mut()
-			.for_each(|statement| elements.append(&mut statement.accept(self)));
+		elements.append(&mut conditional_loop.block.accept(self));
 		elements.append(&mut super::drop_frame(&mut self.context, &[]));
 
 		let start_condition = conditional_loop.start_condition.as_mut().unwrap();
@@ -67,40 +118,6 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 		};
 
 		elements.insert(0, instruction!(Advance, Reverse, instruction, explicit_drop.span));
-		elements
-	}
-
-	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		match &mut expression.expression {
-			Expression::Unit => self.context.push_evaluation(Evaluation::Unit),
-			Expression::Variable(variable) => {
-				let variable = self.context.get_variable(variable);
-				self.context.push_evaluation(Evaluation::Local(variable));
-			}
-			Expression::Primitive(primitive) => {
-				let primitive = Spanned::new(primitive.clone(), expression.span);
-				self.context.push_evaluation(Evaluation::Immediate(primitive));
-			}
-			Expression::BinaryOperation(_) => return expression.binary_operation().accept(self),
-			Expression::FunctionCall(_) => return expression.function_call().accept(self),
-		}
-		Vec::new()
-	}
-
-	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		super::function_parameters(function, &mut self.context);
-		let mut function_elements: Vec<_> = function.statements.iter_mut()
-			.flat_map(|statement| statement.accept(self)).collect();
-		function_elements.append(&mut function.return_value.accept(self));
-
-		let mut elements = super::function_locals(function.span, &self.context);
-		elements.append(&mut super::function_header(function));
-		elements.append(&mut super::function_arguments(function));
-		elements.append(&mut function_elements);
-
-		let return_value = self.context.pop_evaluation();
-		elements.append(&mut super::function_drops(&mut self.context, &return_value));
-		elements.append(&mut super::function_return(function, return_value));
 		elements
 	}
 
@@ -135,15 +152,5 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
 			Statement::Expression(expression) => expression.accept(self),
 		}
-	}
-
-	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
-		syntax_unit.functions.iter_mut()
-			.flat_map(|(_, function)| {
-				self.context.push_frame();
-				let elements = function.accept(self);
-				self.context = FunctionContext::default();
-				elements
-			}).collect()
 	}
 }

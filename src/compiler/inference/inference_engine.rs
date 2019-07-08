@@ -30,6 +30,69 @@ impl<'a> InferenceEngine<'a> {
 impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 	type Result = TypeResult<'a, ()>;
 
+	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
+		let mut error_collate = ErrorCollate::new();
+		for function in syntax_unit.functions.values_mut() {
+			if let Err(errors) = function.accept(self) {
+				error_collate.combine(errors);
+			}
+
+			self.environment.clear();
+		}
+		error_collate.collapse(())
+	}
+
+	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
+		for parameter in &function.parameters {
+			let DataType(parameter_type) = parameter.data_type.clone();
+			self.environment.insert(parameter.target.clone(), parameter_type);
+		}
+
+		function.expression_block.accept(self)?;
+		let return_value = &function.expression_block.expression;
+		let return_type = return_value.evaluation_type.as_ref();
+		Ok(self.unify(return_type.clone(), function.return_type.node.as_ref().clone())
+			.map_err(|error| Spanned::new(error.into(), return_value.span))?)
+	}
+
+	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
+		let evaluation_type = match &mut expression.expression {
+			Expression::Unit => DataType::UNIT_TYPE,
+			Expression::Variable(target) => DataType(self.environment[target].clone()),
+			Expression::Primitive(_) => DataType(self.context.new_variable()),
+			Expression::BinaryOperation(_) => {
+				let mut binary_operation = expression.binary_operation();
+				binary_operation.accept(self)?;
+
+				match binary_operation.operator.node {
+					BinaryOperator::Equal => DataType(super::application::BOOLEAN_TYPE),
+					_ => binary_operation.left.evaluation_type.clone(),
+				}
+			}
+			Expression::FunctionCall(_) => {
+				let mut function_call = expression.function_call();
+				function_call.accept(self)?;
+				function_call.evaluation_type.clone()
+			}
+		};
+
+		let expression_type = expression.evaluation_type.as_ref();
+		Ok(match expression.evaluation_type.resolved().is_some() {
+			false => expression.evaluation_type = evaluation_type,
+			true => self.unify(expression_type.clone(), evaluation_type.as_ref().clone())
+				.map_err(|error| Spanned::new(error.into(), expression.span))?,
+		})
+	}
+
+	fn expression_block(&mut self, expression_block: &mut Spanned<ExpressionBlock<'a>>) -> Self::Result {
+		expression_block.block.accept(self)?;
+		expression_block.expression.accept(self)
+	}
+
+	fn block(&mut self, block: &mut Spanned<Block<'a>>) -> Self::Result {
+		block.statements.iter_mut().try_for_each(|statement| statement.accept(self))
+	}
+
 	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
 		operation.left.accept(self)?;
 		operation.right.accept(self)?;
@@ -64,8 +127,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		self.unify(conditional_loop.end_condition.evaluation_type.as_ref().clone(), BOOLEAN_TYPE)
 			.map_err(|error| Spanned::new(error.into(), conditional_loop.end_condition.span))?;
 
-		conditional_loop.statements.iter_mut().try_for_each(|statement| statement.accept(self))?;
-		Ok(())
+		conditional_loop.block.accept(self)
 	}
 
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
@@ -74,49 +136,6 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		let expression_type = explicit_drop.expression.evaluation_type.as_ref();
 		Ok(self.unify(identifier_type, expression_type.clone())
 			.map_err(|error| Spanned::new(error.into(), explicit_drop.span))?)
-	}
-
-	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		let evaluation_type = match &mut expression.expression {
-			Expression::Unit => DataType::UNIT_TYPE,
-			Expression::Variable(target) => DataType(self.environment[target].clone()),
-			Expression::Primitive(_) => DataType(self.context.new_variable()),
-			Expression::BinaryOperation(_) => {
-				let mut binary_operation = expression.binary_operation();
-				binary_operation.accept(self)?;
-
-				match binary_operation.operator.node {
-					BinaryOperator::Equal => DataType(super::application::BOOLEAN_TYPE),
-					_ => binary_operation.left.evaluation_type.clone(),
-				}
-			}
-			Expression::FunctionCall(_) => {
-				let mut function_call = expression.function_call();
-				function_call.accept(self)?;
-				function_call.evaluation_type.clone()
-			}
-		};
-
-		let expression_type = expression.evaluation_type.as_ref();
-		Ok(match expression.evaluation_type.resolved().is_some() {
-			false => expression.evaluation_type = evaluation_type,
-			true => self.unify(expression_type.clone(), evaluation_type.as_ref().clone())
-				.map_err(|error| Spanned::new(error.into(), expression.span))?,
-		})
-	}
-
-	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		for parameter in &function.parameters {
-			let DataType(parameter_type) = parameter.data_type.clone();
-			self.environment.insert(parameter.target.clone(), parameter_type);
-		}
-
-		function.statements.iter_mut().try_for_each(|statement| statement.accept(self))?;
-		function.return_value.accept(self)?;
-
-		let return_type = function.return_value.evaluation_type.as_ref();
-		Ok(self.unify(return_type.clone(), function.return_type.node.as_ref().clone())
-			.map_err(|error| Spanned::new(error.into(), function.return_value.span))?)
 	}
 
 	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
@@ -148,18 +167,6 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
 			Statement::Expression(expression) => expression.accept(self),
 		}
-	}
-
-	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
-		let mut error_collate = ErrorCollate::new();
-		for function in syntax_unit.functions.values_mut() {
-			if let Err(errors) = function.accept(self) {
-				error_collate.combine(errors);
-			}
-
-			self.environment.clear();
-		}
-		error_collate.collapse(())
 	}
 }
 

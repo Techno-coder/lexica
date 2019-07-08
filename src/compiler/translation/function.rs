@@ -50,7 +50,7 @@ pub fn function_drops(context: &mut FunctionContext, return_value: &Evaluation) 
 
 pub fn function_return(function: &Spanned<Function>, return_value: Evaluation) -> Vec<Spanned<Element>> {
 	let mut elements = Vec::new();
-	let return_span = function.return_value.span;
+	let return_span = function.expression_block.expression.span;
 	elements.push(instruction!(Advance, match return_value {
 		Evaluation::Unit => "pass".to_owned(),
 		Evaluation::Local(local) => format!("drop {}", local),
