@@ -9,9 +9,14 @@ pub fn parse_function<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let identifier = identifier!(lexer, end_span);
 	let parameters = parse_parameter_list(lexer, end_span)?;
 
-	expect!(lexer, end_span, ReturnSeparator);
-	let return_type = identifier!(lexer, end_span);
-	let return_type = Spanned::new(DataType::new(return_type.node), return_type.span);
+	let return_type = match lexer.peek() {
+		Some(token) if token.node == Token::ReturnSeparator => {
+			let _ = lexer.next();
+			let return_type = identifier!(lexer, end_span);
+			Spanned::new(DataType::new(return_type.node), return_type.span)
+		}
+		_ => Spanned::new(DataType::UNIT_TYPE, identifier.span),
+	};
 
 	let expression_block = super::parse_expression_block(lexer, end_span)?;
 	let (statements, return_value) = expression_block.node;

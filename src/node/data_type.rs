@@ -9,7 +9,10 @@ pub const TYPE_SENTINEL: Type<Identifier> = Type::Variable(0);
 pub struct DataType<'a>(pub Type<Identifier<'a>>);
 
 impl<'a> DataType<'a> {
-	pub fn new(identifier: Identifier<'a>) -> Self {
+	/// Data type representing an zero sized value.
+	pub const UNIT_TYPE: DataType<'static> = DataType::new(Identifier("()"));
+
+	pub const fn new(identifier: Identifier<'a>) -> Self {
 		DataType(Type::Constructed(identifier, Vec::new()))
 	}
 
@@ -18,6 +21,12 @@ impl<'a> DataType<'a> {
 			DataType(Type::Constructed(Identifier(string), _)) => Some(string),
 			DataType(Type::Variable(_)) => None,
 		}
+	}
+}
+
+impl From<crate::interpreter::Size> for DataType<'static> {
+	fn from(size: crate::interpreter::Size) -> Self {
+		DataType::new(Identifier(size.to_string()))
 	}
 }
 

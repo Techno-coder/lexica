@@ -7,6 +7,7 @@ use super::{BinaryOperation, DataType, FunctionCall, NodeConstruct, NodeVisitor,
 
 #[derive(Debug, Clone)]
 pub enum Expression<'a> {
+	Unit,
 	Variable(VariableTarget<'a>),
 	Primitive(Primitive),
 	BinaryOperation(Box<BinaryOperation<'a>>),
@@ -71,6 +72,7 @@ impl<'a> AsMut<Expression<'a>> for ExpressionNode<'a> {
 impl<'a> fmt::Display for ExpressionNode<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match &self.expression {
+			Expression::Unit => write!(f, "()"),
 			Expression::Variable(target) => write!(f, "{}", target),
 			Expression::Primitive(primitive) => write!(f, "{}", primitive),
 			Expression::BinaryOperation(operation) => write!(f, "{}", operation),

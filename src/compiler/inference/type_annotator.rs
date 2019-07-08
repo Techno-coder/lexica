@@ -56,8 +56,8 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		let expression_span = expression.span;
-		let evaluation_type = expression.evaluation_type.as_ref().clone();
 		self.apply(&mut expression.evaluation_type, expression_span)?;
+		let evaluation_type = expression.evaluation_type.as_ref().clone();
 
 		let type_identifier = expression.evaluation_type.resolved().unwrap();
 		match &mut expression.expression {
@@ -96,6 +96,7 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 			Statement::Mutation(mutation) => mutation.accept(self),
 			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
+			Statement::Expression(expression) => expression.accept(self),
 		}
 	}
 

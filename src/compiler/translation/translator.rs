@@ -61,6 +61,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 
 		let local_index = self.context.drop_variable(&explicit_drop.target);
 		let instruction = match self.context.pop_evaluation() {
+			Evaluation::Unit => panic!("Unit evaluation cannot be assigned"),
 			Evaluation::Local(local) => format!("clone {} {}", local_index, local),
 			Evaluation::Immediate(primitive) => format!("reset {} {}", local_index, primitive),
 		};
@@ -71,6 +72,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		match &mut expression.expression {
+			Expression::Unit => self.context.push_evaluation(Evaluation::Unit),
 			Expression::Variable(variable) => {
 				let variable = self.context.get_variable(variable);
 				self.context.push_evaluation(Evaluation::Local(variable));
@@ -131,6 +133,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 			Statement::Mutation(mutation) => mutation.accept(self),
 			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
+			Statement::Expression(expression) => expression.accept(self),
 		}
 	}
 

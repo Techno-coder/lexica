@@ -78,6 +78,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		let evaluation_type = match &mut expression.expression {
+			Expression::Unit => DataType::UNIT_TYPE,
 			Expression::Variable(target) => DataType(self.environment[target].clone()),
 			Expression::Primitive(_) => DataType(self.context.new_variable()),
 			Expression::BinaryOperation(_) => {
@@ -145,6 +146,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 			Statement::Mutation(mutation) => mutation.accept(self),
 			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
+			Statement::Expression(expression) => expression.accept(self),
 		}
 	}
 

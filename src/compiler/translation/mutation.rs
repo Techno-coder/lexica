@@ -15,6 +15,7 @@ pub fn mutation_assign(span: Span, target: &VariableTarget, mut expression: Vec<
 	let local_index = context.get_variable(target);
 
 	elements.push(instruction!(Advance, match context.pop_evaluation() {
+		Evaluation::Unit => panic!("Unit evaluation cannot be assigned"),
 		Evaluation::Local(local) => format!("{} {} {}", operation, local_index, local),
 		Evaluation::Immediate(primitive) => format!("{}.i {} {}", operation, local_index, primitive),
 	}, span));

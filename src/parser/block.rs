@@ -1,4 +1,4 @@
-use crate::node::{Statement, ExpressionNode};
+use crate::node::{DataType, Expression, ExpressionNode, Statement};
 use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
@@ -10,6 +10,14 @@ pub fn parse_expression_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let span_start = expect!(lexer, end_span, BlockOpen).byte_start;
 	let mut statements = Vec::new();
 	let expression = loop {
+		match lexer.peek() {
+			Some(token) if token.node == Token::BlockClose => {
+				let (expression, evaluation_type) = (Expression::Unit, DataType::UNIT_TYPE);
+				break Spanned::new(ExpressionNode { expression, evaluation_type }, token.span);
+			}
+			_ => (),
+		}
+
 		let lexer_recovery = lexer.clone();
 		let statement = super::parse_statement(lexer, end_span);
 		match statement {
@@ -17,12 +25,20 @@ pub fn parse_expression_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			Err(statement_error) => {
 				*lexer = lexer_recovery;
 				match super::parse_expression_root(lexer, end_span) {
-					Ok(expression) => break expression,
+					Ok(expression) => match lexer.peek() {
+						Some(token) if token.node == Token::Terminator => {
+							let _ = lexer.next();
+							let span = expression.span.clone();
+							let statement = Statement::Expression(expression);
+							statements.push(Spanned::new(statement, span));
+						}
+						_ => break expression,
+					}
 					Err(_) => return Err(statement_error),
 				}
 			}
 		}
-	}.into();
+	};
 
 	let span_end = expect!(lexer, end_span, BlockClose).byte_end;
 	Ok(Spanned::new((statements, expression), Span::new(span_start, span_end)))

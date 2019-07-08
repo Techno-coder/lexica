@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::interpreter::Size;
+use crate::node::DataType;
 
 use super::{Context, InterpreterResult};
 
@@ -8,8 +8,8 @@ use super::{Context, InterpreterResult};
 #[derive(Debug)]
 pub struct Intrinsic {
 	pub identifier: &'static str,
-	pub return_type: Size,
-	pub parameters: Vec<Size>,
+	pub return_type: DataType<'static>,
+	pub parameters: Vec<DataType<'static>>,
 	pub function: IntrinsicFunction,
 }
 

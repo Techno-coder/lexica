@@ -44,6 +44,7 @@ pub fn binary_equality(mut elements: Vec<Spanned<Element>>, context: &mut Functi
 pub fn binary_operator(elements: &mut Vec<Spanned<Element>>, instruction: &str,
                        local_index: usize, right_value: Evaluation, span: Span) {
 	elements.push(instruction!(Advance, match right_value {
+		Evaluation::Unit => panic!("Unit evaluation cannot be part of an operation"),
 		Evaluation::Local(local) => format!("{} {} {}", instruction, local_index, local),
 		Evaluation::Immediate(primitive) => format!("{}.i {} {}", instruction, local_index, primitive),
 	}, span));

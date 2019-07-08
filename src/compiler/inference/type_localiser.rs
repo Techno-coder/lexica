@@ -18,11 +18,11 @@ impl<'a> TypeLocaliser<'a> {
 
 		for intrinsic in intrinsics.intrinsics() {
 			let identifier = Identifier(intrinsic.identifier);
-			let function_return = Identifier(intrinsic.return_type.to_string());
+			let function_return = Identifier(intrinsic.return_type.resolved().unwrap());
 			function_returns.insert(identifier.clone(), DataType::new(function_return));
 
 			let parameters = intrinsic.parameters.iter()
-				.map(|parameter| Identifier(parameter.to_string()).into())
+				.map(|parameter| Identifier(parameter.resolved().unwrap()).into())
 				.map(|parameter| DataType::new(parameter)).collect();
 			function_parameters.insert(identifier, parameters);
 		}
@@ -90,6 +90,7 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 			Statement::Mutation(mutation) => mutation.accept(self),
 			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
+			Statement::Expression(expression) => expression.accept(self),
 		}
 	}
 

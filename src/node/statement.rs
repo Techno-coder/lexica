@@ -2,7 +2,8 @@ use std::fmt;
 
 use crate::source::Spanned;
 
-use super::{Binding, ConditionalLoop, ExplicitDrop, Mutation, NodeConstruct, NodeVisitor};
+use super::{Binding, ConditionalLoop, ExplicitDrop, ExpressionNode, Mutation, NodeConstruct,
+            NodeVisitor};
 
 #[derive(Debug)]
 pub enum Statement<'a> {
@@ -10,6 +11,7 @@ pub enum Statement<'a> {
 	Mutation(Spanned<Mutation<'a>>),
 	ExplicitDrop(Spanned<ExplicitDrop<'a>>),
 	ConditionalLoop(Spanned<ConditionalLoop<'a>>),
+	Expression(Spanned<ExpressionNode<'a>>),
 }
 
 impl<'a> NodeConstruct<'a> for Spanned<Statement<'a>> {
@@ -25,6 +27,7 @@ impl<'a> fmt::Display for Statement<'a> {
 			Statement::Mutation(mutation) => write!(f, "{};", mutation),
 			Statement::ExplicitDrop(explicit_drop) => write!(f, "{};", explicit_drop),
 			Statement::ConditionalLoop(conditional_loop) => write!(f, "{}", conditional_loop),
+			Statement::Expression(expression) => write!(f, "{};", expression),
 		}
 	}
 }

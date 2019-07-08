@@ -5,6 +5,7 @@ use super::{Element, FunctionContext};
 
 #[derive(Debug)]
 pub enum Evaluation {
+	Unit,
 	Local(usize),
 	Immediate(Spanned<Primitive>),
 }
@@ -12,6 +13,7 @@ pub enum Evaluation {
 impl Evaluation {
 	pub fn promote(self, elements: &mut Vec<Spanned<Element>>, context: &mut FunctionContext) -> usize {
 		match self {
+			Evaluation::Unit => panic!("Cannot promote unit evaluation"),
 			Evaluation::Local(local) => local,
 			Evaluation::Immediate(primitive) => {
 				let local = context.register_local(primitive.size());

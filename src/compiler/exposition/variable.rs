@@ -82,7 +82,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		let expression_span = expression.span.clone();
 		match &mut expression.expression {
-			Expression::Primitive(_) => Ok(()),
+			Expression::Unit | Expression::Primitive(_) => Ok(()),
 			Expression::Variable(target) => self.resolve_target_span(target, expression_span),
 			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
 			Expression::FunctionCall(_) => expression.function_call().accept(self),
@@ -121,6 +121,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 			Statement::Mutation(mutation) => mutation.accept(self),
 			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
 			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
+			Statement::Expression(expression) => expression.accept(self),
 		}
 	}
 
