@@ -10,8 +10,8 @@ pub fn parse_statement<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let span_start = next_token.span.byte_start;
 
 	let statement = match next_token.node {
+		Token::Identifier(_) => return parse_statement_identifier(lexer, end_span),
 		Token::Binding => Statement::Binding(parse_binding(lexer, end_span)?),
-		Token::Identifier(_) => Statement::Mutation(parse_mutation(lexer, end_span)?),
 		Token::Drop => Statement::ExplicitDrop(parse_explicit_drop(lexer, end_span)?),
 		Token::Loop => {
 			let conditional_loop = parse_conditional_loop(lexer, end_span)?;
@@ -34,6 +34,32 @@ pub fn parse_binding<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let expression = super::parse_expression_root(lexer, end_span)?;
 	let span = Span::new(span_start, expression.span.byte_end);
 	Ok(Spanned::new(Binding { variable, expression }, span))
+}
+
+pub fn parse_statement_identifier<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
+                                      -> ParserResult<'a, Spanned<Statement<'a>>> {
+	let lexer_recovery = lexer.clone();
+	match parse_mutation(lexer, end_span) {
+		Ok(mutation) => {
+			let span_end = expect!(lexer, end_span, Terminator).byte_end;
+			let span = Span::new(mutation.span.byte_start, span_end);
+			let mutation = Statement::Mutation(mutation);
+			Ok(Spanned::new(mutation, span))
+		}
+		Err(statement_error) => {
+			*lexer = lexer_recovery;
+			let identifier = identifier!(lexer, end_span);
+			match super::parse_function_call(lexer, identifier, end_span) {
+				Ok(function_call) => {
+					let span_end = expect!(lexer, end_span, Terminator).byte_end;
+					let span = Span::new(function_call.span.byte_start, span_end);
+					let function_call = Statement::Expression(function_call);
+					Ok(Spanned::new(function_call, span))
+				}
+				Err(_) => Err(statement_error)
+			}
+		}
+	}
 }
 
 pub fn parse_mutation<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)

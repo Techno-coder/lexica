@@ -25,15 +25,7 @@ pub fn parse_expression_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			Err(statement_error) => {
 				*lexer = lexer_recovery;
 				match super::parse_expression_root(lexer, end_span) {
-					Ok(expression) => match lexer.peek() {
-						Some(token) if token.node == Token::Terminator => {
-							let _ = lexer.next();
-							let span = expression.span.clone();
-							let statement = Statement::Expression(expression);
-							statements.push(Spanned::new(statement, span));
-						}
-						_ => break expression,
-					}
+					Ok(expression) => break expression,
 					Err(_) => return Err(statement_error),
 				}
 			}
