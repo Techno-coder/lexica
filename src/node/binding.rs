@@ -4,7 +4,7 @@ use crate::source::Spanned;
 
 use super::{ExpressionNode, NodeConstruct, NodeVisitor, Variable};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Binding<'a> {
 	pub variable: Spanned<Variable<'a>>,
 	pub expression: Spanned<ExpressionNode<'a>>,

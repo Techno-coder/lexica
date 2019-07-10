@@ -74,6 +74,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				function_call.accept(self)?;
 				function_call.evaluation_type.clone()
 			}
+			Expression::WhenConditional(_) => unimplemented!(),
 		};
 
 		let expression_type = expression.evaluation_type.as_ref();
@@ -91,6 +92,21 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 	fn block(&mut self, block: &mut Spanned<Block<'a>>) -> Self::Result {
 		block.statements.iter_mut().try_for_each(|statement| statement.accept(self))
+	}
+
+	fn statement(&mut self, statement: &mut Spanned<Statement<'a>>) -> Self::Result where Self: Sized {
+		match &mut statement.node {
+			Statement::Binding(binding) => binding.accept(self),
+			Statement::Mutation(mutation) => mutation.accept(self),
+			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
+			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
+			Statement::Expression(expression) => {
+				expression.accept(self)?;
+				let evaluation_type = expression.evaluation_type.as_ref().clone();
+				Ok(self.unify(evaluation_type, DataType::UNIT_TYPE.as_ref().clone())
+					.map_err(|error| Spanned::new(error.into(), statement.span))?)
+			}
+		}
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
@@ -157,16 +173,6 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				self.unify(identifier_type, evaluation_type.clone())
 			}
 		}.map_err(|error| Spanned::new(error.into(), mutation.span))?)
-	}
-
-	fn statement(&mut self, statement: &mut Spanned<Statement<'a>>) -> Self::Result {
-		match &mut statement.node {
-			Statement::Binding(binding) => binding.accept(self),
-			Statement::Mutation(mutation) => mutation.accept(self),
-			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
-			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
-			Statement::Expression(expression) => expression.accept(self),
-		}
 	}
 }
 

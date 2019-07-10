@@ -78,6 +78,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 			Expression::Variable(target) => self.resolve_target_span(target, expression_span),
 			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
 			Expression::FunctionCall(_) => expression.function_call().accept(self),
+			Expression::WhenConditional(_) => unimplemented!(),
 		}
 	}
 
@@ -131,16 +132,6 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 				self.resolve_target(target)?;
 				expression.accept(self)
 			}
-		}
-	}
-
-	fn statement(&mut self, statement: &mut Spanned<Statement<'a>>) -> Self::Result {
-		match &mut statement.node {
-			Statement::Binding(binding) => binding.accept(self),
-			Statement::Mutation(mutation) => mutation.accept(self),
-			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
-			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
-			Statement::Expression(expression) => expression.accept(self),
 		}
 	}
 }

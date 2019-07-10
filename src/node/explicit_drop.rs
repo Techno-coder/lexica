@@ -4,7 +4,7 @@ use crate::source::Spanned;
 
 use super::{ExpressionNode, NodeConstruct, NodeVisitor, VariableTarget};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExplicitDrop<'a> {
 	pub target: Spanned<VariableTarget<'a>>,
 	pub expression: Spanned<ExpressionNode<'a>>,

@@ -25,22 +25,27 @@ pub fn parse_expression<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, precedenc
 pub fn parse_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
                           -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	let error = Spanned::new(ParserError::ExpectedExpression, end_span);
-	let next_token = lexer.next().ok_or(error)?;
-	Ok(Spanned::new(match next_token.node {
-		Token::Identifier(identifier) => {
-			let identifier = Spanned::new(Identifier(identifier), next_token.span);
-			return match_identifier_terminal(lexer, identifier, end_span);
-		}
+	let next_token = lexer.peek().ok_or(error)?;
+	match next_token.node {
+		Token::Identifier(_) => match_identifier_terminal(lexer, end_span),
 		Token::UnsignedInteger(integer) => {
 			let integer = Integer::new_unsigned(integer);
-			Expression::Primitive(Primitive::Integer(integer))
+			let (span, _) = (next_token.span, lexer.next());
+			let expression = Expression::Primitive(Primitive::Integer(integer));
+			Ok(Spanned::new(expression.into(), span))
+		}
+		Token::When => {
+			let when_conditional = super::parse_when_conditional(lexer, end_span)?;
+			let expression = Expression::WhenConditional(when_conditional.node);
+			Ok(Spanned::new(expression.into(), when_conditional.span))
 		}
 		_ => return Err(Spanned::new(ParserError::ExpectedExpression, next_token.span).into()),
-	}.into(), next_token.span))
+	}
 }
 
-pub fn match_identifier_terminal<'a>(lexer: &mut PeekLexer<'a>, identifier: Spanned<Identifier<'a>>,
-                                     end_span: Span) -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
+pub fn match_identifier_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
+                                     -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
+	let identifier = identifier!(lexer, end_span);
 	let expression_variable = Expression::Variable(identifier.node.clone().into());
 	Ok(match lexer.peek() {
 		Some(token) if token.node == Token::ParenthesisOpen => {

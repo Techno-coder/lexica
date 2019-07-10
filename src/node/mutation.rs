@@ -4,7 +4,7 @@ use crate::source::Spanned;
 
 use super::{ExpressionNode, NodeConstruct, NodeVisitor, VariableTarget};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Mutation<'a> {
 	Swap(Spanned<VariableTarget<'a>>, Spanned<VariableTarget<'a>>),
 	AddAssign(Spanned<VariableTarget<'a>>, Spanned<ExpressionNode<'a>>),

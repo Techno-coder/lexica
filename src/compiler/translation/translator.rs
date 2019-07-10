@@ -58,6 +58,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 			}
 			Expression::BinaryOperation(_) => return expression.binary_operation().accept(self),
 			Expression::FunctionCall(_) => return expression.function_call().accept(self),
+			Expression::WhenConditional(_) => unimplemented!(),
 		}
 		Vec::new()
 	}
@@ -141,16 +142,6 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 				let expression = expression.accept(self);
 				super::multiply_assign(span, target, expression, &mut self.context)
 			}
-		}
-	}
-
-	fn statement(&mut self, statement: &mut Spanned<Statement<'a>>) -> Self::Result {
-		match &mut statement.node {
-			Statement::Binding(binding) => binding.accept(self),
-			Statement::Mutation(mutation) => mutation.accept(self),
-			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
-			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
-			Statement::Expression(expression) => expression.accept(self),
 		}
 	}
 }

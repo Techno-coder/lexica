@@ -107,14 +107,4 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 			_ => Ok(()),
 		}
 	}
-
-	fn statement(&mut self, statement: &mut Spanned<Statement<'a>>) -> Self::Result {
-		match &mut statement.node {
-			Statement::Binding(binding) => binding.accept(self),
-			Statement::Mutation(mutation) => mutation.accept(self),
-			Statement::ExplicitDrop(explicit_drop) => explicit_drop.accept(self),
-			Statement::ConditionalLoop(conditional_loop) => conditional_loop.accept(self),
-			Statement::Expression(expression) => expression.accept(self),
-		}
-	}
 }

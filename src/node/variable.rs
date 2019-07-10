@@ -4,7 +4,7 @@ use crate::source::Spanned;
 
 use super::{DataType, Identifier};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Variable<'a> {
 	pub target: VariableTarget<'a>,
 	pub data_type: DataType<'a>,

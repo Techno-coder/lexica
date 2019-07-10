@@ -10,7 +10,7 @@ pub fn parse_function<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let parameters = parse_parameter_list(lexer, end_span)?;
 
 	let return_type = match lexer.peek() {
-		Some(token) if token.node == Token::ReturnSeparator => {
+		Some(token) if token.node == Token::BlockSeparator => {
 			let _ = lexer.next();
 			let return_type = identifier!(lexer, end_span);
 			Spanned::new(DataType::new(return_type.node), return_type.span)

@@ -1,10 +1,16 @@
 macro_rules! expect {
-    ($lexer: expr, $end_span: expr, $token: ident) => {{
-		let error = crate::parser::ParserError::ExpectedToken(crate::parser::Token::$token);
+    ($lexer: expr, $end_span: expr, $token: ident) => {
+        expect_token!($lexer, $end_span, crate::parser::Token::$token)
+    };
+}
+
+macro_rules! expect_token {
+    ($lexer: expr, $end_span: expr, $token: expr) => {{
+		let error = crate::parser::ParserError::ExpectedToken($token.clone());
 		match $lexer.next() {
-			Some(token) => match token.node {
-				crate::parser::Token::$token => token.span,
-				_ => return Err(crate::source::Spanned::new(error, token.span).into()),
+			Some(token) => match token.node == $token {
+				false => return Err(crate::source::Spanned::new(error, token.span).into()),
+				true => token.span,
 			},
 			None => return Err(crate::source::Spanned::new(error, $end_span).into()),
 		}

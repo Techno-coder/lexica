@@ -4,7 +4,7 @@ use crate::source::Spanned;
 
 use super::{Block, ExpressionNode, NodeConstruct, NodeVisitor};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConditionalLoop<'a> {
 	pub start_condition: Option<Spanned<ExpressionNode<'a>>>,
 	pub end_condition: Spanned<ExpressionNode<'a>>,

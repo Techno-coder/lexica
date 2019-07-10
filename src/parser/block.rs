@@ -17,8 +17,7 @@ pub fn parse_expression_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		}
 
 		let lexer_recovery = lexer.clone();
-		let statement = super::parse_statement(lexer, end_span);
-		match statement {
+		match super::parse_statement(lexer, end_span, Token::Terminator) {
 			Ok(statement) => statements.push(statement),
 			Err(statement_error) => {
 				*lexer = lexer_recovery;
@@ -45,7 +44,7 @@ pub fn parse_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 
 	let error = Spanned::new(ParserError::ExpectedToken(Token::BlockClose), end_span);
 	while lexer.peek().ok_or(error.clone())?.node != Token::BlockClose {
-		statements.push(super::parse_statement(lexer, end_span)?);
+		statements.push(super::parse_statement(lexer, end_span, Token::Terminator)?);
 	}
 
 	let span_end = expect!(lexer, end_span, BlockClose).byte_end;

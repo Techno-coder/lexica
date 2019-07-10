@@ -1,4 +1,5 @@
 pub use self::block::*;
+pub use self::conditional::*;
 pub use self::error::*;
 pub use self::expression::*;
 pub use self::function::*;
@@ -19,3 +20,4 @@ mod function;
 mod expression;
 mod statement;
 mod block;
+mod conditional;
