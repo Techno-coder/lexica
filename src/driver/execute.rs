@@ -21,7 +21,7 @@ pub fn execute() -> Option<()> {
 	let operation_store = crate::interpreter::parser::OperationStore::new();
 	let annotation_store = crate::interpreter::parser::AnnotationStore::new();
 	let compilation_unit = super::compile(&source_map, translation_map, &operation_store,
-	                                      &annotation_store, &intrinsic_store)?;
+		&annotation_store, &intrinsic_store)?;
 
 	let mut runtime = crate::interpreter::Runtime::new(compilation_unit)
 		.expect("Failed to create runtime");
@@ -30,8 +30,16 @@ pub fn execute() -> Option<()> {
 	if let Err(error) = result {
 		println!("Interpreter runtime error: {}", error);
 	}
-
 	println!("{:#?}", runtime.context());
+
+	if interface.is_present("backtrack") {
+		let result = runtime.run(crate::interpreter::Direction::Reverse);
+		if let Err(error) = result {
+			println!("Interpreter runtime error: {}", error);
+		}
+		println!("{:#?}", runtime.context());
+	}
+
 	Some(())
 }
 

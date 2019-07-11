@@ -32,6 +32,7 @@ Example source files can be found in the `examples` directory.
 
 ## Flags
 - `-b` - Emits the translated bytecode
+- `-u` - Reverses the context after execution has halted
 
 ## Influence
 Lexica has been influenced by:
