@@ -3,8 +3,8 @@ use std::fmt;
 use crate::source::Span;
 
 use super::{CompilationUnit, CompileContext, CompileResult, Context, Direction, FunctionOffset,
-            GenericOperation, InstructionTarget, InterpreterResult, Operand, Operation, Operational,
-            Reversible};
+	GenericOperation, InstructionTarget, InterpreterResult, Operand, Operation, Operational,
+	Reversible};
 
 /// Halts the runtime if the step direction is the same as exit direction.
 #[derive(Debug)]
@@ -20,16 +20,7 @@ impl Operational for Exit {
 
 impl Operation for Exit {
 	fn execute(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		let frame_direction = context.frame()?.direction();
-		match frame_direction {
-			Direction::Advance => context.is_halted = true,
-			Direction::Reverse if context.is_halted => {
-				let InstructionTarget(function, FunctionOffset(offset)) = context.program_counter();
-				context.set_next_instruction(|| Ok(InstructionTarget(function, FunctionOffset(offset - 1))));
-				context.is_halted = false;
-			}
-			_ => (),
-		};
+		context.is_halted = true;
 		Ok(())
 	}
 
@@ -40,16 +31,14 @@ impl Operation for Exit {
 
 impl Reversible for Exit {
 	fn reverse(&self, context: &mut Context, _: &CompilationUnit) -> InterpreterResult<()> {
-		let frame_direction = context.frame()?.direction();
-		match frame_direction {
-			Direction::Reverse => context.is_halted = true,
-			Direction::Advance if context.is_halted => {
-				let InstructionTarget(function, FunctionOffset(offset)) = context.program_counter();
-				context.set_next_instruction(|| Ok(InstructionTarget(function, FunctionOffset(offset - 1))));
-				context.is_halted = false;
-			}
-			_ => (),
-		}
+		let InstructionTarget(function, FunctionOffset(offset)) = context.program_counter();
+		let next_instruction = match context.step_direction {
+			Direction::Advance => InstructionTarget(function, FunctionOffset(offset + 1)),
+			Direction::Reverse => InstructionTarget(function, FunctionOffset(offset - 1)),
+		};
+
+		context.set_next_instruction(|| Ok(next_instruction));
+		context.is_halted = false;
 		Ok(())
 	}
 }

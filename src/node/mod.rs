@@ -13,6 +13,7 @@ pub use self::node_construct::*;
 pub use self::statement::*;
 pub use self::syntax_unit::*;
 pub use self::variable::*;
+pub use self::when_conditional::*;
 
 mod node_construct;
 mod binary_operation;
@@ -27,5 +28,6 @@ mod mutation;
 mod statement;
 mod syntax_unit;
 mod function_call;
+mod when_conditional;
 mod identifier;
 mod data_type;
