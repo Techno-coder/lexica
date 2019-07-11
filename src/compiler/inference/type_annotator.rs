@@ -60,6 +60,7 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 				Ok(*primitive = primitive.clone().cast(size).ok_or(error)?)
 			}
 			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
+			Expression::WhenConditional(_) => expression.when_conditional().accept(self),
 			Expression::FunctionCall(_) => expression.function_call().accept(self),
 			_ => Ok(()),
 		}
@@ -106,5 +107,13 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 			Mutation::MultiplyAssign(_, expression) => expression.accept(self),
 			_ => Ok(()),
 		}
+	}
+
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
+		Ok(for branch in &mut when_conditional.branches {
+			branch.condition.accept(self)?;
+			branch.end_condition.as_mut().unwrap().accept(self)?;
+			branch.expression_block.accept(self)?;
+		})
 	}
 }

@@ -69,12 +69,17 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 					_ => binary_operation.left.evaluation_type.clone(),
 				}
 			}
+			Expression::WhenConditional(_) => {
+				let mut when_conditional = expression.when_conditional();
+				when_conditional.accept(self)?;
+				when_conditional.branches[0].expression_block
+					.expression.evaluation_type.clone()
+			}
 			Expression::FunctionCall(_) => {
 				let mut function_call = expression.function_call();
 				function_call.accept(self)?;
 				function_call.evaluation_type.clone()
 			}
-			Expression::WhenConditional(_) => unimplemented!(),
 		};
 
 		let expression_type = expression.evaluation_type.as_ref();
@@ -173,6 +178,33 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				self.unify(identifier_type, evaluation_type.clone())
 			}
 		}.map_err(|error| Spanned::new(error.into(), mutation.span))?)
+	}
+
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
+		const BOOLEAN_TYPE: Type<Identifier<'static>> = super::application::BOOLEAN_TYPE;
+		for branch in &mut when_conditional.branches {
+			branch.condition.accept(self)?;
+			self.unify(branch.condition.evaluation_type.as_ref().clone(), BOOLEAN_TYPE)
+				.map_err(|error| Spanned::new(error.into(), branch.condition.span))?;
+
+			let end_condition = branch.end_condition.as_mut().unwrap();
+			end_condition.accept(self)?;
+
+			self.unify(end_condition.evaluation_type.as_ref().clone(), BOOLEAN_TYPE)
+				.map_err(|error| Spanned::new(error.into(), end_condition.span))?;
+			branch.expression_block.accept(self)?;
+		}
+
+		for (right_index, right) in when_conditional.branches.iter().enumerate().skip(1) {
+			let left = &when_conditional.branches[right_index - 1];
+			let span = right.expression_block.expression.span;
+
+			let left = left.expression_block.expression.evaluation_type.as_ref().clone();
+			let right = right.expression_block.expression.evaluation_type.as_ref().clone();
+			self.unify(left, right).map_err(|error| Spanned::new(error.into(), span))?;
+		}
+
+		Ok(())
 	}
 }
 

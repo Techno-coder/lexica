@@ -59,10 +59,13 @@ impl<'a> FunctionContext<'a> {
 		self.evaluation_stack.pop().expect("Expression stack is empty")
 	}
 
+	pub fn label(&mut self) -> usize {
+		self.label_index += 1;
+		self.label_index - 1
+	}
+
 	pub fn pair_labels(&mut self) -> (usize, usize) {
-		let labels = (self.label_index, self.label_index + 1);
-		self.label_index += 2;
-		labels
+		(self.label(), self.label())
 	}
 
 	pub fn local_sizes(&self) -> &[Size] {

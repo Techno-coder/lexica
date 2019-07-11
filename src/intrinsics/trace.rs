@@ -11,6 +11,7 @@ pub fn trace() -> Intrinsic {
 		function: IntrinsicFunction(|context| {
 			let mut integer = Integer::new_unsigned(0);
 			integer.restore(context.drop_stack())?;
+			integer.drop(context.drop_stack());
 			Ok(println!("{}", integer))
 		}),
 	}

@@ -57,8 +57,8 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 				self.context.push_evaluation(Evaluation::Immediate(primitive));
 			}
 			Expression::BinaryOperation(_) => return expression.binary_operation().accept(self),
+			Expression::WhenConditional(_) => return expression.when_conditional().accept(self),
 			Expression::FunctionCall(_) => return expression.function_call().accept(self),
-			Expression::WhenConditional(_) => unimplemented!(),
 		}
 		Vec::new()
 	}
@@ -93,6 +93,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 		self.context.push_frame();
 		let (start_label, end_label) = self.context.pair_labels();
 		let mut elements = super::loop_header(conditional_loop.span, start_label, end_label);
+
 		let end_condition = &mut conditional_loop.end_condition;
 		let condition = end_condition.accept(self);
 		elements.append(&mut super::loop_end_condition(condition, &mut self.context, end_condition, end_label));
@@ -143,5 +144,27 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 				super::multiply_assign(span, target, expression, &mut self.context)
 			}
 		}
+	}
+
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
+		let mut elements = Vec::new();
+		let (start_label, end_label) = self.context.pair_labels();
+		let branch_labels = super::when_branch_labels(when_conditional, &mut self.context);
+
+		let conditions = when_conditional.branches.iter_mut()
+			.map(|branch| branch.condition.accept(self)).collect();
+		elements.append(&mut super::when_entry(when_conditional, &branch_labels,
+			conditions, &mut self.context, start_label, end_label));
+
+		let expressions = when_conditional.branches.iter_mut()
+			.map(|branch| branch.expression_block.accept(self)).collect();
+		elements.append(&mut super::when_expressions(when_conditional, &branch_labels,
+			expressions, start_label, end_label));
+
+		let end_conditions = when_conditional.branches.iter_mut()
+			.map(|branch| branch.condition.accept(self)).collect();
+		elements.append(&mut super::when_reverse_entry(when_conditional, &branch_labels,
+			end_conditions, &mut self.context, start_label, end_label));
+		elements
 	}
 }

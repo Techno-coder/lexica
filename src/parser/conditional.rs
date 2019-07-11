@@ -30,7 +30,7 @@ pub fn parse_conditional_loop<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 }
 
 pub fn parse_when_conditional<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
-                                  -> ParserResult<'a, Spanned<WhenConditional<'a>>> {
+                                  -> ParserResult<'a, Spanned<Box<WhenConditional<'a>>>> {
 	let span_start = expect!(lexer, end_span, When).byte_start;
 	match lexer.peek() {
 		Some(token) if token.node == Token::BlockOpen => {
@@ -50,7 +50,8 @@ pub fn parse_when_conditional<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			}
 
 			let span_end = expect!(lexer, end_span, BlockClose).byte_end;
-			Ok(Spanned::new(WhenConditional { branches }, Span::new(span_start, span_end)))
+			let span = Span::new(span_start, span_end);
+			Ok(Spanned::new(Box::new(WhenConditional { branches }), span))
 		}
 		_ => {
 			let (condition, end_condition) = parse_when_condition(lexer, end_span)?;
@@ -58,7 +59,7 @@ pub fn parse_when_conditional<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			let span = Span::new(span_start, expression_block.span.byte_end);
 
 			let branches = vec![WhenBranch { condition, end_condition, expression_block }];
-			Ok(Spanned::new(WhenConditional { branches }, span))
+			Ok(Spanned::new(Box::new(WhenConditional { branches }), span))
 		}
 	}
 }

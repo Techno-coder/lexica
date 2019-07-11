@@ -77,8 +77,8 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 			Expression::Unit | Expression::Primitive(_) => Ok(()),
 			Expression::Variable(target) => self.resolve_target_span(target, expression_span),
 			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
+			Expression::WhenConditional(_) => expression.when_conditional().accept(self),
 			Expression::FunctionCall(_) => expression.function_call().accept(self),
-			Expression::WhenConditional(_) => unimplemented!(),
 		}
 	}
 
@@ -133,6 +133,17 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 				expression.accept(self)
 			}
 		}
+	}
+
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
+		Ok(for branch in &mut when_conditional.branches {
+			branch.condition.accept(self)?;
+			branch.end_condition.as_mut().unwrap().accept(self)?;
+
+			self.generation_frames.push(GenerationFrame::new());
+			branch.expression_block.accept(self)?;
+			self.generation_frames.pop();
+		})
 	}
 }
 

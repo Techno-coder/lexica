@@ -33,5 +33,5 @@ pub trait NodeVisitor<'a> {
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result;
 	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result;
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result;
-//	fn when_conditional(&mut self, when_conditional: &mut Spanned<WhenConditional<'a>>) -> Self::Result;
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result;
 }

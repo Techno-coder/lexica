@@ -12,7 +12,7 @@ pub enum Expression<'a> {
 	Variable(VariableTarget<'a>),
 	Primitive(Primitive),
 	BinaryOperation(Box<BinaryOperation<'a>>),
-	WhenConditional(WhenConditional<'a>),
+	WhenConditional(Box<WhenConditional<'a>>),
 	FunctionCall(Box<FunctionCall<'a>>),
 }
 
@@ -45,6 +45,7 @@ macro_rules! forward {
 
 impl<'a> Spanned<ExpressionNode<'a>> {
 	forward!(binary_operation, BinaryOperation);
+	forward!(when_conditional, WhenConditional);
 	forward!(function_call, FunctionCall);
 }
 

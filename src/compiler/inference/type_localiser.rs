@@ -53,6 +53,7 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		match &mut expression.expression {
 			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
+			Expression::WhenConditional(_) => expression.when_conditional().accept(self),
 			Expression::FunctionCall(_) => expression.function_call().accept(self),
 			_ => (),
 		}
@@ -101,6 +102,14 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 			Mutation::AddAssign(_, expression) |
 			Mutation::MultiplyAssign(_, expression) => expression.accept(self),
 			_ => (),
+		}
+	}
+
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
+		for branch in &mut when_conditional.branches {
+			branch.condition.accept(self);
+			branch.end_condition.as_mut().unwrap().accept(self);
+			branch.expression_block.accept(self);
 		}
 	}
 }

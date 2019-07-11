@@ -9,6 +9,7 @@ pub use self::mutation::*;
 pub use self::translation_map::*;
 pub use self::translator::*;
 pub use self::function_call::*;
+pub use self::when_conditional::*;
 
 #[macro_use]
 pub mod constructor;
@@ -23,3 +24,4 @@ mod function;
 mod mutation;
 mod evaluation;
 mod function_call;
+mod when_conditional;
