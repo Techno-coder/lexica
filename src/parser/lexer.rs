@@ -55,6 +55,12 @@ impl<'a> Iterator for Lexer<'a> {
 			other => {
 				if let Ok(integer) = other.parse::<u64>() {
 					Token::UnsignedInteger(integer)
+				} else if let Ok(integer) = other.parse::<i64>() {
+					Token::SignedInteger(integer)
+				} else if let Ok(float) = other.parse::<f64>() {
+					Token::Float(float)
+				} else if let Ok(boolean) = other.parse::<bool>() {
+					Token::Boolean(boolean)
 				} else {
 					Token::Identifier(other)
 				}

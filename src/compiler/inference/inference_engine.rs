@@ -1,7 +1,7 @@
 use hashbrown::HashMap;
-
 use polytype::{Context, Type, UnificationError};
 
+use crate::interpreter::Primitive;
 use crate::node::*;
 use crate::source::{ErrorCollate, Spanned};
 
@@ -59,7 +59,10 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		let evaluation_type = match &mut expression.expression {
 			Expression::Unit => DataType::UNIT_TYPE,
 			Expression::Variable(target) => DataType(self.environment[target].clone()),
-			Expression::Primitive(_) => DataType(self.context.new_variable()),
+			Expression::Primitive(primitive) => match primitive {
+				Primitive::Boolean(_) => DataType(super::application::BOOLEAN_TYPE),
+				_ => DataType(self.context.new_variable()),
+			},
 			Expression::BinaryOperation(_) => {
 				let mut binary_operation = expression.binary_operation();
 				binary_operation.accept(self)?;

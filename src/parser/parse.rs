@@ -35,7 +35,7 @@ pub fn end_span(text: &str) -> Span {
 
 pub fn discard_state(lexer: &mut PeekLexer) {
 	while let Some(token) = lexer.peek() {
-		match token.function_separator() {
+		match token.structure_separator() {
 			false => lexer.next(),
 			true => break,
 		};

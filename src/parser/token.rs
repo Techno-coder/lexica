@@ -26,11 +26,14 @@ pub enum Token<'a> {
 	Multiply,
 	AddAssign,
 	MultiplyAssign,
+	Boolean(bool),
 	UnsignedInteger(u64),
+	SignedInteger(i64),
+	Float(f64),
 }
 
 impl<'a> Token<'a> {
-	pub fn function_separator(&self) -> bool {
+	pub fn structure_separator(&self) -> bool {
 		match self {
 			Token::Function => true,
 			_ => false,
