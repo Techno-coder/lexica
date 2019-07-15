@@ -7,9 +7,13 @@ edition = "2018"
 [dependencies]
 byteorder = "^1.3"
 colored = "^1.7"
-polytype = "6.0"
+polytype = "^6.0"
 
 [dependencies.clap]
 version = "^2.0"
 default-features = false
 features = ["suggestions", "color"]
+
+[dependencies.hashbrown]
+version = "^0.5"
+features = ["nightly"]

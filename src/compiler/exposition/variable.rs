@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 use crate::node::*;
 use crate::source::{ErrorCollate, Span, Spanned};
