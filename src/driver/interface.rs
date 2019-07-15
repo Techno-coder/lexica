@@ -5,6 +5,7 @@ pub fn interface<'a>() -> ArgMatches<'a> {
 		.version(env!("CARGO_PKG_VERSION"))
 		.about("Lexica language compiler and interpreter")
 		.arg(Arg::with_name("input")
+			.help("Lexica source or bytecode files to be compiled or executed")
 			.required(true))
 		.arg(Arg::with_name("bytecode")
 			.help("Emits the bytecode translation of the source")

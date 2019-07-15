@@ -22,10 +22,10 @@ pub fn loop_end_condition(mut elements: Vec<Spanned<Element>>, context: &mut Fun
 
 pub fn loop_start_condition(mut elements: Vec<Spanned<Element>>, context: &mut FunctionContext,
                             condition: &Spanned<ExpressionNode>, start_label: usize) -> Vec<Spanned<Element>> {
-	super::polarize_reverse(&mut elements);
 	let expression_index = context.pop_evaluation().promote(&mut elements, context);
 	let instruction = format!("branch.i = {} true {}", expression_index, start_label);
 	elements.push(instruction!(Advance, Reverse, instruction, condition.span));
+	super::polarize_reverse(&mut elements);
 	elements
 }
 
