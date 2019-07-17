@@ -12,5 +12,6 @@ mod parser;
 mod source;
 
 fn main() {
-	let _ = crate::driver::execute();
+	better_panic::install();
+	crate::driver::execute();
 }

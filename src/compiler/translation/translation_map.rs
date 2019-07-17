@@ -1,14 +1,14 @@
 use std::collections::BTreeMap;
 use std::fmt::Write;
 
-use crate::source::{Span, Spanned};
+use crate::source::{Span, Spanned, TextMap};
 
 use super::Element;
 
 #[derive(Debug)]
 pub struct TranslationMap {
 	ranges: BTreeMap<usize, Span>,
-	text: String,
+	text_map: TextMap,
 }
 
 impl TranslationMap {
@@ -21,11 +21,12 @@ impl TranslationMap {
 			ranges.insert(text.len(), element.span);
 		}
 
-		Self { ranges, text }
+		let text_map = TextMap::new(text);
+		Self { ranges, text_map }
 	}
 
-	pub fn text(&self) -> &str {
-		&self.text
+	pub fn text_map(&self) -> &TextMap {
+		&self.text_map
 	}
 
 	pub fn translate<T>(&self, element: &mut Spanned<T>) {

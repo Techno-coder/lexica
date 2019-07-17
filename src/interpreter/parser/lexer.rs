@@ -1,17 +1,16 @@
-use crate::source::{Spanned, SplitWhitespace};
+use crate::source::{Spanned, SplitSource, TextMap};
 
 use super::Token;
 
 /// Parses a string into separate tokens.
 #[derive(Debug)]
 pub struct Lexer<'a> {
-	lexemes: SplitWhitespace<'a>,
+	lexemes: SplitSource<'a>,
 }
 
 impl<'a> Lexer<'a> {
-	pub fn new(text: &'a str) -> Self {
-		let lexemes = SplitWhitespace::new(text);
-		Self { lexemes }
+	pub fn new(text_map: &'a TextMap) -> Self {
+		Self { lexemes: SplitSource::new(text_map, &[], "#") }
 	}
 }
 

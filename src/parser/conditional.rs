@@ -34,8 +34,8 @@ pub fn parse_when_conditional<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let span_start = expect!(lexer, end_span, When).byte_start;
 	match lexer.peek() {
 		Some(token) if token.node == Token::BlockOpen => {
-			let _ = lexer.next();
 			let mut branches = Vec::new();
+			lexer.next();
 
 			while let Some(token) = lexer.peek() {
 				if token.node == Token::BlockClose {
@@ -69,7 +69,7 @@ pub fn parse_when_condition<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let condition = super::parse_expression_root(lexer, end_span)?;
 	Ok(match lexer.peek() {
 		Some(token) if token.node == Token::Implies => {
-			let _ = lexer.next();
+			lexer.next();
 			let end_condition = super::parse_expression_root(lexer, end_span)?;
 			(condition, Some(end_condition))
 		}

@@ -11,7 +11,7 @@ pub fn parse_function<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 
 	let return_type = match lexer.peek() {
 		Some(token) if token.node == Token::BlockSeparator => {
-			let _ = lexer.next();
+			lexer.next();
 			let return_type = identifier!(lexer, end_span);
 			Spanned::new(DataType::new(return_type.node), return_type.span)
 		}
@@ -35,7 +35,7 @@ pub fn parse_parameter_list<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		let token = lexer.peek().ok_or(spanned_brace_error.clone())?;
 
 		if let Token::ParenthesisClose = token.node {
-			let _ = lexer.next();
+			lexer.next();
 			break;
 		}
 

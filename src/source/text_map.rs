@@ -11,7 +11,7 @@ pub struct TextMap {
 
 impl TextMap {
 	pub fn new(text: String) -> TextMap {
-		let text = "\n".to_owned() + &text;
+		let text = "\n".to_owned() + &text + "\n";
 		let mut line_breaks: BTreeMap<_, _> = text
 			.char_indices().filter(|(_, character)| character == &'\n')
 			.enumerate().map(|(line, (index, _))| (index, line + 1)).collect();
@@ -83,6 +83,8 @@ impl TextMap {
 		(&self.text[prefix_start..range.start], &self.text[range])
 	}
 
+	/// Returns the text stored in the TextMap.
+	/// Guarantees the string returned has an ending line break.
 	pub fn text(&self) -> &str {
 		&self.text[1..]
 	}

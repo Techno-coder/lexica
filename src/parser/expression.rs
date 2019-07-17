@@ -117,6 +117,6 @@ pub fn parse_operator<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		_ => return Err(Spanned::new(ParserError::ExpectedOperator, operator.span).into()),
 	}, operator.span);
 
-	let _ = lexer.next();
+	lexer.next();
 	Ok(operator)
 }

@@ -25,7 +25,7 @@ pub fn parse_variable<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let mut span = variable_target.span;
 	let data_type = match lexer.peek() {
 		Some(separator) if separator.node == Token::VariableSeparator => {
-			let _ = lexer.next();
+			lexer.next();
 			let identifier = identifier!(lexer, end_span);
 			span.byte_end = identifier.span.byte_end;
 			DataType::new(identifier.node)
@@ -40,13 +40,14 @@ pub fn parse_variable<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 #[cfg(test)]
 mod tests {
 	use crate::parser::{end_span, Lexer};
+	use crate::source::TextMap;
 
 	use super::*;
 
 	#[test]
 	fn test_identifier() {
-		let text = "variable\n";
-		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
+		let text = TextMap::new("variable".to_owned());
+		let (lexer, end_span) = (&mut Lexer::new(&text), end_span(text.text()));
 
 		let target = Identifier("variable").into();
 		let variable = Variable { target, data_type: DataType::default(), is_mutable: false };
@@ -55,8 +56,8 @@ mod tests {
 
 	#[test]
 	fn test_mutable() {
-		let text = "~variable\n";
-		let (lexer, end_span) = (&mut Lexer::new(text), end_span(text));
+		let text = TextMap::new("~variable".to_owned());
+		let (lexer, end_span) = (&mut Lexer::new(&text), end_span(text.text()));
 
 		let target = Identifier("variable").into();
 		let variable = Variable { target, data_type: DataType::default(), is_mutable: true };

@@ -1,10 +1,13 @@
 use std::iter::Peekable;
 
-use crate::source::{Spanned, SplitSource};
+use crate::source::{Spanned, SplitSource, TextMap};
 
 use super::Token;
 
 pub type PeekLexer<'a> = Peekable<Lexer<'a>>;
+
+const SINGULARITIES: &'static [char] = &['(', ')', '{', '}', ';', ',', '~', ':'];
+const COMMENT: &'static str = "//";
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
@@ -12,8 +15,9 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-	pub fn new(text: &'a str) -> PeekLexer<'a> {
-		Lexer { lexemes: SplitSource::new(text) }.peekable()
+	pub fn new(text_map: &'a TextMap) -> PeekLexer<'a> {
+		let lexemes = SplitSource::new(text_map, SINGULARITIES, COMMENT);
+		Lexer { lexemes }.peekable()
 	}
 }
 

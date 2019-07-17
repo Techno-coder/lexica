@@ -1,18 +1,23 @@
 use std::iter::Peekable;
 use std::str::CharIndices;
 
-use crate::source::Span;
+use crate::source::TextMap;
+
+use super::Span;
 
 #[derive(Debug, Clone)]
 pub struct SplitSource<'a> {
 	text: &'a str,
 	iterator: Peekable<CharIndices<'a>>,
+	singularities: &'static [char],
+	comment: &'static str,
 }
 
 impl<'a> SplitSource<'a> {
-	pub fn new(text: &'a str) -> SplitSource {
+	pub fn new(text_map: &'a TextMap, singularities: &'static [char], comment: &'static str) -> Self {
+		let text = text_map.text();
 		let iterator = text.char_indices().peekable();
-		SplitSource { text, iterator }
+		Self { text, iterator, singularities, comment }
 	}
 
 	fn split_comment(&mut self) -> usize {
@@ -33,33 +38,26 @@ impl<'a> Iterator for SplitSource<'a> {
 	fn next(&mut self) -> Option<Self::Item> {
 		let mut span_start: Option<usize> = None;
 		let mut item_singular: Option<bool> = None;
-		let mut item_punctuation: Option<bool> = None;
 
-		while let Some((index, character)) = self.iterator.peek() {
-			let is_punctuation = is_punctuation(*character);
-			let is_singular = is_punctuation && !is_multiple(*character);
-
-			let punctuation_change = item_punctuation != Some(is_punctuation);
-			let singularity_change = item_singular == Some(false) && is_singular;
-			let singularity_split = item_singular == Some(true) || singularity_change;
-			let text_change = singularity_split || (item_punctuation.is_some() && punctuation_change);
-
+		while let Some((index, character)) = self.iterator.peek().cloned() {
 			if let Some(span_start) = span_start {
-				if &self.text[span_start..*index] == "//" {
+				if &self.text[span_start..index] == self.comment {
 					let end_index = self.split_comment();
 					return Some(self.construct_item(span_start, end_index));
 				}
 			}
 
-			if character.is_whitespace() || text_change {
+			let is_singular = self.singularities.contains(&character);
+			let singularity_change = item_singular == Some(!is_singular);
+			let split_change = item_singular == Some(true) || singularity_change;
+
+			if character.is_whitespace() || split_change {
 				if let Some(span_start) = span_start.take() {
-					let index = *index;
 					return Some(self.construct_item(span_start, index));
 				}
-			} else if item_punctuation.is_none() {
-				item_punctuation = Some(is_punctuation);
+			} else if span_start.is_none() {
+				span_start = Some(index);
 				item_singular = Some(is_singular);
-				span_start = Some(*index);
 			}
 
 			self.iterator.next();
@@ -68,47 +66,30 @@ impl<'a> Iterator for SplitSource<'a> {
 	}
 }
 
-pub fn is_punctuation(character: char) -> bool {
-	character != '_' && character.is_ascii_punctuation()
-}
-
-pub fn is_multiple(character: char) -> bool {
-	match character {
-		'+' | '-' | '*' | '/' => true,
-		'=' | '<' | '>' => true,
-		_ => false,
-	}
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
 
 	#[test]
-	fn test_split_source() {
-		let text = "fn function(n: u32) -> u32 {\n";
-		let lexemes: Vec<_> = SplitSource::new(text).map(|(_, lexeme)| lexeme).collect();
-		assert_eq!(lexemes, &["fn", "function", "(", "n", ":", "u32", ")", "->", "u32", "{"])
+	fn test_no_singularities() {
+		let text = TextMap::new("fn function(n: u32) -> u32 {".to_owned());
+		let lexemes: Vec<_> = SplitSource::new(&text, &[], "").map(|(_, lexeme)| lexeme).collect();
+		assert_eq!(lexemes, &["fn", "function(n:", "u32)", "->", "u32", "{"]);
 	}
 
 	#[test]
 	fn test_comment() {
-		let text = "let ~first = 3; // Comment\n";
-		let lexemes: Vec<_> = SplitSource::new(text).map(|(_, lexeme)| lexeme).collect();
-		assert_eq!(lexemes, &["let", "~", "first", "=", "3", ";", "// Comment"])
+		let text = TextMap::new("let ~first = 3; // Comment".to_owned());
+		let lexemes: Vec<_> = SplitSource::new(&text, &[], "//").map(|(_, lexeme)| lexeme).collect();
+		assert_eq!(lexemes, &["let", "~first", "=", "3;", "// Comment"])
 	}
 
 	#[test]
-	fn test_underscore() {
-		let text = "let print_result = trace(variable);\n";
-		let lexemes: Vec<_> = SplitSource::new(text).map(|(_, lexeme)| lexeme).collect();
+	fn test_singularities() {
+		const SINGULARITIES: &'static [char] = &['(', ')', ';'];
+		let text = TextMap::new("let print_result = trace(variable);".to_owned());
+		let iterator = SplitSource::new(&text, &SINGULARITIES, "");
+		let lexemes: Vec<_> = iterator.map(|(_, lexeme)| lexeme).collect();
 		assert_eq!(lexemes, &["let", "print_result", "=", "trace", "(", "variable", ")", ";"]);
-	}
-
-	#[test]
-	pub fn test_nested() {
-		let text = "apply(apply(variable));\n";
-		let lexemes: Vec<_> = SplitSource::new(text).map(|(_, lexeme)| lexeme).collect();
-		assert_eq!(lexemes, &["apply", "(", "apply", "(", "variable", ")", ")", ";"]);
 	}
 }

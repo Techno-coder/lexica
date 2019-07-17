@@ -1,10 +1,10 @@
 use std::convert::TryFrom;
 use std::iter::Peekable;
 
-use crate::source::{Span, Spanned};
+use crate::source::{Span, Spanned, TextMap};
 
 use super::{Annotation, AnnotationStore, Annotator, Argument, Direction, Lexer,
-            OperationStore, ParserError, ParserResult, Token, TranslationInstruction};
+	OperationStore, ParserError, ParserResult, Token, TranslationInstruction};
 
 /// A singular unit of textual code.
 #[derive(Debug, Clone)]
@@ -24,9 +24,9 @@ pub struct ElementParser<'a> {
 }
 
 impl<'a> ElementParser<'a> {
-	pub fn new(text: &'a str, annotations: &'a AnnotationStore,
+	pub fn new(text_map: &'a TextMap, annotations: &'a AnnotationStore,
 	           operations: &'a OperationStore) -> Self {
-		let lexer = Lexer::new(text).peekable();
+		let lexer = Lexer::new(text_map).peekable();
 		Self { lexer, annotations, operations, function: None }
 	}
 
@@ -34,7 +34,7 @@ impl<'a> ElementParser<'a> {
 	/// the provided error.
 	fn discard<T>(&mut self, span: Span, error: ParserError<'a>) -> ParserResult<'a, T> {
 		while let Some(token) = self.lexer.peek() {
-			let _ = match token.node.element_delimiter() {
+			match token.node.element_delimiter() {
 				true => break,
 				false => self.lexer.next(),
 			};
@@ -96,7 +96,7 @@ impl<'a> ElementParser<'a> {
 	fn reversal_hint(&mut self, span: Span) -> ParserResult<'a, Spanned<Element<'a>>> {
 		self.expect_function_context(span)?;
 		while let Some(token) = self.lexer.peek() {
-			let _ = match token.node {
+			match token.node {
 				Token::ReversalHint => self.lexer.next(),
 				_ => break,
 			};

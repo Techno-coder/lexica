@@ -14,7 +14,7 @@ pub fn execute() -> Option<()> {
 	let translation_map = super::translate(&source_map, &intrinsic_store)?;
 
 	if interface.is_present("bytecode") {
-		println!("{}", translation_map.text());
+		println!("{}", translation_map.text_map().text());
 		return Some(());
 	}
 

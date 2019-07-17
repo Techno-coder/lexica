@@ -1,5 +1,5 @@
 use super::{CallFrame, CompilationUnit, Context, Direction, FunctionOffset, FunctionTarget,
-            Instruction, InstructionTarget, InterpreterError, InterpreterResult, RuntimeStep};
+            InstructionTarget, InterpreterError, InterpreterResult, RuntimeStep};
 
 #[derive(Debug)]
 pub struct Runtime {
@@ -122,11 +122,5 @@ impl Runtime {
 
 	pub fn context(&self) -> &Context {
 		&self.context
-	}
-
-	pub fn current_instruction(&self) -> InterpreterResult<&Instruction> {
-		let target = self.context.program_counter();
-		self.compilation_unit.instruction(target)
-			.ok_or(InterpreterError::InstructionBoundary)
 	}
 }
