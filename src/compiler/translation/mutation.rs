@@ -30,6 +30,11 @@ pub fn add_assign(span: Span, target: &VariableTarget, expression: Vec<Spanned<E
 	mutation_assign(span, target, expression, context, "add")
 }
 
+pub fn minus_assign(span: Span, target: &VariableTarget, expression: Vec<Spanned<Element>>,
+                    context: &mut FunctionContext) -> Vec<Spanned<Element>> {
+	mutation_assign(span, target, expression, context, "minus")
+}
+
 pub fn multiply_assign(span: Span, target: &VariableTarget, expression: Vec<Spanned<Element>>,
                        context: &mut FunctionContext) -> Vec<Spanned<Element>> {
 	mutation_assign(span, target, expression, context, "multiply")

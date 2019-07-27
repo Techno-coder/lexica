@@ -92,6 +92,11 @@ pub fn parse_mutation<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			let span = Span::new(span_start, expression.span.byte_end);
 			Spanned::new(Mutation::AddAssign(target, expression), span)
 		}
+		Token::MinusAssign => {
+			let expression = super::parse_expression_root(lexer, end_span)?;
+			let span = Span::new(span_start, expression.span.byte_end);
+			Spanned::new(Mutation::MinusAssign(target, expression), span)
+		}
 		Token::MultiplyAssign => {
 			let expression = super::parse_expression_root(lexer, end_span)?;
 			let span = Span::new(span_start, expression.span.byte_end);

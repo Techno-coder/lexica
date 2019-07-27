@@ -24,12 +24,12 @@ impl<'a> FunctionContext<'a> {
 	}
 
 	pub fn get_variable(&self, target: &VariableTarget<'a>) -> usize {
-		for frame in &self.variable_stack {
+		for frame in self.variable_stack.iter().rev() {
 			if let Some((local_index, _)) = frame.get(target) {
 				return *local_index;
 			}
 		}
-		panic!("Variable target is not bound")
+		panic!("Variable target: {}, is not bound", target)
 	}
 
 	pub fn drop_variable(&mut self, target: &VariableTarget<'a>) -> usize {

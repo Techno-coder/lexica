@@ -1,33 +1,40 @@
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 
 use crate::node::*;
 use crate::source::{ErrorCollate, Span, Spanned};
 
 use super::ExpositionError;
 
+type DropFrame<'a> = HashSet<VariableTarget<'a>>;
 type GenerationFrame<'a> = HashMap<Identifier<'a>, usize>;
 type Result<'a> = std::result::Result<(), ErrorCollate<Spanned<ExpositionError<'a>>>>;
 
 /// Verifies that all variable identifiers and targets are valid.
 /// Additionally shadows and distinguishes variable targets.
+/// Checks that explicitly dropped variables are no longer used.
 #[derive(Debug)]
 pub struct VariableExposition<'a> {
 	generation_frames: Vec<GenerationFrame<'a>>,
+	drop_frames: Vec<DropFrame<'a>>,
 }
 
 impl<'a> VariableExposition<'a> {
-	pub fn frame(&mut self) -> &mut GenerationFrame<'a> {
+	pub fn generation_frame(&mut self) -> &mut GenerationFrame<'a> {
 		self.generation_frames.last_mut().expect("Generation frame does not exist")
+	}
+
+	pub fn drop_frame(&mut self) -> &mut DropFrame<'a> {
+		self.drop_frames.last_mut().expect("Drop frame does not exist")
 	}
 
 	pub fn register_target(&mut self, target: &mut VariableTarget<'a>) {
 		let VariableTarget(identifier, generation) = target;
-		match self.frame().get_mut(identifier) {
+		match self.generation_frame().get_mut(identifier) {
 			Some(current_generation) => {
 				*current_generation += 1;
 				return *generation = *current_generation;
 			}
-			None => self.frame().insert(identifier.clone(), 0),
+			None => self.generation_frame().insert(identifier.clone(), 0),
 		};
 	}
 
@@ -41,12 +48,22 @@ impl<'a> VariableExposition<'a> {
 		for frame in self.generation_frames.iter().rev() {
 			if let Some(target_generation) = frame.get(identifier) {
 				*generation = *target_generation;
-				return Ok(());
+				return self.check_alive(target, span);
 			}
 		}
 
 		let undefined_error = ExpositionError::UndefinedVariable(identifier.clone());
 		Err(Spanned::new(undefined_error, span).into())
+	}
+
+	pub fn check_alive(&self, target: &VariableTarget<'a>, span: Span) -> Result<'a> {
+		for frame in self.drop_frames.iter().rev() {
+			if frame.contains(target) {
+				let error = ExpositionError::DroppedVariable(target.clone());
+				return Err(Spanned::new(error, span).into());
+			}
+		}
+		Ok(())
 	}
 }
 
@@ -114,6 +131,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
 		self.resolve_target(&mut explicit_drop.target)?;
+		self.drop_frame().insert(explicit_drop.target.node.clone());
 		explicit_drop.expression.accept(self)
 	}
 
@@ -128,6 +146,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 				self.resolve_target(right)
 			}
 			Mutation::AddAssign(target, expression) |
+			Mutation::MinusAssign(target, expression) |
 			Mutation::MultiplyAssign(target, expression) => {
 				self.resolve_target(target)?;
 				expression.accept(self)
@@ -136,20 +155,28 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 	}
 
 	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
-		Ok(for branch in &mut when_conditional.branches {
+		let mut drop_union = HashSet::new();
+		for branch in &mut when_conditional.branches {
+			self.drop_frames.push(DropFrame::new());
 			branch.condition.accept(self)?;
 			branch.end_condition.as_mut().unwrap().accept(self)?;
 
 			self.generation_frames.push(GenerationFrame::new());
 			branch.expression_block.accept(self)?;
 			self.generation_frames.pop();
-		})
+			drop_union.extend(self.drop_frames.pop().unwrap());
+		}
+
+		self.drop_frame().extend(drop_union);
+		Ok(())
 	}
 }
 
 impl<'a> Default for VariableExposition<'a> {
 	fn default() -> Self {
-		let generation_frames = vec![GenerationFrame::new()];
-		Self { generation_frames }
+		Self {
+			generation_frames: vec![GenerationFrame::new()],
+			drop_frames: vec![DropFrame::new()],
+		}
 	}
 }

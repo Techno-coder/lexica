@@ -1,10 +1,11 @@
 use std::fmt;
 
-use crate::node::Identifier;
+use crate::node::{Identifier, VariableTarget};
 
 #[derive(Debug)]
 pub enum ExpositionError<'a> {
-	UndefinedVariable(Identifier<'a>)
+	UndefinedVariable(Identifier<'a>),
+	DroppedVariable(VariableTarget<'a>),
 }
 
 impl<'a> fmt::Display for ExpositionError<'a> {
@@ -12,6 +13,7 @@ impl<'a> fmt::Display for ExpositionError<'a> {
 		use self::ExpositionError::*;
 		match self {
 			UndefinedVariable(identifier) => write!(f, "Variable: {}, is not defined", identifier),
+			DroppedVariable(target) => write!(f, "Variable: {}, has been dropped", target),
 		}
 	}
 }

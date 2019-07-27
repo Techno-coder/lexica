@@ -1,0 +1,35 @@
+fn function(immutable: u64, ~mutable: u64) -> u64 {
+	let ~addition = immutable + mutable;
+	let ~subtraction = immutable - mutable;
+	let multiplication = immutable * mutable;
+//	let division = immutable / mutable;
+
+	let ~counter = 0;
+	loop counter == 0 => counter == immutable {
+		counter += 1;
+	}
+
+	drop counter = immutable;
+	when immutable == 0 => immutable == 0 {
+		mutable -= addition;
+		mutable *= subtraction;
+//		mutable /= multiplication;
+	}
+
+	when {
+		immutable == 1 => immutable == 1 -> addition += 1,
+		immutable == 2 => immutable == 2 -> subtraction += 1,
+		immutable == 3 => immutable == 3 -> addition -= 1,
+		true => true -> subtraction -= 1,
+	}
+
+	immutable
+}
+
+fn return_position_conditional(variable: u64) -> u64 {
+	when {
+		variable == 0 => variable == 0 -> 0,
+		variable == 1 => variable == 1 -> 1,
+		variable == 2 => variable == 2 -> 2,
+	}
+}

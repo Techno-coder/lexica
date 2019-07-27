@@ -99,9 +99,10 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
 		match &mut mutation.node {
+			Mutation::Swap(_, _) => (),
 			Mutation::AddAssign(_, expression) |
+			Mutation::MinusAssign(_, expression) |
 			Mutation::MultiplyAssign(_, expression) => expression.accept(self),
-			_ => (),
 		}
 	}
 

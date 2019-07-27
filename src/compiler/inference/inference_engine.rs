@@ -174,6 +174,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				self.unify(left, right)
 			}
 			Mutation::AddAssign(identifier, expression) |
+			Mutation::MinusAssign(identifier, expression) |
 			Mutation::MultiplyAssign(identifier, expression) => {
 				expression.accept(self)?;
 				let identifier_type = self.environment[identifier].clone();

@@ -31,8 +31,8 @@ pub fn parse_parameter_list<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let mut separator_taken = true;
 	loop {
 		let brace_error = ParserError::ExpectedToken(Token::ParenthesisClose);
-		let spanned_brace_error = Spanned::new(brace_error, end_span);
-		let token = lexer.peek().ok_or(spanned_brace_error.clone())?;
+		let brace_error = Spanned::new(brace_error, end_span);
+		let token = lexer.peek().ok_or(brace_error.clone())?;
 
 		if let Token::ParenthesisClose = token.node {
 			lexer.next();
@@ -50,8 +50,9 @@ pub fn parse_parameter_list<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		let parameter = super::parse_variable(lexer, end_span)?;
 		parameters.push(parameter);
 
-		if let Token::ListSeparator = lexer.peek().ok_or(spanned_brace_error)?.node {
+		if let Token::ListSeparator = lexer.peek().ok_or(brace_error)?.node {
 			separator_taken = true;
+			lexer.next();
 		}
 	}
 	Ok(parameters)

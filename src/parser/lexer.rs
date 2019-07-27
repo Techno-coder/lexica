@@ -55,6 +55,7 @@ impl<'a> Iterator for Lexer<'a> {
 			"-" => Token::Minus,
 			"*" => Token::Multiply,
 			"+=" => Token::AddAssign,
+			"-=" => Token::MinusAssign,
 			"*=" => Token::MultiplyAssign,
 			other => {
 				if let Ok(integer) = other.parse::<u64>() {

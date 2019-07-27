@@ -100,6 +100,7 @@ pub fn parse_branch_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 						Err(_) => return Err(statement_error),
 						Ok(expression) => {
 							let span = expression.span;
+							expect!(lexer, end_span, ListSeparator);
 							let block = Spanned::new(Block { statements: Vec::new() }, span);
 							Spanned::new(ExpressionBlock { block, expression }, span)
 						}

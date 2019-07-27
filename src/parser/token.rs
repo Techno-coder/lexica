@@ -25,6 +25,7 @@ pub enum Token<'a> {
 	Minus,
 	Multiply,
 	AddAssign,
+	MinusAssign,
 	MultiplyAssign,
 	Boolean(bool),
 	UnsignedInteger(u64),

@@ -139,6 +139,10 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 				let expression = expression.accept(self);
 				super::add_assign(span, target, expression, &mut self.context)
 			}
+			Mutation::MinusAssign(target, expression) => {
+				let expression = expression.accept(self);
+				super::minus_assign(span, target, expression, &mut self.context)
+			}
 			Mutation::MultiplyAssign(target, expression) => {
 				let expression = expression.accept(self);
 				super::multiply_assign(span, target, expression, &mut self.context)
