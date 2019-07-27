@@ -25,7 +25,7 @@ pub fn parse_statement<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, terminator
 				false => Err(Spanned::new(error, when_conditional.span).into()),
 				true => {
 					let span = when_conditional.span;
-					let expression = Expression::WhenConditional(when_conditional.node).into();
+					let expression = Expression::WhenConditional(when_conditional).into();
 					let statement = Statement::Expression(Spanned::new(expression, span));
 					Ok(Spanned::new(statement, span))
 				}

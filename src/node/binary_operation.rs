@@ -42,7 +42,7 @@ pub struct BinaryOperation<'a> {
 	pub operator: Spanned<BinaryOperator>,
 }
 
-impl<'a> NodeConstruct<'a> for Spanned<&mut BinaryOperation<'a>> {
+impl<'a> NodeConstruct<'a> for Spanned<BinaryOperation<'a>> {
 	fn accept<V: NodeVisitor<'a>>(&mut self, visitor: &mut V) -> V::Result {
 		visitor.binary_operation(self)
 	}

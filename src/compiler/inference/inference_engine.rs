@@ -56,30 +56,30 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 	}
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		let evaluation_type = match &mut expression.expression {
+		let evaluation_type = match expression.node.as_mut() {
 			Expression::Unit => DataType::UNIT_TYPE,
 			Expression::Variable(target) => DataType(self.environment[target].clone()),
 			Expression::Primitive(primitive) => match primitive {
 				Primitive::Boolean(_) => DataType(super::application::BOOLEAN_TYPE),
 				_ => DataType(self.context.new_variable()),
 			},
-			Expression::BinaryOperation(_) => {
-				let mut binary_operation = expression.binary_operation();
+			Expression::BinaryOperation(binary_operation) => {
 				binary_operation.accept(self)?;
-
 				match binary_operation.operator.node {
 					BinaryOperator::Equal => DataType(super::application::BOOLEAN_TYPE),
 					_ => binary_operation.left.evaluation_type.clone(),
 				}
 			}
-			Expression::WhenConditional(_) => {
-				let mut when_conditional = expression.when_conditional();
+			Expression::WhenConditional(when_conditional) => {
 				when_conditional.accept(self)?;
 				when_conditional.branches[0].expression_block
 					.expression.evaluation_type.clone()
 			}
-			Expression::FunctionCall(_) => {
-				let mut function_call = expression.function_call();
+			Expression::ExpressionBlock(expression_block) => {
+				expression_block.accept(self)?;
+				expression_block.expression.evaluation_type.clone()
+			}
+			Expression::FunctionCall(function_call) => {
 				function_call.accept(self)?;
 				function_call.evaluation_type.clone()
 			}
@@ -117,7 +117,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		}
 	}
 
-	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
+	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {
 		operation.left.accept(self)?;
 		operation.right.accept(self)?;
 
@@ -162,7 +162,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 			.map_err(|error| Spanned::new(error.into(), explicit_drop.span))?)
 	}
 
-	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
+	fn function_call(&mut self, function_call: &mut Spanned<FunctionCall<'a>>) -> Self::Result {
 		function_call.arguments.iter_mut().try_for_each(|argument| argument.accept(self))
 	}
 
@@ -184,7 +184,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		}.map_err(|error| Spanned::new(error.into(), mutation.span))?)
 	}
 
-	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<WhenConditional<'a>>) -> Self::Result {
 		const BOOLEAN_TYPE: Type<Identifier<'static>> = super::application::BOOLEAN_TYPE;
 		for branch in &mut when_conditional.branches {
 			branch.condition.accept(self)?;

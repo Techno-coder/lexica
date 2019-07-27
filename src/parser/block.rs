@@ -11,7 +11,8 @@ pub fn parse_expression_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		match lexer.peek() {
 			Some(token) if token.node == Token::BlockClose => {
 				let (expression, evaluation_type) = (Expression::Unit, DataType::UNIT_TYPE);
-				break Spanned::new(ExpressionNode { expression, evaluation_type }, token.span);
+				let node = ExpressionNode { expression: Box::new(expression), evaluation_type };
+				break Spanned::new(node, token.span);
 			}
 			_ => (),
 		}

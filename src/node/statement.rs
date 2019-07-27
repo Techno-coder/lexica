@@ -22,7 +22,7 @@ impl<'a> Statement<'a> {
 			Statement::Mutation(_) => true,
 			Statement::ExplicitDrop(_) => true,
 			Statement::ConditionalLoop(_) => false,
-			Statement::Expression(expression) => match expression.expression {
+			Statement::Expression(expression) => match expression.node.as_ref() {
 				Expression::WhenConditional(_) => false,
 				_ => true,
 			}

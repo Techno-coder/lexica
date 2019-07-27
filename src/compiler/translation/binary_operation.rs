@@ -4,7 +4,7 @@ use crate::source::{Span, Spanned};
 
 use super::{Element, Evaluation, FunctionContext};
 
-pub fn binary_operation(operation: &mut Spanned<&mut BinaryOperation>, context: &mut FunctionContext)
+pub fn binary_operation(operation: &mut Spanned<BinaryOperation>, context: &mut FunctionContext)
                         -> Vec<Spanned<Element>> {
 	let mut elements = Vec::new();
 	let left_index = context.pop_evaluation()

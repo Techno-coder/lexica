@@ -5,7 +5,7 @@ use crate::source::Spanned;
 
 use super::{Element, Evaluation, FunctionContext};
 
-pub fn function_call_value(function_call: &Spanned<&mut FunctionCall>, context: &mut FunctionContext,
+pub fn function_call_value(function_call: &mut Spanned<FunctionCall>, context: &mut FunctionContext,
                            intrinsics: &IntrinsicStore) -> Vec<Spanned<Element>> {
 	let instruction = format!("call {}", function_call.function);
 	let Identifier(identifier) = &function_call.function.node;

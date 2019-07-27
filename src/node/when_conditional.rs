@@ -15,7 +15,7 @@ impl<'a> WhenConditional<'a> {
 	}
 }
 
-impl<'a> NodeConstruct<'a> for Spanned<&mut WhenConditional<'a>> {
+impl<'a> NodeConstruct<'a> for Spanned<WhenConditional<'a>> {
 	fn accept<V: NodeVisitor<'a>>(&mut self, visitor: &mut V) -> V::Result {
 		visitor.when_conditional(self)
 	}

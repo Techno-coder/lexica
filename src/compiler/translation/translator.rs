@@ -46,7 +46,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 	}
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		match &mut expression.expression {
+		match expression.node.as_mut() {
 			Expression::Unit => self.context.push_evaluation(Evaluation::Unit),
 			Expression::Variable(variable) => {
 				let variable = self.context.get_variable(variable);
@@ -56,9 +56,10 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 				let primitive = Spanned::new(primitive.clone(), expression.span);
 				self.context.push_evaluation(Evaluation::Immediate(primitive));
 			}
-			Expression::BinaryOperation(_) => return expression.binary_operation().accept(self),
-			Expression::WhenConditional(_) => return expression.when_conditional().accept(self),
-			Expression::FunctionCall(_) => return expression.function_call().accept(self),
+			Expression::BinaryOperation(binary_operation) => return binary_operation.accept(self),
+			Expression::WhenConditional(when_conditional) => return when_conditional.accept(self),
+			Expression::ExpressionBlock(expression_block) => return expression_block.accept(self),
+			Expression::FunctionCall(function_call) => return function_call.accept(self),
 		}
 		Vec::new()
 	}
@@ -73,7 +74,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 		block.statements.iter_mut().flat_map(|statement| statement.accept(self)).collect()
 	}
 
-	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
+	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {
 		let mut elements = operation.left.accept(self);
 		elements.append(&mut operation.right.accept(self));
 		elements.append(&mut super::binary_operation(operation, &mut self.context));
@@ -123,7 +124,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 		elements
 	}
 
-	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
+	fn function_call(&mut self, function_call: &mut Spanned<FunctionCall<'a>>) -> Self::Result {
 		let mut elements: Vec<_> = function_call.arguments.iter_mut()
 			.flat_map(|argument| argument.accept(self)).collect();
 		elements.append(&mut super::function_call_arguments(function_call, &mut self.context));
@@ -150,7 +151,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 		}
 	}
 
-	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<WhenConditional<'a>>) -> Self::Result {
 		let mut elements = Vec::new();
 		let (start_label, end_label) = self.context.pair_labels();
 		let branch_labels = super::when_branch_labels(when_conditional, &mut self.context);

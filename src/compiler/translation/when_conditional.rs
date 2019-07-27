@@ -3,7 +3,7 @@ use crate::source::Spanned;
 
 use super::{Element, FunctionContext};
 
-type WhenConditional<'a, 'b, 'c> = &'b mut Spanned<&'c mut crate::node::WhenConditional<'a>>;
+type WhenConditional<'a, 'b> = &'b mut Spanned<crate::node::WhenConditional<'a>>;
 
 pub fn when_branch_labels(when_conditional: WhenConditional, context: &mut FunctionContext)
                           -> Vec<(usize, usize)> {

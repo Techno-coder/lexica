@@ -27,6 +27,12 @@ fn function(immutable: u64, ~mutable: u64) -> u64 {
 }
 
 fn return_position_conditional(variable: u64) -> u64 {
+	let expression_block: u64 = {
+		let first = 0;
+		let second = 1;
+		first + second
+	};
+
 	when {
 		variable == 0 => variable == 0 -> 0,
 		variable == 1 => variable == 1 -> 1,

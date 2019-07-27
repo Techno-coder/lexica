@@ -27,11 +27,11 @@ pub trait NodeVisitor<'a> {
 		}
 	}
 
-	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result;
+	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result;
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result;
 	fn conditional_loop(&mut self, conditional_loop: &mut Spanned<ConditionalLoop<'a>>) -> Self::Result;
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result;
-	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result;
+	fn function_call(&mut self, function_call: &mut Spanned<FunctionCall<'a>>) -> Self::Result;
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result;
-	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result;
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<WhenConditional<'a>>) -> Self::Result;
 }

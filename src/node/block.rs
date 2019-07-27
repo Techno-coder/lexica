@@ -49,7 +49,7 @@ impl<'a> fmt::Display for ExpressionBlock<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use super::Expression;
 		write!(f, "{}", self.block)?;
-		match self.expression.expression {
+		match self.expression.node.as_ref() {
 			Expression::Unit => Ok(()),
 			_ => writeln!(f, "{}", self.expression),
 		}

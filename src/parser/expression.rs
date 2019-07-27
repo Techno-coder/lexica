@@ -53,8 +53,17 @@ pub fn parse_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 		}
 		Token::When => {
 			let when_conditional = super::parse_when_conditional(lexer, end_span)?;
-			let expression = Expression::WhenConditional(when_conditional.node);
-			Ok(Spanned::new(expression.into(), when_conditional.span))
+			let span = when_conditional.span;
+
+			let expression = Expression::WhenConditional(when_conditional);
+			Ok(Spanned::new(expression.into(), span))
+		}
+		Token::BlockOpen => {
+			let expression_block = super::parse_expression_block(lexer, end_span)?;
+			let span = expression_block.span;
+
+			let expression = Expression::ExpressionBlock(expression_block);
+			Ok(Spanned::new(expression.into(), span))
 		}
 		_ => return Err(Spanned::new(ParserError::ExpectedExpression, next_token.span).into()),
 	}
@@ -92,8 +101,10 @@ pub fn parse_function_call<'a>(lexer: &mut PeekLexer<'a>, function: Spanned<Iden
 
 	let evaluation_type = DataType::default();
 	let span = Span::new(function.span.byte_start, byte_end);
-	let function_call = Box::new(FunctionCall { function, arguments, evaluation_type });
-	Ok(Spanned::new(Expression::FunctionCall(function_call).into(), span))
+
+	let function_call = FunctionCall { function, arguments, evaluation_type };
+	let expression = Expression::FunctionCall(Spanned::new(function_call, span));
+	Ok(Spanned::new(expression.into(), span))
 }
 
 pub fn parse_binder<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, context: Spanned<ExpressionNode<'a>>,
@@ -101,7 +112,8 @@ pub fn parse_binder<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, context: Span
 	let terminal = parse_expression(lexer, end_span, operator.precedence())?;
 	let span = Span::new(context.span.byte_start, terminal.span.byte_end);
 	let binder = BinaryOperation { left: context, right: terminal, operator };
-	Ok(Spanned::new(Expression::BinaryOperation(Box::new(binder)).into(), span))
+	let expression = Expression::BinaryOperation(Spanned::new(binder, span));
+	Ok(Spanned::new(expression.into(), span))
 }
 
 pub fn parse_operator<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)

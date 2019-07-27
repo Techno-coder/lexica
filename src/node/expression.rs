@@ -3,22 +3,23 @@ use std::fmt;
 use crate::interpreter::Primitive;
 use crate::source::Spanned;
 
-use super::{BinaryOperation, DataType, FunctionCall, NodeConstruct, NodeVisitor, VariableTarget,
-            WhenConditional};
+use super::{BinaryOperation, DataType, ExpressionBlock, FunctionCall, NodeConstruct, NodeVisitor,
+	VariableTarget, WhenConditional};
 
 #[derive(Debug, Clone)]
 pub enum Expression<'a> {
 	Unit,
 	Variable(VariableTarget<'a>),
 	Primitive(Primitive),
-	BinaryOperation(Box<BinaryOperation<'a>>),
-	WhenConditional(Box<WhenConditional<'a>>),
-	FunctionCall(Box<FunctionCall<'a>>),
+	BinaryOperation(Spanned<BinaryOperation<'a>>),
+	WhenConditional(Spanned<WhenConditional<'a>>),
+	ExpressionBlock(Spanned<ExpressionBlock<'a>>),
+	FunctionCall(Spanned<FunctionCall<'a>>),
 }
 
 #[derive(Debug, Clone)]
 pub struct ExpressionNode<'a> {
-	pub expression: Expression<'a>,
+	pub expression: Box<Expression<'a>>,
 	pub evaluation_type: DataType<'a>,
 }
 
@@ -28,33 +29,14 @@ impl<'a> NodeConstruct<'a> for Spanned<ExpressionNode<'a>> {
 	}
 }
 
-macro_rules! forward {
-    ($identifier: ident, $type: ident) => {
-		pub fn $identifier(&mut self) -> Spanned<&mut $type<'a>> {
-			let span = self.span.clone();
-			match &mut self.expression {
-				Expression::$type($identifier) => {
-					let $identifier = Box::as_mut($identifier);
-					Spanned::new($identifier, span)
-				}
-				_ => panic!("Expression is not a {}", stringify!($identifier))
-			}
-		}
-    };
-}
-
-impl<'a> Spanned<ExpressionNode<'a>> {
-	forward!(binary_operation, BinaryOperation);
-	forward!(when_conditional, WhenConditional);
-	forward!(function_call, FunctionCall);
-}
-
 impl<'a> From<Expression<'a>> for ExpressionNode<'a> {
 	fn from(expression: Expression<'a>) -> Self {
 		let evaluation_type = match expression {
 			Expression::Unit => DataType::UNIT_TYPE,
 			_ => DataType::default(),
 		};
+
+		let expression = Box::new(expression);
 		ExpressionNode { expression, evaluation_type }
 	}
 }
@@ -73,12 +55,13 @@ impl<'a> AsMut<Expression<'a>> for ExpressionNode<'a> {
 
 impl<'a> fmt::Display for ExpressionNode<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match &self.expression {
+		match self.expression.as_ref() {
 			Expression::Unit => write!(f, "()"),
 			Expression::Variable(target) => write!(f, "{}", target),
 			Expression::Primitive(primitive) => write!(f, "{}", primitive),
 			Expression::BinaryOperation(operation) => write!(f, "{}", operation),
 			Expression::WhenConditional(when_conditional) => write!(f, "{}", when_conditional),
+			Expression::ExpressionBlock(expression_block) => write!(f, "{}", expression_block),
 			Expression::FunctionCall(function_call) => write!(f, "{}", function_call),
 		}
 	}

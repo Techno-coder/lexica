@@ -11,7 +11,7 @@ pub struct FunctionCall<'a> {
 	pub evaluation_type: DataType<'a>,
 }
 
-impl<'a> NodeConstruct<'a> for Spanned<&mut FunctionCall<'a>> {
+impl<'a> NodeConstruct<'a> for Spanned<FunctionCall<'a>> {
 	fn accept<V: NodeVisitor<'a>>(&mut self, visitor: &mut V) -> V::Result {
 		visitor.function_call(self)
 	}

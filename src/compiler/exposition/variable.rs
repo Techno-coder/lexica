@@ -90,12 +90,13 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		let expression_span = expression.span.clone();
-		match &mut expression.expression {
+		match expression.node.as_mut() {
 			Expression::Unit | Expression::Primitive(_) => Ok(()),
 			Expression::Variable(target) => self.resolve_target_span(target, expression_span),
-			Expression::BinaryOperation(_) => expression.binary_operation().accept(self),
-			Expression::WhenConditional(_) => expression.when_conditional().accept(self),
-			Expression::FunctionCall(_) => expression.function_call().accept(self),
+			Expression::BinaryOperation(binary_operation) => binary_operation.accept(self),
+			Expression::WhenConditional(when_conditional) => when_conditional.accept(self),
+			Expression::ExpressionBlock(expression_block) => expression_block.accept(self),
+			Expression::FunctionCall(function_call) => function_call.accept(self),
 		}
 	}
 
@@ -108,7 +109,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 		block.statements.iter_mut().try_for_each(|statement| statement.accept(self))
 	}
 
-	fn binary_operation(&mut self, operation: &mut Spanned<&mut BinaryOperation<'a>>) -> Self::Result {
+	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {
 		operation.left.accept(self)?;
 		operation.right.accept(self)?;
 		Ok(())
@@ -135,7 +136,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 		explicit_drop.expression.accept(self)
 	}
 
-	fn function_call(&mut self, function_call: &mut Spanned<&mut FunctionCall<'a>>) -> Self::Result {
+	fn function_call(&mut self, function_call: &mut Spanned<FunctionCall<'a>>) -> Self::Result {
 		function_call.arguments.iter_mut().try_for_each(|argument| argument.accept(self))
 	}
 
@@ -154,7 +155,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 		}
 	}
 
-	fn when_conditional(&mut self, when_conditional: &mut Spanned<&mut WhenConditional<'a>>) -> Self::Result {
+	fn when_conditional(&mut self, when_conditional: &mut Spanned<WhenConditional<'a>>) -> Self::Result {
 		let mut drop_union = HashSet::new();
 		for branch in &mut when_conditional.branches {
 			self.drop_frames.push(DropFrame::new());
