@@ -20,7 +20,7 @@ pub fn mutation_assign(span: Span, target: &VariableTarget, mut expression: Vec<
 		Evaluation::Immediate(primitive) => format!("{}.i {} {}", operation, local_index, primitive),
 	}, span));
 
-	super::polarize_reverse(&mut expression);
+	super::compose_reverse(&mut expression);
 	elements.append(&mut expression);
 	elements
 }

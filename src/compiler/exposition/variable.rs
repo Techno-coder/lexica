@@ -28,14 +28,14 @@ impl<'a> VariableExposition<'a> {
 	}
 
 	pub fn register_target(&mut self, target: &mut VariableTarget<'a>) {
-		let VariableTarget(identifier, generation) = target;
-		match self.generation_frame().get_mut(identifier) {
-			Some(current_generation) => {
-				*current_generation += 1;
-				return *generation = *current_generation;
-			}
-			None => self.generation_frame().insert(identifier.clone(), 0),
+		let target_generation = match self.resolve_generation(target) {
+			Some(target_generation) => target_generation + 1,
+			None => 0,
 		};
+
+		let VariableTarget(identifier, generation) = target;
+		self.generation_frame().insert(identifier.clone(), target_generation);
+		*generation = target_generation;
 	}
 
 	pub fn resolve_target(&self, target: &mut Spanned<VariableTarget<'a>>) -> Result<'a> {
@@ -44,16 +44,25 @@ impl<'a> VariableExposition<'a> {
 	}
 
 	pub fn resolve_target_span(&self, target: &mut VariableTarget<'a>, span: Span) -> Result<'a> {
-		let VariableTarget(identifier, generation) = target;
-		for frame in self.generation_frames.iter().rev() {
-			if let Some(target_generation) = frame.get(identifier) {
-				*generation = *target_generation;
-				return self.check_alive(target, span);
-			}
+		if let Some(target_generation) = self.resolve_generation(target) {
+			let VariableTarget(_, generation) = target;
+			*generation = target_generation;
+			return self.check_alive(target, span);
 		}
 
+		let VariableTarget(identifier, _) = target;
 		let undefined_error = ExpositionError::UndefinedVariable(identifier.clone());
 		Err(Spanned::new(undefined_error, span).into())
+	}
+
+	pub fn resolve_generation(&self, target: &VariableTarget<'a>) -> Option<usize> {
+		let VariableTarget(identifier, _) = target;
+		for frame in self.generation_frames.iter().rev() {
+			if let Some(target_generation) = frame.get(identifier) {
+				return Some(*target_generation);
+			}
+		}
+		None
 	}
 
 	pub fn check_alive(&self, target: &VariableTarget<'a>, span: Span) -> Result<'a> {

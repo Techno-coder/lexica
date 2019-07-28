@@ -39,3 +39,26 @@ fn return_position_conditional(variable: u64) -> u64 {
 		variable == 2 => variable == 2 -> 2,
 	}
 }
+
+fn nested_shadow() {
+	let variable: u64 = 0;
+	when true => true {
+		let variable: u32 = 0;
+		let other: u32 = 1;
+		variable += other;
+	}
+
+	let other: u64 = 1;
+	variable += other;
+}
+
+fn nested_drop() {
+	let variable: u64 = 3;
+	drop variable = {
+		let variable = 2;
+		let addition = variable + 1;
+
+		nested_shadow();
+		addition
+	};
+}

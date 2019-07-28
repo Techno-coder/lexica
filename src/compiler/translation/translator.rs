@@ -111,7 +111,7 @@ impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
 
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
 		let mut elements = explicit_drop.expression.accept(self);
-		super::polarize_reverse(&mut elements);
+		super::compose_reverse(&mut elements);
 
 		let local_index = self.context.drop_variable(&explicit_drop.target);
 		let instruction = match self.context.pop_evaluation() {

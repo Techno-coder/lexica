@@ -3,16 +3,21 @@ use crate::source::Spanned;
 
 use super::{Element, FunctionContext};
 
-pub fn polarize(elements: &mut Vec<Spanned<Element>>, direction: Direction) {
+/// Composes the polarization with the specified direction.
+/// If no polarization exists then the execution direction is composed.
+pub fn compose(elements: &mut Vec<Spanned<Element>>, direction: Direction) {
 	for element in elements {
 		if let Element::Instruction(instruction) = &mut element.node {
-			instruction.polarization = Some(direction);
+			match &mut instruction.polarization {
+				Some(polarization) => *polarization = polarization.compose(direction),
+				None => instruction.direction = instruction.direction.compose(direction),
+			}
 		}
 	}
 }
 
-pub fn polarize_reverse(elements: &mut Vec<Spanned<Element>>) {
-	polarize(elements, Direction::Reverse);
+pub fn compose_reverse(elements: &mut Vec<Spanned<Element>>) {
+	compose(elements, Direction::Reverse);
 	elements.reverse();
 }
 

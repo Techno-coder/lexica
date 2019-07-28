@@ -34,11 +34,15 @@ impl fmt::Display for Instruction {
 			None => "",
 		};
 
+		let operation_index = self.instruction.find(char::is_whitespace)
+			.unwrap_or(self.instruction.len());
+		let (operation, operands) = self.instruction.split_at(operation_index);
+
 		let direction = match self.direction {
 			Direction::Advance => "",
 			Direction::Reverse => "'",
 		};
 
-		write!(f, "\t{}{}{}", polarization, self.instruction, direction)
+		write!(f, "\t{}{}{}{}", polarization, operation, direction, operands)
 	}
 }

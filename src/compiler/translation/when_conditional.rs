@@ -37,7 +37,7 @@ pub fn when_entry(when_conditional: WhenConditional, branch_labels: &Vec<(usize,
 		let span = when_conditional.branches[branch_index].condition.span;
 		condition_elements.push(instruction!(Advance, Advance, instruction, span));
 
-		super::polarize(&mut condition_elements, Direction::Advance);
+		super::compose(&mut condition_elements, Direction::Advance);
 		elements.append(&mut condition_elements);
 	}
 
@@ -85,7 +85,7 @@ pub fn when_reverse_entry(when_conditional: WhenConditional, branch_labels: &Vec
 		let span = when_conditional.branches[branch_index].end_condition.as_ref().unwrap().span;
 		condition_elements.push(instruction!(Advance, Reverse, instruction, span));
 
-		super::polarize_reverse(&mut condition_elements);
+		super::compose_reverse(&mut condition_elements);
 		elements.append(&mut condition_elements);
 	}
 

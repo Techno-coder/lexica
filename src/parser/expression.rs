@@ -87,19 +87,16 @@ pub fn parse_function_call<'a>(lexer: &mut PeekLexer<'a>, function: Spanned<Iden
 	expect!(lexer, end_span, ParenthesisOpen);
 
 	let mut arguments = Vec::new();
-	let byte_end = loop {
+	while lexer.peek().ok_or(end_error.clone())?.node != Token::ParenthesisClose {
 		arguments.push(parse_expression_root(lexer, end_span)?);
-		match lexer.next() {
-			Some(token) => match token.node {
-				Token::ListSeparator => continue,
-				Token::ParenthesisClose => break token.span.byte_end,
-				_ => return Err(end_error.into()),
-			}
-			None => return Err(end_error.into()),
+		match lexer.peek().ok_or(end_error.clone())?.node {
+			Token::ListSeparator => (),
+			_ => break,
 		}
-	};
+	}
 
 	let evaluation_type = DataType::default();
+	let byte_end = expect!(lexer, end_span, ParenthesisClose).byte_end;
 	let span = Span::new(function.span.byte_start, byte_end);
 
 	let function_call = FunctionCall { function, arguments, evaluation_type };

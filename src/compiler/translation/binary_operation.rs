@@ -37,7 +37,7 @@ pub fn binary_equality(mut elements: Vec<Spanned<Element>>, context: &mut Functi
 
 	let right_index = right_value.promote(&mut elements, context);
 	let instruction = format!("compare = {} {} {}", left_index, right_index, local_index);
-	elements.push(instruction!(Advance, instruction, span));
+	elements.push(instruction!(Advance, Advance, instruction, span));
 	return elements;
 }
 
