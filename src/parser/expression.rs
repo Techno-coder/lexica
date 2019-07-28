@@ -90,9 +90,9 @@ pub fn parse_function_call<'a>(lexer: &mut PeekLexer<'a>, function: Spanned<Iden
 	while lexer.peek().ok_or(end_error.clone())?.node != Token::ParenthesisClose {
 		arguments.push(parse_expression_root(lexer, end_span)?);
 		match lexer.peek().ok_or(end_error.clone())?.node {
-			Token::ListSeparator => (),
+			Token::ListSeparator => lexer.next(),
 			_ => break,
-		}
+		};
 	}
 
 	let evaluation_type = DataType::default();

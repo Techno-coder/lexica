@@ -22,6 +22,7 @@ pub fn function_call_value(function_call: &mut Spanned<FunctionCall>, context: &
 				.expect("Invalid return type"));
 
 			elements.push(instruction!(Advance, format!("restore {}", local), function_call.span));
+			context.register_intermediate(local, function_call.span);
 			context.push_evaluation(Evaluation::Local(local));
 		}
 	}
@@ -34,14 +35,18 @@ pub fn function_call_arguments(function_call: &FunctionCall, context: &mut Funct
 	function_call.arguments.iter().rev()
 		.map(|argument| {
 			let evaluation = context.pop_evaluation();
-			function_call_argument(Spanned::new(evaluation, argument.span))
+			let argument = Spanned::new(evaluation, argument.span);
+			function_call_argument(argument, context)
 		}).collect()
 }
 
-pub fn function_call_argument(argument: Spanned<Evaluation>) -> Spanned<Element> {
+pub fn function_call_argument(argument: Spanned<Evaluation>, context: &mut FunctionContext)
+                              -> Spanned<Element> {
 	match argument.node {
 		Evaluation::Unit => Spanned::new(Element::Other("".to_owned()), argument.span),
 		Evaluation::Local(local) => {
+			// TODO: Assume all arguments are consuming
+			context.drop_intermediate(&local);
 			let instruction = format!("drop {}", local);
 			instruction!(Advance, instruction, argument.span)
 		}

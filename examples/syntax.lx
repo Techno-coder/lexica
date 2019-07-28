@@ -62,3 +62,9 @@ fn nested_drop() {
 		addition
 	};
 }
+
+fn main() {
+	trace(function(5, 3));
+	trace(return_position_conditional(1));
+	nested_drop();
+}

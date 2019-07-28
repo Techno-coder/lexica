@@ -23,16 +23,12 @@ pub fn compose_reverse(elements: &mut Vec<Spanned<Element>>) {
 
 /// Drops variables that are yet to be dropped from the removed frame.
 pub fn drop_frame(context: &mut FunctionContext, ignored_indexes: &[usize]) -> Vec<Spanned<Element>> {
-	let mut elements = Vec::new();
-	let frame = context.pop_frame();
-	for (_, (identifier_index, span)) in frame {
-		match ignored_indexes.contains(&identifier_index) {
-			true => continue,
-			false => {
-				let instruction = format!("drop {}", identifier_index);
-				elements.push(instruction!(Advance, instruction, span));
-			}
-		}
-	}
-	elements
+	let (variable_frame, intermediate_frame) = context.pop_frame();
+	let variable_frame = variable_frame.iter().map(|(_, (index, span))| (index, span));
+	variable_frame.chain(intermediate_frame.iter())
+		.filter(|(index, _)| !ignored_indexes.contains(index))
+		.map(|(index, span)| {
+			let instruction = format!("drop {}", index);
+			instruction!(Advance, instruction, *span)
+		}).collect()
 }
