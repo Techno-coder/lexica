@@ -39,7 +39,13 @@ impl<'a> From<Spanned<Identifier<'a>>> for Spanned<VariableTarget<'a>> {
 
 impl<'a> fmt::Display for VariableTarget<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let VariableTarget(identifier, _) = self;
-		write!(f, "{}", identifier)
+		let VariableTarget(identifier, generation) = self;
+		write!(f, "{}", identifier)?;
+
+		if identifier == &Identifier::TEMPORARY {
+			write!(f, "{}", generation)?;
+		}
+
+		Ok(())
 	}
 }

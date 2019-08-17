@@ -20,7 +20,7 @@ impl<'a> NodeConstruct<'a> for Spanned<ConditionalLoop<'a>> {
 impl<'a> fmt::Display for ConditionalLoop<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use std::fmt::Write;
-		use crate::display::IndentWriter;
+		use crate::utility::IndentWriter;
 
 		if let Some(start_condition) = &self.start_condition {
 			writeln!(f, "loop {} => {} {{", start_condition, self.end_condition)?;

@@ -4,13 +4,17 @@ use super::Identifier;
 
 /// Sentinel value checks all data types have been visited.
 pub const TYPE_SENTINEL: Type<Identifier> = Type::Variable(0);
+pub const BOOLEAN_TYPE: Type<Identifier> = Type::Constructed(Identifier("bool"), Vec::new());
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataType<'a>(pub Type<Identifier<'a>>);
 
 impl<'a> DataType<'a> {
 	/// Data type representing an zero sized value.
-	pub const UNIT_TYPE: DataType<'static> = DataType::new(Identifier("()"));
+	pub const UNIT: DataType<'static> = DataType::new(Identifier("()"));
+	/// Data type representing a value that cannot be constructed.
+	pub const EMPTY: DataType<'static> = DataType::new(Identifier("!"));
+	pub const BOOLEAN: DataType<'static> = DataType(BOOLEAN_TYPE);
 
 	pub const fn new(identifier: Identifier<'a>) -> Self {
 		DataType(Type::Constructed(identifier, Vec::new()))

@@ -10,7 +10,7 @@ pub fn parse_expression_block<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let expression = loop {
 		match lexer.peek() {
 			Some(token) if token.node == Token::BlockClose => {
-				let (expression, evaluation_type) = (Expression::Unit, DataType::UNIT_TYPE);
+				let (expression, evaluation_type) = (Expression::Unit, DataType::UNIT);
 				let node = ExpressionNode { expression: Box::new(expression), evaluation_type };
 				break Spanned::new(node, token.span);
 			}

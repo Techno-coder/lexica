@@ -24,7 +24,7 @@ impl<'a> NodeConstruct<'a> for Spanned<WhenConditional<'a>> {
 impl<'a> fmt::Display for WhenConditional<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use std::fmt::Write;
-		use crate::display::IndentWriter;
+		use crate::utility::IndentWriter;
 
 		write!(f, "when")?;
 		match self.branches.len() {
@@ -65,7 +65,7 @@ impl<'a> WhenBranch<'a> {
 impl<'a> fmt::Display for WhenBranch<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use std::fmt::Write;
-		use crate::display::IndentWriter;
+		use crate::utility::IndentWriter;
 
 		write!(f, "{}", self.condition)?;
 		if let Some(end_condition) = &self.end_condition {

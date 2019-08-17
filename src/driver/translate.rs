@@ -13,6 +13,9 @@ pub fn translate(source_map: &TextMap, intrinsics: &IntrinsicStore) -> Option<Tr
 	let mut type_annotator = crate::compiler::TypeAnnotator::new(inference_engine.context());
 	emit_errors(source_map, syntax_unit.accept(&mut type_annotator))?;
 
+	// TODO: Replace translation
+	syntax_unit.accept(&mut crate::compiler::LowerTransform::default());
+
 	let elements = syntax_unit.accept(&mut crate::compiler::Translator::new(intrinsics));
 	Some(crate::compiler::TranslationMap::new(elements))
 }

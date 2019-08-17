@@ -1,3 +1,5 @@
+//! Structures representing the abstract syntax tree.
+
 pub use self::binary_operation::*;
 pub use self::binding::*;
 pub use self::block::*;

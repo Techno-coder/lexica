@@ -35,7 +35,7 @@ pub struct ExpressionBlock<'a> {
 impl<'a> ExpressionBlock<'a> {
 	pub fn unit_evaluation(&self) -> bool {
 		use super::DataType;
-		self.expression.node.evaluation_type == DataType::UNIT_TYPE
+		self.expression.node.evaluation_type == DataType::UNIT
 	}
 }
 

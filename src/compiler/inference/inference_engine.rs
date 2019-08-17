@@ -57,16 +57,16 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		let evaluation_type = match expression.node.as_mut() {
-			Expression::Unit => DataType::UNIT_TYPE,
+			Expression::Unit => DataType::UNIT,
 			Expression::Variable(target) => DataType(self.environment[target].clone()),
 			Expression::Primitive(primitive) => match primitive {
-				Primitive::Boolean(_) => DataType(super::application::BOOLEAN_TYPE),
+				Primitive::Boolean(_) => DataType::BOOLEAN,
 				_ => DataType(self.context.new_variable()),
 			},
 			Expression::BinaryOperation(binary_operation) => {
 				binary_operation.accept(self)?;
 				match binary_operation.operator.node {
-					BinaryOperator::Equal => DataType(super::application::BOOLEAN_TYPE),
+					BinaryOperator::Equal => DataType::BOOLEAN,
 					_ => binary_operation.left.evaluation_type.clone(),
 				}
 			}
@@ -111,7 +111,7 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 			Statement::Expression(expression) => {
 				expression.accept(self)?;
 				let evaluation_type = expression.evaluation_type.as_ref().clone();
-				Ok(self.unify(evaluation_type, DataType::UNIT_TYPE.as_ref().clone())
+				Ok(self.unify(evaluation_type, DataType::UNIT.as_ref().clone())
 					.map_err(|error| Spanned::new(error.into(), statement.span))?)
 			}
 		}
@@ -145,7 +145,6 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 		let start_condition = conditional_loop.start_condition.as_mut().unwrap();
 		start_condition.accept(self)?;
 
-		const BOOLEAN_TYPE: Type<Identifier<'static>> = super::application::BOOLEAN_TYPE;
 		self.unify(start_condition.evaluation_type.as_ref().clone(), BOOLEAN_TYPE)
 			.map_err(|error| Spanned::new(error.into(), start_condition.span))?;
 		self.unify(conditional_loop.end_condition.evaluation_type.as_ref().clone(), BOOLEAN_TYPE)
@@ -185,7 +184,6 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 	}
 
 	fn when_conditional(&mut self, when_conditional: &mut Spanned<WhenConditional<'a>>) -> Self::Result {
-		const BOOLEAN_TYPE: Type<Identifier<'static>> = super::application::BOOLEAN_TYPE;
 		for branch in &mut when_conditional.branches {
 			branch.condition.accept(self)?;
 			self.unify(branch.condition.evaluation_type.as_ref().clone(), BOOLEAN_TYPE)

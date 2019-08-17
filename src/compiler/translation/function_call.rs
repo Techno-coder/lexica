@@ -14,7 +14,7 @@ pub fn function_call_value(function_call: &mut Spanned<FunctionCall>, context: &
 		None => instruction!(Advance, instruction, function_call.span),
 	}];
 
-	match function_call.evaluation_type == DataType::UNIT_TYPE {
+	match function_call.evaluation_type == DataType::UNIT {
 		true => context.push_evaluation(Evaluation::Unit),
 		false => {
 			let return_type = function_call.evaluation_type.resolved().unwrap();

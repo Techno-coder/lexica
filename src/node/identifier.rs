@@ -5,6 +5,10 @@ use polytype::Name;
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Identifier<'a>(pub &'a str);
 
+impl<'a> Identifier<'a> {
+	pub const TEMPORARY: Self = Identifier(".");
+}
+
 impl<'a> fmt::Display for Identifier<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let Identifier(string) = self;

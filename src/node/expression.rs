@@ -32,7 +32,7 @@ impl<'a> NodeConstruct<'a> for Spanned<ExpressionNode<'a>> {
 impl<'a> From<Expression<'a>> for ExpressionNode<'a> {
 	fn from(expression: Expression<'a>) -> Self {
 		let evaluation_type = match expression {
-			Expression::Unit => DataType::UNIT_TYPE,
+			Expression::Unit => DataType::UNIT,
 			_ => DataType::default(),
 		};
 

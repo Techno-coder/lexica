@@ -21,7 +21,7 @@ impl<'a> NodeConstruct<'a> for Spanned<Function<'a>> {
 impl<'a> fmt::Display for Function<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use std::fmt::Write;
-		use crate::display::IndentWriter;
+		use crate::utility::IndentWriter;
 
 		write!(f, "fn {}(", self.identifier)?;
 		let split = self.parameters.split_last();
@@ -30,7 +30,7 @@ impl<'a> fmt::Display for Function<'a> {
 			write!(f, "{}", last)?;
 		}
 
-		match self.return_type.node == DataType::UNIT_TYPE {
+		match self.return_type.node == DataType::UNIT {
 			false => writeln!(f, ") -> {} {{", self.return_type.resolved().unwrap()),
 			true => writeln!(f, ") {{"),
 		}?;
