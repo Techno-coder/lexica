@@ -7,15 +7,24 @@ use super::{Component, LowerTransform};
 type ExpressionBlock<'a> = Spanned<crate::node::ExpressionBlock<'a>>;
 
 pub fn expression_block<'a>(transform: &mut LowerTransform<'a>, expression_block: &mut ExpressionBlock<'a>) {
+	transform.push_frame();
 	expression_block.block.accept(transform);
 	let component = transform.pop_component();
 	expression_block.expression.accept(transform);
 
+	let evaluation = transform.pop_evaluation();
+	if let basic::Value::Expression(expression) = &evaluation {
+		if let basic::Expression::Variable(variable) = &expression.node {
+			transform.drop_binding(&variable.target);
+		}
+	}
+
+	transform.push_evaluation(evaluation);
 	let expression = transform.pop_component();
 	let component = component.join(expression, expression_block.span);
+	let component = component.join(transform.pop_frame(), expression_block.span);
 	transform.push_component(component);
 }
-
 
 pub fn block<'a>(transform: &mut LowerTransform<'a>, block: &mut Spanned<Block<'a>>) {
 	let mut component = Component::new_empty(transform.next_block());
@@ -30,7 +39,7 @@ pub fn block<'a>(transform: &mut LowerTransform<'a>, block: &mut Spanned<Block<'
 pub fn function<'a>(transform: &mut LowerTransform<'a>, function: &mut Spanned<Function<'a>>)
                     -> Spanned<basic::Function<'a>> {
 	function.parameters.iter()
-		.for_each(|parameter| transform.bind_variable(parameter.node.clone()));
+		.for_each(|parameter| transform.bind_variable(parameter.clone()));
 
 	function.expression_block.accept(transform);
 	let component = transform.pop_component();

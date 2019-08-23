@@ -14,6 +14,12 @@ pub struct Function<'a> {
 	pub blocks: Vec<BasicBlock<'a>>,
 }
 
+impl<'a> Function<'a> {
+	pub fn is_entry(&self) -> bool {
+		self.identifier == Identifier(crate::interpreter::ENTRY_POINT)
+	}
+}
+
 impl<'a> fmt::Display for Function<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use std::fmt::Write;

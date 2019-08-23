@@ -4,7 +4,7 @@ use crate::basic::*;
 use crate::interpreter::{Direction, Size};
 use crate::intrinsics::IntrinsicStore;
 use crate::node::{BinaryOperator, Identifier, Variable, VariableTarget};
-use crate::source::Spanned;
+use crate::source::{Span, Spanned};
 
 type Element = Spanned<super::Element>;
 
@@ -44,10 +44,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 
 		let mut block_elements = Vec::new();
 		for parameter in &function.parameters {
-			let local = self.register_variable(&parameter);
-			let instruction = format!("restore {}", local);
-			let instruction = instruction!(Advance, instruction, parameter.span);
-			block_elements.push(instruction);
+			self.register_variable(parameter);
 		}
 
 		for block in &function.blocks {
@@ -58,7 +55,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 			}
 		}
 
-		self.translate_block(&function.entry_block, &function, &mut block_elements);
+		self.translate_entry(&function, &mut block_elements);
 		for (index, _) in function.blocks.iter().enumerate() {
 			let target = BlockTarget(index);
 			if target != function.entry_block && target != function.exit_block {
@@ -112,12 +109,31 @@ impl<'a, 'b> Translator<'a, 'b> {
 		elements
 	}
 
+	pub fn translate_entry(&mut self, function: &Function<'a>, block_elements: &mut Vec<Element>) {
+		let target = &function.entry_block;
+		self.block_reverse_branch(target, function, block_elements);
+
+		for parameter in &function.parameters {
+			let instruction = format!("restore {}", self.bindings[&parameter.target]);
+			let instruction = instruction!(Advance, instruction, parameter.span);
+			block_elements.push(instruction);
+		}
+
+		self.block_statements(target, function, block_elements);
+		self.block_advance_branch(target, function, block_elements);
+	}
+
 	pub fn translate_block(&mut self, target: &BlockTarget, function: &Function<'a>,
 	                       block_elements: &mut Vec<Element>) {
-		let block = &function[target];
-		let is_entry_point = function.identifier == Identifier(crate::interpreter::ENTRY_POINT);
+		self.block_reverse_branch(target, function, block_elements);
+		self.block_statements(target, function, block_elements);
+		self.block_advance_branch(target, function, block_elements);
+	}
 
-		if !is_entry_point || target != &function.entry_block {
+	pub fn block_reverse_branch(&mut self, target: &BlockTarget, function: &Function<'a>,
+	                            block_elements: &mut Vec<Element>) {
+		let block = &function[target];
+		if !function.is_entry() || target != &function.entry_block {
 			let branch = self.branch(&block.reverse, Direction::Advance);
 			block_elements.append(&mut self.invert_elements(branch));
 		} else {
@@ -127,7 +143,26 @@ impl<'a, 'b> Translator<'a, 'b> {
 
 		let label = format!("{}:", self.reverse_mapping[target]);
 		block_elements.push(Spanned::new(super::Element::Other(label), block.reverse.span));
+	}
 
+	pub fn block_advance_branch(&mut self, target: &BlockTarget, function: &Function<'a>,
+	                            block_elements: &mut Vec<Element>) {
+		let block = &function[target];
+		let label = format!("{}:", self.advance_mapping[target]);
+		block_elements.push(Spanned::new(super::Element::Other(label), block.advance.span));
+
+		if !function.is_entry() || target != &function.exit_block {
+			let mut branch = self.branch(&block.advance, Direction::Reverse);
+			block_elements.append(&mut branch);
+		} else {
+			let span = block.advance.span;
+			block_elements.push(instruction!(Advance, "exit".to_owned(), span));
+		}
+	}
+
+	pub fn block_statements(&mut self, target: &BlockTarget, function: &Function<'a>,
+	                        block_elements: &mut Vec<Element>) {
+		let block = &function[target];
 		for statement in &block.statements {
 			let mut elements = Vec::new();
 			self.statement(statement, &mut elements);
@@ -136,16 +171,6 @@ impl<'a, 'b> Translator<'a, 'b> {
 			}
 
 			block_elements.append(&mut elements);
-		}
-
-		if !is_entry_point || target != &function.exit_block {
-			let label = format!("{}:", self.advance_mapping[target]);
-			block_elements.push(Spanned::new(super::Element::Other(label), block.advance.span));
-			let mut branch = self.branch(&block.advance, Direction::Reverse);
-			block_elements.append(&mut branch);
-		} else {
-			let span = block.advance.span;
-			block_elements.push(instruction!(Advance, "exit".to_owned(), span));
 		}
 	}
 
@@ -183,6 +208,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 			Statement::Mutation(mutation) => self.mutation(mutation, elements),
 			Statement::Assignment(assignment) => self.assignment(assignment, elements),
 			Statement::FunctionCall(function_call) => self.function_call(function_call, elements),
+			Statement::ImplicitDrop(implicit_drop) => self.implicit_drop(implicit_drop, elements),
 		}
 	}
 
@@ -286,17 +312,20 @@ impl<'a, 'b> Translator<'a, 'b> {
 	}
 
 	pub fn drop_expression(&self, expression: &Spanned<Expression<'a>>, elements: &mut Vec<Element>) {
+		let span = expression.span;
 		match &expression.node {
 			Expression::Unit => (),
-			Expression::Variable(variable) => {
-				let instruction = format!("drop {}", self.bindings[&variable.target]);
-				elements.push(instruction!(Advance, instruction, expression.span));
-			}
+			Expression::Variable(variable) => self.drop_target(&variable.target, span, elements),
 			Expression::Primitive(primitive) => {
 				let instruction = format!("drop.i {} {}", primitive.size(), primitive);
-				elements.push(instruction!(Advance, instruction, expression.span));
+				elements.push(instruction!(Advance, instruction, span));
 			}
 		}
+	}
+
+	pub fn drop_target(&self, target: &VariableTarget<'a>, span: Span, elements: &mut Vec<Element>) {
+		let instruction = format!("drop {}", self.bindings[&target]);
+		elements.push(instruction!(Advance, instruction, span));
 	}
 
 	pub fn assignment(&mut self, assignment: &Spanned<Assignment<'a>>, elements: &mut Vec<Element>) {
@@ -321,5 +350,9 @@ impl<'a, 'b> Translator<'a, 'b> {
 				elements.push(instruction);
 			}
 		}
+	}
+
+	pub fn implicit_drop(&mut self, implicit_drop: &Spanned<ImplicitDrop<'a>>, elements: &mut Vec<Element>) {
+		self.drop_target(&implicit_drop.target, implicit_drop.span, elements);
 	}
 }

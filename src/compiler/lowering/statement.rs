@@ -30,7 +30,7 @@ pub fn binding<'a>(transform: &mut LowerTransform<'a>, binding: &mut Spanned<Bin
 
 	let span = binding.span;
 	let variable = binding.variable.clone();
-	transform.bind_variable(variable.node.clone());
+	transform.bind_variable(variable.clone());
 	let binding = basic::Binding { variable, value: transform.pop_evaluation() };
 	let binding = Spanned::new(binding, span);
 
@@ -44,6 +44,7 @@ pub fn explicit_drop<'a>(transform: &mut LowerTransform<'a>, explicit_drop: &mut
 	let target = explicit_drop.target.clone();
 	let (expression, other) = transform.pop_expression();
 	let component = transform.pop_component().join(other, expression.span);
+	transform.drop_binding(&target);
 
 	let span = explicit_drop.span;
 	let assignment = Spanned::new(basic::Assignment { target, expression }, span);

@@ -11,6 +11,7 @@ pub enum Statement<'a> {
 	Mutation(Spanned<Mutation<'a>>),
 	Assignment(Spanned<Assignment<'a>>),
 	FunctionCall(Spanned<FunctionCall<'a>>),
+	ImplicitDrop(Spanned<ImplicitDrop<'a>>),
 }
 
 impl<'a> fmt::Display for Statement<'a> {
@@ -20,6 +21,7 @@ impl<'a> fmt::Display for Statement<'a> {
 			Statement::Mutation(mutation) => write!(f, "{}", mutation),
 			Statement::Assignment(assignment) => write!(f, "{}", assignment),
 			Statement::FunctionCall(function_call) => write!(f, "{}", function_call),
+			Statement::ImplicitDrop(implicit_drop) => write!(f, "{}", implicit_drop),
 		}
 	}
 }
@@ -64,5 +66,16 @@ pub struct Assignment<'a> {
 impl<'a> fmt::Display for Assignment<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "{} = {}", self.target, self.expression)
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct ImplicitDrop<'a> {
+	pub target: Spanned<VariableTarget<'a>>,
+}
+
+impl<'a> fmt::Display for ImplicitDrop<'a> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "drop {}", self.target)
 	}
 }

@@ -6,10 +6,12 @@ use crate::source::Spanned;
 
 use super::Component;
 
+type BindingFrame<'a> = HashMap<VariableTarget<'a>, Spanned<Variable<'a>>>;
+
 #[derive(Debug, Default)]
 pub struct LowerTransform<'a> {
 	functions: Vec<Spanned<basic::Function<'a>>>,
-	bindings: HashMap<VariableTarget<'a>, Variable<'a>>,
+	bindings: Vec<BindingFrame<'a>>,
 
 	evaluation_stack: Vec<basic::Value<'a>>,
 	component_stack: Vec<Component<'a>>,
@@ -64,13 +66,37 @@ impl<'a> LowerTransform<'a> {
 		self.component_stack.pop().expect("Component stack is empty")
 	}
 
-	pub fn bind_variable(&mut self, variable: Variable<'a>) {
-		self.bindings.insert(variable.target.clone(), variable);
+	pub fn push_frame(&mut self) {
+		self.bindings.push(BindingFrame::new());
+	}
+
+	pub fn pop_frame(&mut self) -> Component<'a> {
+		let mut component = Component::new_empty(self.next_block());
+		let frame = self.bindings.pop().expect("Binding frame stack is empty");
+		for (_, variable) in frame {
+			let span = variable.span;
+			let target = Spanned::new(variable.node.target, span);
+			let implicit_drop = Spanned::new(basic::ImplicitDrop { target }, span);
+			let statement = basic::Statement::ImplicitDrop(implicit_drop);
+			component = component.append(self.next_block(), Spanned::new(statement, span));
+		}
+		component
+	}
+
+	pub fn bind_variable(&mut self, variable: Spanned<Variable<'a>>) {
+		self.bindings.last_mut().expect("Binding frame stack is empty")
+			.insert(variable.target.clone(), variable);
+	}
+
+	pub fn drop_binding(&mut self, target: &VariableTarget<'a>) {
+		for frame in self.bindings.iter_mut().rev() {
+			frame.remove(target);
+		}
 	}
 
 	pub fn get_binding(&self, target: &VariableTarget<'a>) -> &Variable<'a> {
 		let error = format!("Binding for: {}, does not exist", target);
-		self.bindings.get(&target).expect(&error)
+		self.bindings.iter().rev().find_map(|frame| frame.get(target)).expect(&error)
 	}
 
 	pub fn functions(self) -> Vec<Spanned<basic::Function<'a>>> {
@@ -86,7 +112,7 @@ impl<'a> NodeVisitor<'a> for LowerTransform<'a> {
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		self.bindings.clear();
+		self.bindings = vec![BindingFrame::new()];
 		self.next_temporary = 0;
 		self.next_block = 0;
 

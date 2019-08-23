@@ -9,6 +9,7 @@ type ConditionalLoop<'a> = Spanned<crate::node::ConditionalLoop<'a>>;
 pub fn conditional_loop<'a>(transform: &mut LowerTransform<'a>, conditional_loop: &mut ConditionalLoop<'a>) {
 	let (entry_target, exit_target) = (transform.next_block(), transform.next_block());
 	let mut component = Component::new_paired(entry_target.clone(), exit_target.clone());
+	transform.push_frame();
 
 	conditional_loop.start_condition.as_mut().unwrap().accept(transform);
 	let (start_condition, other) = transform.pop_expression();
@@ -45,5 +46,6 @@ pub fn conditional_loop<'a>(transform: &mut LowerTransform<'a>, conditional_loop
 		default: block_component.advance_block.clone(),
 	}, span);
 
+	component = component.join(transform.pop_frame(), span);
 	transform.push_component(component);
 }
