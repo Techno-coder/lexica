@@ -9,9 +9,8 @@ use super::{Expression, FunctionCall, Value};
 pub enum Statement<'a> {
 	Binding(Spanned<Binding<'a>>),
 	Mutation(Spanned<Mutation<'a>>),
-	ExplicitDrop(Spanned<ExplicitDrop<'a>>),
-	FunctionCall(Spanned<FunctionCall<'a>>),
 	Assignment(Spanned<Assignment<'a>>),
+	FunctionCall(Spanned<FunctionCall<'a>>),
 }
 
 impl<'a> fmt::Display for Statement<'a> {
@@ -19,9 +18,8 @@ impl<'a> fmt::Display for Statement<'a> {
 		match self {
 			Statement::Binding(binding) => write!(f, "{}", binding),
 			Statement::Mutation(mutation) => write!(f, "{}", mutation),
-			Statement::ExplicitDrop(explicit_drop) => write!(f, "{}", explicit_drop),
-			Statement::FunctionCall(function_call) => write!(f, "{}", function_call),
 			Statement::Assignment(assignment) => write!(f, "{}", assignment),
+			Statement::FunctionCall(function_call) => write!(f, "{}", function_call),
 		}
 	}
 }
@@ -54,18 +52,6 @@ impl<'a> fmt::Display for Mutation<'a> {
 			Mutation::MinusAssign(identifier, expression) => write!(f, "{} -= {}", identifier, expression),
 			Mutation::MultiplyAssign(identifier, expression) => write!(f, "{} *= {}", identifier, expression),
 		}
-	}
-}
-
-#[derive(Debug, Clone)]
-pub struct ExplicitDrop<'a> {
-	pub target: Spanned<VariableTarget<'a>>,
-	pub expression: Spanned<Expression<'a>>,
-}
-
-impl<'a> fmt::Display for ExplicitDrop<'a> {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "drop {} = {}", self.target, self.expression)
 	}
 }
 

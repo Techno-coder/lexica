@@ -12,6 +12,13 @@ pub enum Expression<'a> {
 }
 
 impl<'a> Expression<'a> {
+	pub fn is_unit(&self) -> bool {
+		match self {
+			Expression::Unit => true,
+			_ => false,
+		}
+	}
+
 	pub fn data_type(&self) -> DataType<'a> {
 		match self {
 			Expression::Unit => DataType::UNIT,

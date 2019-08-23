@@ -7,7 +7,9 @@ pub struct Span {
 }
 
 impl Span {
-	pub fn new(byte_start: usize, byte_end: usize) -> Span {
+	pub const SENTINEL: Span = Span::new(std::usize::MAX, std::usize::MAX);
+
+	pub const fn new(byte_start: usize, byte_end: usize) -> Span {
 		Span { byte_start, byte_end }
 	}
 

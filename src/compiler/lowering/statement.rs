@@ -1,5 +1,5 @@
 use crate::basic;
-use crate::node::{Binding, ExplicitDrop, NodeConstruct, Statement, Mutation};
+use crate::node::{Binding, ExplicitDrop, Mutation, NodeConstruct, Statement};
 use crate::source::Spanned;
 
 use super::{Component, LowerTransform};
@@ -43,11 +43,11 @@ pub fn explicit_drop<'a>(transform: &mut LowerTransform<'a>, explicit_drop: &mut
 	explicit_drop.expression.accept(transform);
 	let target = explicit_drop.target.clone();
 	let (expression, other) = transform.pop_expression();
-	let component = transform.pop_component().join(other);
+	let component = transform.pop_component().join(other, expression.span);
 
 	let span = explicit_drop.span;
-	let explicit_drop = Spanned::new(basic::ExplicitDrop { target, expression }, span);
-	let statement = Spanned::new(basic::Statement::ExplicitDrop(explicit_drop), span);
+	let assignment = Spanned::new(basic::Assignment { target, expression }, span);
+	let statement = Spanned::new(basic::Statement::Assignment(assignment), span);
 	let mut component = component.append(transform.next_block(), statement).invert();
 
 	let (entry_target, exit_target) = (transform.next_block(), transform.next_block());
@@ -55,10 +55,10 @@ pub fn explicit_drop<'a>(transform: &mut LowerTransform<'a>, explicit_drop: &mut
 	component.blocks.insert(exit_target.clone(), basic::BasicBlock::default());
 
 	let advance_block = component.advance_block.clone();
-	component.link_advance(&entry_target, &exit_target);
-	component.link_advance(&advance_block, &exit_target);
-	component.link_reverse(&exit_target, &advance_block);
-	component.link_reverse(&advance_block, &entry_target);
+	component.link_advance(&entry_target, &exit_target, span);
+	component.link_advance(&advance_block, &exit_target, span);
+	component.link_reverse(&exit_target, &advance_block, span);
+	component.link_reverse(&advance_block, &entry_target, span);
 
 	component.advance_block = exit_target.clone();
 	component.reverse_block = entry_target.clone();
@@ -93,6 +93,7 @@ pub fn mutation<'a>(transform: &mut LowerTransform<'a>, mutation: &mut Spanned<M
 	}, span);
 
 	let statement = Spanned::new(basic::Statement::Mutation(mutation), span);
-	let component = transform.pop_component().join(other).append(transform.next_block(), statement);
+	let component = transform.pop_component().join(other, span)
+		.append(transform.next_block(), statement);
 	transform.push_component(component);
 }

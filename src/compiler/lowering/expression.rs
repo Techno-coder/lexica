@@ -1,5 +1,5 @@
 use crate::basic;
-use crate::node::{Expression, ExpressionNode, NodeConstruct, BinaryOperation, FunctionCall};
+use crate::node::{BinaryOperation, Expression, ExpressionNode, FunctionCall, NodeConstruct};
 use crate::source::Spanned;
 
 use super::{Component, LowerTransform};
@@ -24,12 +24,12 @@ pub fn expression<'a>(transform: &mut LowerTransform<'a>, expression: &mut Spann
 pub fn binary_operation<'a>(transform: &mut LowerTransform<'a>, operation: &mut Spanned<BinaryOperation<'a>>) {
 	operation.left.accept(transform);
 	let (left, other) = transform.pop_expression();
-	let component = transform.pop_component().join(other);
+	let component = transform.pop_component().join(other, left.span);
 
 	operation.right.accept(transform);
 	let (right, other) = transform.pop_expression();
-	let other = transform.pop_component().join(other);
-	let component = component.join(other);
+	let other = transform.pop_component().join(other, right.span);
+	let component = component.join(other, right.span);
 	transform.push_component(component);
 
 	let (span, operator) = (operation.span, operation.operator.clone());
@@ -46,8 +46,8 @@ pub fn function_call<'a>(transform: &mut LowerTransform<'a>, function_call: &mut
 	for argument in &mut function_call.arguments {
 		argument.accept(transform);
 		let (expression, other) = transform.pop_expression();
-		let other = transform.pop_component().join(other);
-		component = component.join(other);
+		let other = transform.pop_component().join(other, expression.span);
+		component = component.join(other, expression.span);
 		arguments.push(expression);
 	}
 

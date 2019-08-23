@@ -5,6 +5,13 @@ pub enum Direction {
 }
 
 impl Direction {
+	pub fn invert(self) -> Direction {
+		match self {
+			Direction::Advance => Direction::Reverse,
+			Direction::Reverse => Direction::Advance,
+		}
+	}
+
 	pub fn compose(self, other: Direction) -> Direction {
 		match self == other {
 			true => Direction::Advance,

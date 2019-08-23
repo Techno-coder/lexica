@@ -8,7 +8,7 @@ use super::Component;
 
 #[derive(Debug, Default)]
 pub struct LowerTransform<'a> {
-	functions: HashMap<Identifier<'a>, basic::Function<'a>>,
+	functions: Vec<Spanned<basic::Function<'a>>>,
 	bindings: HashMap<VariableTarget<'a>, Variable<'a>>,
 
 	evaluation_stack: Vec<basic::Value<'a>>,
@@ -17,6 +17,7 @@ pub struct LowerTransform<'a> {
 	next_block: usize,
 }
 
+// TODO: Insert implicit drops
 impl<'a> LowerTransform<'a> {
 	pub fn next_temporary(&mut self) -> VariableTarget<'a> {
 		self.next_temporary += 1;
@@ -71,6 +72,10 @@ impl<'a> LowerTransform<'a> {
 		let error = format!("Binding for: {}, does not exist", target);
 		self.bindings.get(&target).expect(&error)
 	}
+
+	pub fn functions(self) -> Vec<Spanned<basic::Function<'a>>> {
+		self.functions
+	}
 }
 
 impl<'a> NodeVisitor<'a> for LowerTransform<'a> {
@@ -85,10 +90,9 @@ impl<'a> NodeVisitor<'a> for LowerTransform<'a> {
 		self.next_temporary = 0;
 		self.next_block = 0;
 
-		let identifier = function.identifier.node.clone();
 		let function = super::function(self, function);
 		println!("{}", function); // TODO
-		self.functions.insert(identifier, function);
+		self.functions.push(function);
 
 		assert!(self.evaluation_stack.is_empty());
 		assert!(self.component_stack.is_empty());

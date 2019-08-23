@@ -1,175 +1,325 @@
+use hashbrown::HashMap;
+
+use crate::basic::*;
+use crate::interpreter::{Direction, Size};
 use crate::intrinsics::IntrinsicStore;
-use crate::node::*;
+use crate::node::{BinaryOperator, Identifier, Variable, VariableTarget};
 use crate::source::Spanned;
 
-use super::{Element, Evaluation, FunctionContext};
+type Element = Spanned<super::Element>;
 
 #[derive(Debug)]
 pub struct Translator<'a, 'b> {
-	context: FunctionContext<'a>,
-	// TODO: Replace with any entropic function
+	locals: Vec<Size>,
+	bindings: HashMap<VariableTarget<'a>, usize>,
+	/// Stores the index of the last element encountered when reversing a block.
+	reverse_mapping: HashMap<BlockTarget, usize>,
+	/// Stores the index of the last element encountered when advancing a block.
+	advance_mapping: HashMap<BlockTarget, usize>,
 	intrinsics: &'b IntrinsicStore,
+	elements: Vec<Element>,
 }
 
 impl<'a, 'b> Translator<'a, 'b> {
 	pub fn new(intrinsics: &'b IntrinsicStore) -> Self {
-		Self { context: FunctionContext::default(), intrinsics }
-	}
-}
-
-impl<'a, 'b> NodeVisitor<'a> for Translator<'a, 'b> {
-	type Result = Vec<Spanned<Element>>;
-
-	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
-		syntax_unit.functions.iter_mut()
-			.flat_map(|(_, function)| {
-				self.context.push_frame();
-				let elements = function.accept(self);
-				self.context = FunctionContext::default();
-				elements
-			}).collect()
-	}
-
-	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		super::function_parameters(function, &mut self.context);
-		let mut function_elements = function.expression_block.accept(self);
-
-		let mut elements = super::function_locals(function.span, &self.context);
-		elements.append(&mut super::function_header(function));
-		elements.append(&mut super::function_arguments(function));
-		elements.append(&mut function_elements);
-
-		let return_value = self.context.pop_evaluation();
-		elements.append(&mut super::function_drops(&mut self.context, &return_value));
-		elements.append(&mut super::function_return(function, return_value));
-		elements
-	}
-
-	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		match expression.node.as_mut() {
-			Expression::Unit => self.context.push_evaluation(Evaluation::Unit),
-			Expression::Variable(variable) => {
-				let variable = self.context.get_variable(variable);
-				self.context.push_evaluation(Evaluation::Local(variable));
-			}
-			Expression::Primitive(primitive) => {
-				let primitive = Spanned::new(primitive.clone(), expression.span);
-				self.context.push_evaluation(Evaluation::Immediate(primitive));
-			}
-			Expression::BinaryOperation(binary_operation) => return binary_operation.accept(self),
-			Expression::WhenConditional(when_conditional) => return when_conditional.accept(self),
-			Expression::ExpressionBlock(expression_block) => return expression_block.accept(self),
-			Expression::FunctionCall(function_call) => return function_call.accept(self),
+		Translator {
+			locals: Vec::new(),
+			bindings: HashMap::new(),
+			reverse_mapping: HashMap::new(),
+			advance_mapping: HashMap::new(),
+			intrinsics,
+			elements: Vec::new(),
 		}
-		Vec::new()
 	}
 
-	fn expression_block(&mut self, expression_block: &mut Spanned<ExpressionBlock<'a>>) -> Self::Result {
-		let mut elements = expression_block.block.accept(self);
-		elements.append(&mut expression_block.expression.accept(self));
+	pub fn translate(&mut self, functions: Vec<Spanned<Function<'a>>>) -> Vec<Element> {
+		functions.into_iter().for_each(|function| self.translate_function(function));
+		std::mem::replace(&mut self.elements, Vec::new())
+	}
+
+	pub fn translate_function(&mut self, function: Spanned<Function<'a>>) {
+		self.locals.clear();
+		self.bindings.clear();
+		self.generate_labels(&function);
+
+		let mut block_elements = Vec::new();
+		for parameter in &function.parameters {
+			let local = self.register_variable(&parameter);
+			let instruction = format!("restore {}", local);
+			let instruction = instruction!(Advance, instruction, parameter.span);
+			block_elements.push(instruction);
+		}
+
+		for block in &function.blocks {
+			for statement in &block.statements {
+				if let Statement::Binding(binding) = &statement.node {
+					self.register_binding(binding);
+				}
+			}
+		}
+
+		self.translate_block(&function.entry_block, &function, &mut block_elements);
+		for (index, _) in function.blocks.iter().enumerate() {
+			let target = BlockTarget(index);
+			if target != function.entry_block && target != function.exit_block {
+				self.translate_block(&target, &function, &mut block_elements);
+			}
+		}
+
+		if function.exit_block != function.entry_block {
+			self.translate_block(&function.exit_block, &function, &mut block_elements);
+		}
+
+		for local in &self.locals {
+			let annotation = super::Element::Other(format!("@local {}", local));
+			self.elements.push(Spanned::new(annotation, function.span));
+		}
+
+		let header = super::Element::Other(format!("~{} {{", function.identifier));
+		self.elements.push(Spanned::new(header, function.span));
+		self.elements.append(&mut block_elements);
+		self.elements.push(Spanned::new(super::Element::Other("}".to_owned()), function.span));
+	}
+
+	pub fn generate_labels(&mut self, function: &Function<'a>) {
+		let mut next_label = 0;
+		self.reverse_mapping.clear();
+		self.advance_mapping.clear();
+		for (index, _) in function.blocks.iter().enumerate() {
+			let block_target = BlockTarget(index);
+			self.reverse_mapping.insert(block_target.clone(), next_label);
+			self.advance_mapping.insert(block_target, next_label + 1);
+			next_label += 2;
+		}
+	}
+
+	pub fn register_variable(&mut self, variable: &Variable<'a>) -> usize {
+		let size = Size::parse(variable.data_type.resolved().unwrap())
+			.expect("Invalid size type for binding");
+		let index = self.register_local(size);
+		self.bindings.insert(variable.target.clone(), index);
+		index
+	}
+
+	pub fn register_local(&mut self, size: Size) -> usize {
+		self.locals.push(size);
+		self.locals.len() - 1
+	}
+
+	pub fn invert_elements(&self, mut elements: Vec<Element>) -> Vec<Element> {
+		elements.iter_mut().for_each(|element| element.invert());
+		elements.reverse();
 		elements
 	}
 
-	fn block(&mut self, block: &mut Spanned<Block<'a>>) -> Self::Result {
-		block.statements.iter_mut().flat_map(|statement| statement.accept(self)).collect()
+	pub fn translate_block(&mut self, target: &BlockTarget, function: &Function<'a>,
+	                       block_elements: &mut Vec<Element>) {
+		let block = &function[target];
+		let is_entry_point = function.identifier == Identifier(crate::interpreter::ENTRY_POINT);
+
+		if !is_entry_point || target != &function.entry_block {
+			let branch = self.branch(&block.reverse, Direction::Advance);
+			block_elements.append(&mut self.invert_elements(branch));
+		} else {
+			let span = block.reverse.span;
+			block_elements.push(instruction!(Reverse, "exit".to_owned(), span));
+		}
+
+		let label = format!("{}:", self.reverse_mapping[target]);
+		block_elements.push(Spanned::new(super::Element::Other(label), block.reverse.span));
+
+		for statement in &block.statements {
+			let mut elements = Vec::new();
+			self.statement(statement, &mut elements);
+			if block.direction == Direction::Reverse {
+				elements = self.invert_elements(elements);
+			}
+
+			block_elements.append(&mut elements);
+		}
+
+		if !is_entry_point || target != &function.exit_block {
+			let label = format!("{}:", self.advance_mapping[target]);
+			block_elements.push(Spanned::new(super::Element::Other(label), block.advance.span));
+			let mut branch = self.branch(&block.advance, Direction::Reverse);
+			block_elements.append(&mut branch);
+		} else {
+			let span = block.advance.span;
+			block_elements.push(instruction!(Advance, "exit".to_owned(), span));
+		}
 	}
 
-	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {
-		let mut elements = operation.left.accept(self);
-		elements.append(&mut operation.right.accept(self));
-		elements.append(&mut super::binary_operation(operation, &mut self.context));
-		elements
-	}
-
-	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
-		let mut elements = binding.expression.accept(self);
-		let target = binding.variable.target.clone();
-		let target = Spanned::new(target, binding.variable.span);
-		let local_index = self.context.pop_evaluation().promote(&mut elements, &mut self.context);
-		self.context.annotate_local(local_index, target);
-		elements
-	}
-
-	fn conditional_loop(&mut self, conditional_loop: &mut Spanned<ConditionalLoop<'a>>) -> Self::Result {
-		self.context.push_frame();
-		let (start_label, end_label) = self.context.pair_labels();
-		let mut elements = super::loop_header(conditional_loop.span, start_label, end_label);
-
-		let end_condition = &mut conditional_loop.end_condition;
-		let condition = end_condition.accept(self);
-		elements.append(&mut super::loop_end_condition(condition, &mut self.context, end_condition, end_label));
-
-		elements.append(&mut conditional_loop.block.accept(self));
-		elements.append(&mut super::drop_frame(&mut self.context, &[]));
-
-		let start_condition = conditional_loop.start_condition.as_mut().unwrap();
-		let condition = start_condition.accept(self);
-		elements.append(&mut super::loop_start_condition(condition, &mut self.context, start_condition, start_label));
-		elements.append(&mut super::loop_suffix(conditional_loop.span, start_label, end_label));
-		elements
-	}
-
-	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
-		let mut elements = explicit_drop.expression.accept(self);
-		super::compose_reverse(&mut elements);
-
-		let local_index = self.context.drop_variable(&explicit_drop.target);
-		let instruction = match self.context.pop_evaluation() {
-			Evaluation::Unit => panic!("Unit evaluation cannot be assigned"),
-			Evaluation::Local(local) => format!("clone {} {}", local_index, local),
-			Evaluation::Immediate(primitive) => format!("reset {} {}", local_index, primitive),
+	pub fn branch(&mut self, branch: &Spanned<Branch<'a>>, target_direction: Direction) -> Vec<Element> {
+		let mapping = match target_direction {
+			Direction::Advance => &self.advance_mapping,
+			Direction::Reverse => &self.reverse_mapping,
 		};
 
-		elements.insert(0, instruction!(Advance, Reverse, instruction, explicit_drop.span));
+		let mut elements = Vec::new();
+		match &branch.node {
+			Branch::Return(expression) => {
+				self.drop_expression(expression, &mut elements);
+				elements.push(instruction!(Advance, Advance, "return".to_owned(), branch.span));
+			}
+			Branch::Conditional(conditional) => {
+				let (target, default) = (mapping[&conditional.target], mapping[&conditional.default]);
+				let local = self.promote(&conditional.condition, &mut elements);
+				let instruction = format!("branch.i = {} true {}", local, target);
+				elements.push(instruction!(Advance, Advance, instruction, branch.span));
+				let instruction = format!("jump {}", default);
+				elements.push(instruction!(Advance, Advance, instruction, branch.span));
+			}
+			Branch::Jump(target) => {
+				let instruction = format!("jump {}", mapping[target]);
+				elements.push(instruction!(Advance, Advance, instruction, branch.span));
+			}
+		}
 		elements
 	}
 
-	fn function_call(&mut self, function_call: &mut Spanned<FunctionCall<'a>>) -> Self::Result {
-		let mut elements: Vec<_> = function_call.arguments.iter_mut()
-			.flat_map(|argument| argument.accept(self)).collect();
-		elements.append(&mut super::function_call_arguments(function_call, &mut self.context));
-		elements.append(&mut super::function_call_value(function_call, &mut self.context, self.intrinsics));
-		elements
+	pub fn statement(&mut self, statement: &Statement<'a>, elements: &mut Vec<Element>) {
+		match statement {
+			Statement::Binding(binding) => self.binding(binding, elements),
+			Statement::Mutation(mutation) => self.mutation(mutation, elements),
+			Statement::Assignment(assignment) => self.assignment(assignment, elements),
+			Statement::FunctionCall(function_call) => self.function_call(function_call, elements),
+		}
 	}
 
-	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
-		let span = mutation.span;
-		match &mut mutation.node {
-			Mutation::Swap(left, right) => super::swap(span, left, right, &self.context),
-			Mutation::AddAssign(target, expression) => {
-				let expression = expression.accept(self);
-				super::add_assign(span, target, expression, &mut self.context)
+	pub fn register_binding(&mut self, binding: &Spanned<Binding<'a>>) {
+		match &binding.value {
+			Value::Uninitialized(_) => return,
+			Value::Expression(expression) if expression.is_unit() => return,
+			_ => self.register_variable(&binding.variable),
+		};
+	}
+
+	pub fn binding(&mut self, binding: &Spanned<Binding<'a>>, elements: &mut Vec<Element>) {
+		let span = binding.span;
+		match &binding.value {
+			Value::Uninitialized(_) => return,
+			Value::Expression(expression) => match expression.is_unit() {
+				false => {
+					let local = self.bindings[&binding.variable.target];
+					self.assign_expression(local, expression, elements)
+				}
+				true => return,
+			},
+			Value::FunctionCall(function_call) => {
+				let local = self.bindings[&binding.variable.target];
+				self.function_call(function_call, elements);
+				let instruction = format!("restore {}", local);
+				elements.push(instruction!(Advance, instruction, function_call.span));
 			}
-			Mutation::MinusAssign(target, expression) => {
-				let expression = expression.accept(self);
-				super::minus_assign(span, target, expression, &mut self.context)
-			}
-			Mutation::MultiplyAssign(target, expression) => {
-				let expression = expression.accept(self);
-				super::multiply_assign(span, target, expression, &mut self.context)
+			Value::BinaryOperation(binary_operation) => {
+				let local = self.bindings[&binding.variable.target];
+				let operation = match binary_operation.operator.node {
+					BinaryOperator::Equal => {
+						let left = self.promote(&binary_operation.left, elements);
+						let right = self.promote(&binary_operation.right, elements);
+						let instruction = format!("compare = {} {} {}", left, right, local);
+						elements.push(instruction!(Advance, Advance, instruction, span));
+						return;
+					}
+					BinaryOperator::Add => "add",
+					BinaryOperator::Minus => "minus",
+					BinaryOperator::Multiply => "multiply",
+				};
+
+				self.assign_expression(local, &binary_operation.left, elements);
+				self.mutate(local, &binary_operation.right, operation, elements);
 			}
 		}
 	}
 
-	fn when_conditional(&mut self, when_conditional: &mut Spanned<WhenConditional<'a>>) -> Self::Result {
-		let mut elements = Vec::new();
-		let (start_label, end_label) = self.context.pair_labels();
-		let branch_labels = super::when_branch_labels(when_conditional, &mut self.context);
+	pub fn promote(&mut self, expression: &Spanned<Expression<'a>>, elements: &mut Vec<Element>) -> usize {
+		match &expression.node {
+			Expression::Unit => panic!("Unit type cannot be promoted"),
+			Expression::Variable(variable) => self.bindings[&variable.target],
+			Expression::Primitive(_) => {
+				let size = Size::parse(expression.data_type().resolved().unwrap())
+					.expect("Invalid size type for expression");
+				let local = self.register_local(size);
+				self.assign_expression(local, expression, elements);
+				local
+			}
+		}
+	}
 
-		let conditions = when_conditional.branches.iter_mut()
-			.map(|branch| branch.condition.accept(self)).collect();
-		elements.append(&mut super::when_entry(when_conditional, &branch_labels,
-			conditions, &mut self.context, start_label, end_label));
+	pub fn mutation(&mut self, mutation: &Spanned<Mutation<'a>>, elements: &mut Vec<Element>) {
+		let (target, expression, operation) = match &mutation.node {
+			Mutation::Swap(left, right) => {
+				let instruction = format!("swap {} {}", self.bindings[&left], self.bindings[&right]);
+				return elements.push(instruction!(Advance, instruction, mutation.span));
+			}
+			Mutation::AddAssign(target, expression) => (target, expression, "add"),
+			Mutation::MinusAssign(target, expression) => (target, expression, "minus"),
+			Mutation::MultiplyAssign(target, expression) => (target, expression, "multiply"),
+		};
 
-		let expressions = when_conditional.branches.iter_mut()
-			.map(|branch| branch.expression_block.accept(self)).collect();
-		elements.append(&mut super::when_expressions(when_conditional, &branch_labels,
-			expressions, start_label, end_label));
+		let local = self.bindings[target];
+		self.mutate(local, expression, operation, elements);
+	}
 
-		let end_conditions = when_conditional.branches.iter_mut()
-			.map(|branch| branch.condition.accept(self)).collect();
-		elements.append(&mut super::when_reverse_entry(when_conditional, &branch_labels,
-			end_conditions, &mut self.context, start_label, end_label));
-		elements
+	pub fn mutate(&mut self, local: usize, expression: &Spanned<Expression<'a>>,
+	              operation: &str, elements: &mut Vec<Element>) {
+		elements.push(instruction!(Advance, match &expression.node {
+			Expression::Unit => return,
+			Expression::Variable(variable) => {
+				let other = self.bindings[&variable.target];
+				format!("{} {} {}", operation, local, other)
+			},
+			Expression::Primitive(primitive) =>
+				format!("{}.i {} {}", operation, local, primitive),
+		}, expression.span));
+	}
+
+	pub fn function_call(&mut self, function_call: &Spanned<FunctionCall<'a>>, elements: &mut Vec<Element>) {
+		let Identifier(function) = function_call.function.node;
+		function_call.arguments.iter().for_each(|argument| self.drop_expression(argument, elements));
+
+		let instruction = format!("call {}", function);
+		elements.push(match self.intrinsics.get(function) {
+			Some(_) => instruction!(Advance, Advance, instruction, function_call.function.span),
+			None => instruction!(Advance, instruction, function_call.function.span),
+		})
+	}
+
+	pub fn drop_expression(&self, expression: &Spanned<Expression<'a>>, elements: &mut Vec<Element>) {
+		match &expression.node {
+			Expression::Unit => (),
+			Expression::Variable(variable) => {
+				let instruction = format!("drop {}", self.bindings[&variable.target]);
+				elements.push(instruction!(Advance, instruction, expression.span));
+			}
+			Expression::Primitive(primitive) => {
+				let instruction = format!("drop.i {} {}", primitive.size(), primitive);
+				elements.push(instruction!(Advance, instruction, expression.span));
+			}
+		}
+	}
+
+	pub fn assignment(&mut self, assignment: &Spanned<Assignment<'a>>, elements: &mut Vec<Element>) {
+		let local = self.bindings[&assignment.target];
+		self.assign_expression(local, &assignment.expression, elements);
+	}
+
+	pub fn assign_expression(&mut self, local: usize, expression: &Spanned<Expression<'a>>,
+	                         elements: &mut Vec<Element>) {
+		let span = expression.span;
+		match &expression.node {
+			Expression::Unit => (),
+			Expression::Variable(variable) => {
+				let other = self.bindings[&variable.target];
+				let instruction = format!("clone {} {}", local, other);
+				let instruction = instruction!(Advance, Advance, instruction, span);
+				elements.push(instruction);
+			}
+			Expression::Primitive(primitive) => {
+				let instruction = format!("reset {} {}", local, primitive);
+				let instruction = instruction!(Advance, Advance, instruction, span);
+				elements.push(instruction);
+			}
+		}
 	}
 }

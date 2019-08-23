@@ -8,6 +8,17 @@ pub enum Element {
 	Other(String),
 }
 
+impl Element {
+	pub fn invert(&mut self) {
+		if let Element::Instruction(instruction) = self {
+			match &mut instruction.polarization {
+				Some(polarization) => *polarization = polarization.invert(),
+				None => instruction.direction = instruction.direction.invert(),
+			}
+		}
+	}
+}
+
 impl fmt::Display for Element {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {

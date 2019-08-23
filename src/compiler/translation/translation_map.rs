@@ -21,6 +21,7 @@ impl TranslationMap {
 			ranges.insert(text.len(), element.span);
 		}
 
+		println!("{}", text); // TODO;
 		let text_map = TextMap::new(text);
 		Self { ranges, text_map }
 	}

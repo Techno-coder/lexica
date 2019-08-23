@@ -1,5 +1,5 @@
 use crate::basic;
-use crate::node::{DataType, NodeConstruct, Variable};
+use crate::node::{NodeConstruct, Variable};
 use crate::source::Spanned;
 
 use super::{Component, LowerTransform};
@@ -16,21 +16,26 @@ pub fn when_conditional<'a>(transform: &mut LowerTransform<'a>, when_conditional
 	for branch in when_conditional.branches.iter_mut() {
 		branch.condition.accept(transform);
 		let (condition, other) = transform.pop_expression();
-		let mut condition_component = transform.pop_component().join(other);
+		let condition_span = condition.span;
+		let mut condition_component = transform.pop_component()
+			.join(other, condition_span);
 		component.incorporate(&mut condition_component);
 
 		branch.end_condition.as_mut().unwrap().accept(transform);
 		let (end_condition, other) = transform.pop_expression();
-		let mut end_condition_component = transform.pop_component().join(other).invert();
+		let end_condition_span = condition.span;
+		let mut end_condition_component = transform.pop_component()
+			.join(other, condition.span).invert();
 		component.incorporate(&mut end_condition_component);
 
 		branch.expression_block.accept(transform);
 		let (expression, other) = transform.pop_expression();
-		let mut block_component = transform.pop_component().join(other);
+		let expression_span = expression.span;
+		let mut block_component = transform.pop_component()
+			.join(other, expression_span);
 
-		let data_type = expression.data_type();
-		if data_type != DataType::UNIT {
-			let expression_span = expression.span;
+		if !expression.is_unit() {
+			let data_type = expression.data_type();
 			let variable = temporary.get_or_insert_with(|| {
 				let target = transform.next_temporary();
 				Variable { target, data_type, is_mutable: false }
@@ -45,25 +50,27 @@ pub fn when_conditional<'a>(transform: &mut LowerTransform<'a>, when_conditional
 		}
 
 		component.incorporate(&mut block_component);
-		component.link_advance(&block_component.advance_block, &exit_target);
-		component.link_reverse(&block_component.reverse_block, &entry_target);
+		component.link_advance(&block_component.advance_block, &exit_target, expression_span);
+		component.link_reverse(&block_component.reverse_block, &entry_target, expression_span);
 
 		let (target, default) = (block_component.reverse_block, basic::BlockTarget::SENTINEL);
 		component[&target].in_advance.push(condition_component.advance_block.clone());
-		let branch = basic::ConditionalBranch { condition, target, default };
-		let branch = basic::Branch::Conditional(branch);
-		component[&condition_component.advance_block].advance = branch;
+		let basic_branch = basic::ConditionalBranch { condition, target, default };
+		let basic_branch = basic::Branch::Conditional(basic_branch);
+		let basic_branch = Spanned::new(basic_branch, branch.condition.span);
+		component[&condition_component.advance_block].advance = basic_branch;
 
 		let (target, default) = (block_component.advance_block, basic::BlockTarget::SENTINEL);
 		component[&target].in_reverse.push(end_condition_component.reverse_block.clone());
-		let branch = basic::ConditionalBranch { condition: end_condition, target, default };
-		let branch = basic::Branch::Conditional(branch);
-		component[&end_condition_component.reverse_block].reverse = branch;
+		let basic_branch = basic::ConditionalBranch { condition: end_condition, target, default };
+		let basic_branch = basic::Branch::Conditional(basic_branch);
+		let basic_branch = Spanned::new(basic_branch, branch.end_condition.as_ref().unwrap().span);
+		component[&end_condition_component.reverse_block].reverse = basic_branch;
 
 		component.link_reverse(&condition_component.reverse_block,
-			last_condition.as_ref().unwrap_or(&entry_target));
+			last_condition.as_ref().unwrap_or(&entry_target), condition_span);
 		component.link_advance(&end_condition_component.advance_block,
-			last_end_condition.as_ref().unwrap_or(&exit_target));
+			last_end_condition.as_ref().unwrap_or(&exit_target), end_condition_span);
 
 		match &last_condition {
 			Some(last_condition) => {
@@ -79,8 +86,10 @@ pub fn when_conditional<'a>(transform: &mut LowerTransform<'a>, when_conditional
 				component[last_end_condition].reverse.replace(&mapping);
 			}
 			None => {
-				component.link_advance(&entry_target, &condition_component.reverse_block);
-				component.link_reverse(&exit_target, &end_condition_component.advance_block);
+				let reverse_block = condition_component.reverse_block;
+				component.link_advance(&entry_target, &reverse_block, condition_span);
+				let advance_block = end_condition_component.advance_block;
+				component.link_reverse(&exit_target, &advance_block, end_condition_span);
 			}
 		}
 
