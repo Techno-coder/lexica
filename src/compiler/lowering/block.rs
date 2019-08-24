@@ -12,17 +12,15 @@ pub fn expression_block<'a>(transform: &mut LowerTransform<'a>, expression_block
 	let component = transform.pop_component();
 	expression_block.expression.accept(transform);
 
-	let evaluation = transform.pop_evaluation();
-	if let basic::Value::Expression(expression) = &evaluation {
-		if let basic::Expression::Variable(variable) = &expression.node {
-			transform.drop_binding(&variable.target);
-		}
+	let (expression, other) = transform.pop_expression();
+	if let basic::Expression::Variable(variable) = &expression.node {
+		transform.drop_binding(&variable.target);
 	}
 
-	transform.push_evaluation(evaluation);
-	let expression = transform.pop_component();
-	let component = component.join(expression, expression_block.span);
-	let component = component.join(transform.pop_frame(), expression_block.span);
+	transform.push_evaluation(basic::Value::Expression(expression));
+	let expression = transform.pop_component().join(other, expression_block.span);
+	let component = component.join(expression, expression_block.span)
+		.join(transform.pop_frame(), expression_block.span);
 	transform.push_component(component);
 }
 

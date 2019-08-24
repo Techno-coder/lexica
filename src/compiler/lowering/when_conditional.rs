@@ -97,10 +97,12 @@ pub fn when_conditional<'a>(transform: &mut LowerTransform<'a>, when_conditional
 		last_end_condition = Some(end_condition_component.reverse_block);
 	}
 
-	let mapping = map! { basic::BlockTarget::SENTINEL => exit_target };
-	component[&last_condition.unwrap()].advance.replace(&mapping);
+	let mapping = map! { basic::BlockTarget::SENTINEL => exit_target.clone() };
+	component[last_condition.as_ref().unwrap()].advance.replace(&mapping);
+	component[&exit_target].in_advance.push(last_condition.unwrap());
 	let mapping = map! { basic::BlockTarget::SENTINEL => entry_target.clone() };
-	component[&last_end_condition.unwrap()].reverse.replace(&mapping);
+	component[last_end_condition.as_ref().unwrap()].reverse.replace(&mapping);
+	component[&entry_target].in_advance.push(last_end_condition.unwrap());
 
 	let span = when_conditional.span;
 	let expression = Spanned::new(match temporary {

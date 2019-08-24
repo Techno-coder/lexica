@@ -3,7 +3,7 @@ use std::fmt::Write;
 
 use crate::source::{Span, Spanned, TextMap};
 
-use super::Element;
+type Element = Spanned<super::Element>;
 
 #[derive(Debug)]
 pub struct TranslationMap {
@@ -12,7 +12,7 @@ pub struct TranslationMap {
 }
 
 impl TranslationMap {
-	pub fn new(elements: Vec<Spanned<Element>>) -> Self {
+	pub fn new(elements: Vec<Element>) -> Self {
 		let mut ranges = BTreeMap::new();
 		let mut text = String::new();
 
@@ -21,7 +21,6 @@ impl TranslationMap {
 			ranges.insert(text.len(), element.span);
 		}
 
-		println!("{}", text); // TODO;
 		let text_map = TextMap::new(text);
 		Self { ranges, text_map }
 	}

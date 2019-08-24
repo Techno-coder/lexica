@@ -58,7 +58,7 @@ fn nested_drop() {
 		let variable = 2;
 		let addition = variable + 1;
 
-		nested_shadow();
+		// nested_shadow();
 		addition
 	};
 }

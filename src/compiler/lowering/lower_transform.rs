@@ -19,7 +19,6 @@ pub struct LowerTransform<'a> {
 	next_block: usize,
 }
 
-// TODO: Insert implicit drops
 impl<'a> LowerTransform<'a> {
 	pub fn next_temporary(&mut self) -> VariableTarget<'a> {
 		self.next_temporary += 1;
@@ -117,7 +116,6 @@ impl<'a> NodeVisitor<'a> for LowerTransform<'a> {
 		self.next_block = 0;
 
 		let function = super::function(self, function);
-		println!("{}", function); // TODO
 		self.functions.push(function);
 
 		assert!(self.evaluation_stack.is_empty());
