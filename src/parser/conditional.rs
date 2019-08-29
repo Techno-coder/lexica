@@ -13,9 +13,10 @@ pub fn parse_conditional_loop<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let mut start_condition = None;
 
 	let error = ParserError::ExpectedToken(Token::BlockOpen);
-	let next_token = lexer.next().ok_or(Spanned::new(error.clone(), end_span))?;
+	let next_token = lexer.peek().ok_or(Spanned::new(error.clone(), end_span))?;
 	match next_token.node {
 		Token::Implies => {
+			lexer.next();
 			start_condition = Some(end_condition);
 			end_condition = super::parse_expression_root(lexer, end_span)?;
 		}

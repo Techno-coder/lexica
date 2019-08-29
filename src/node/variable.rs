@@ -42,7 +42,8 @@ impl<'a> fmt::Display for VariableTarget<'a> {
 		let VariableTarget(identifier, generation) = self;
 		write!(f, "{}", identifier)?;
 
-		if identifier == &Identifier::TEMPORARY {
+		let Identifier(identifier) = identifier;
+		if identifier.chars().next() == Some(Identifier::TEMPORARY_PREFIX) {
 			write!(f, "{}", generation)?;
 		}
 

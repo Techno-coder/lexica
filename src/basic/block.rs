@@ -58,7 +58,7 @@ impl<'a> fmt::Display for BasicBlock<'a> {
 pub struct BlockTarget(pub usize);
 
 impl BlockTarget {
-	pub const SENTINEL: Self = BlockTarget(std::usize::MAX);
+	pub const SENTINEL: Self = BlockTarget(usize::max_value());
 }
 
 impl fmt::Display for BlockTarget {

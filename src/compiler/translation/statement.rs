@@ -50,10 +50,19 @@ impl<'a, 'b> Translator<'a, 'b> {
 	pub fn function_call(&mut self, function_call: &Spanned<FunctionCall<'a>>, elements: &mut Vec<Element>) {
 		function_call.arguments.iter().for_each(|argument| self.drop_expression(argument, elements));
 		let instruction = format!("call {}", function_call.function.node);
-		elements.push(match self.is_intrinsic(&function_call.function.node) {
-			true => instruction!(Advance, Advance, instruction, function_call.function.span),
-			false => instruction!(Advance, instruction, function_call.function.span),
-		})
+		let span = function_call.function.span;
+
+		match self.is_intrinsic(&function_call.function.node) {
+			false => elements.push(instruction!(Advance, instruction, span)),
+			true => {
+				elements.push(instruction!(Advance, Advance, instruction, span));
+				// TODO: Assuming arguments are by reference
+				let mut restore_elements = Vec::new();
+				function_call.arguments.iter()
+					.for_each(|argument| self.drop_expression(argument, &mut restore_elements));
+				elements.append(&mut self.invert_elements(restore_elements));
+			}
+		}
 	}
 
 	pub fn drop_expression(&self, expression: &Spanned<Expression<'a>>, elements: &mut Vec<Element>) {

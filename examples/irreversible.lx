@@ -1,0 +1,22 @@
+fn fibonacci(n: u64) -> u64 {
+	let ~first = 1;
+	let ~second = 1;
+
+	let ~counter = 1;
+	loop counter == n {
+		let summation = first + second;
+		first <=> second;
+		second <=> summation;
+
+		counter += 1;
+		when counter == n {
+			trace(n);
+		}
+	}
+
+	second
+}
+
+fn main() {
+	trace(fibonacci(35));
+}
