@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token<'a> {
+	Data,
 	Function,
 	Binding,
 	Drop,
@@ -36,6 +37,7 @@ pub enum Token<'a> {
 impl<'a> Token<'a> {
 	pub fn structure_separator(&self) -> bool {
 		match self {
+			Token::Data => true,
 			Token::Function => true,
 			_ => false,
 		}

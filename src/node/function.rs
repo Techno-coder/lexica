@@ -20,9 +20,6 @@ impl<'a> NodeConstruct<'a> for Spanned<Function<'a>> {
 
 impl<'a> fmt::Display for Function<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		use std::fmt::Write;
-		use crate::utility::IndentWriter;
-
 		write!(f, "fn {}(", self.identifier)?;
 		let split = self.parameters.split_last();
 		if let Some((last, rest)) = split {
@@ -31,12 +28,10 @@ impl<'a> fmt::Display for Function<'a> {
 		}
 
 		match self.return_type.node == DataType::UNIT {
-			false => writeln!(f, ") -> {} {{", self.return_type.resolved().unwrap()),
-			true => writeln!(f, ") {{"),
+			false => write!(f, ") -> {} ", self.return_type.resolved().unwrap()),
+			true => write!(f, ") "),
 		}?;
 
-		let mut indent = IndentWriter::wrap(f);
-		write!(indent, "{}", self.expression_block)?;
-		write!(f, "}}")
+		write!(f, "{}", self.expression_block)
 	}
 }

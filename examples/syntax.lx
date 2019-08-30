@@ -1,3 +1,8 @@
+data Structure {
+	field_one: bool,
+	field_two: u64,
+}
+
 fn function(immutable: u64, ~mutable: u64) -> u64 {
 	let ~addition = immutable + mutable;
 	let ~subtraction = immutable - mutable;

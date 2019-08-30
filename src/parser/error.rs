@@ -13,6 +13,7 @@ pub enum ParserError<'a> {
 	ExpectedOperator,
 	ExpectedMutator,
 	ExpectedStatement,
+	ExpectedStructure,
 }
 
 impl<'a> fmt::Display for ParserError<'a> {
@@ -24,6 +25,7 @@ impl<'a> fmt::Display for ParserError<'a> {
 			ParserError::ExpectedOperator => write!(f, "Expected operator"),
 			ParserError::ExpectedMutator => write!(f, "Expected mutation operator"),
 			ParserError::ExpectedStatement => write!(f, "Expected statement"),
+			ParserError::ExpectedStructure => write!(f, "Expected root level structure"),
 		}
 	}
 }

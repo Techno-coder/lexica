@@ -17,12 +17,27 @@ impl<'a> NodeConstruct<'a> for Spanned<Block<'a>> {
 
 impl<'a> fmt::Display for Block<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		Ok(for statement in &self.statements {
-			match statement.terminated() {
-				false => writeln!(f, "{}", statement),
-				true => writeln!(f, "{};", statement),
-			}?;
-		})
+		use crate::utility::IndentWriter;
+		if !f.alternate() { writeln!(f, "{{")?; }
+
+		{
+			let is_alternate = f.alternate();
+			let mut indent = IndentWriter::wrap(f);
+			let f: &mut dyn fmt::Write = match is_alternate {
+				false => &mut indent,
+				true => f,
+			};
+
+			for statement in &self.statements {
+				match statement.terminated() {
+					false => writeln!(f, "{}", statement),
+					true => writeln!(f, "{};", statement),
+				}?;
+			}
+		}
+
+		if !f.alternate() { write!(f, "}}")?; }
+		Ok(())
 	}
 }
 
@@ -47,12 +62,20 @@ impl<'a> NodeConstruct<'a> for Spanned<ExpressionBlock<'a>> {
 
 impl<'a> fmt::Display for ExpressionBlock<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		use std::fmt::Write;
 		use super::Expression;
-		write!(f, "{}", self.block)?;
+		use crate::utility::IndentWriter;
+
+		writeln!(f, "{{")?;
+		let mut indent = IndentWriter::wrap(f);
+		write!(indent, "{:#}", self.block)?;
+
 		match self.expression.node.as_ref() {
-			Expression::Unit => Ok(()),
-			_ => writeln!(f, "{}", self.expression),
+			Expression::Unit => (),
+			_ => writeln!(indent, "{:#}", self.expression)?,
 		}
+
+		write!(f, "}}")
 	}
 }
 

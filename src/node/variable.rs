@@ -14,10 +14,9 @@ pub struct Variable<'a> {
 impl<'a> fmt::Display for Variable<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let prefix = if self.is_mutable { "~" } else { "" };
-		if let Some(data_type) = self.data_type.resolved() {
-			write!(f, "{}{}: {}", prefix, self.target, data_type)
-		} else {
-			write!(f, "{}{}", prefix, self.target)
+		match self.data_type.resolved() {
+			Some(data_type) => write!(f, "{}{}: {}", prefix, self.target, data_type),
+			_ => write!(f, "{}{}", prefix, self.target),
 		}
 	}
 }

@@ -31,6 +31,7 @@ impl<'a> Iterator for Lexer<'a> {
 		}
 
 		let token = match lexeme {
+			"data" => Token::Data,
 			"fn" => Token::Function,
 			"let" => Token::Binding,
 			"drop" => Token::Drop,

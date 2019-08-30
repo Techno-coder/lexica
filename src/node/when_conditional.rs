@@ -35,17 +35,15 @@ impl<'a> fmt::Display for WhenConditional<'a> {
 					write!(f, " => {}", end_condition)?;
 				}
 
-				writeln!(f, " {{")?;
-				let mut indent = IndentWriter::wrap(f);
-				write!(indent, "{}", branch.expression_block)
+				write!(f, " {}", branch.expression_block)
 			}
 			_ => {
 				writeln!(f, " {{")?;
 				let mut indent = IndentWriter::wrap(f);
-				self.branches.iter().try_for_each(|branch| writeln!(indent, "{}", branch))
+				self.branches.iter().try_for_each(|branch| writeln!(indent, "{}", branch))?;
+				write!(f, "}}")
 			}
-		}?;
-		write!(f, "}}")
+		}
 	}
 }
 
@@ -64,9 +62,6 @@ impl<'a> WhenBranch<'a> {
 
 impl<'a> fmt::Display for WhenBranch<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		use std::fmt::Write;
-		use crate::utility::IndentWriter;
-
 		write!(f, "{}", self.condition)?;
 		if let Some(end_condition) = &self.end_condition {
 			write!(f, " => {}", end_condition)?;
@@ -74,13 +69,9 @@ impl<'a> fmt::Display for WhenBranch<'a> {
 
 		let statements = &self.expression_block.block.statements;
 		match statements.len() {
-			1 => write!(f, " -> {},", &statements[0]),
-			_ => {
-				writeln!(f, " -> {{")?;
-				let mut indent = IndentWriter::wrap(f);
-				write!(indent, "{}", self.expression_block)?;
-				write!(f, "}},")
-			}
+			0 => write!(f, " -> {},", self.expression_block.expression),
+			1 if self.unit_evaluation() => write!(f, " -> {},", &statements[0]),
+			_ => write!(f, " -> {},", self.expression_block),
 		}
 	}
 }

@@ -6,6 +6,7 @@ pub use self::function::*;
 pub use self::lexer::*;
 pub use self::parse::*;
 pub use self::statement::*;
+pub use self::structure::*;
 pub use self::token::*;
 pub use self::variable::*;
 
@@ -21,3 +22,4 @@ mod expression;
 mod statement;
 mod block;
 mod conditional;
+mod structure;
