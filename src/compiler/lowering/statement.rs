@@ -1,5 +1,5 @@
 use crate::basic;
-use crate::node::{Binding, ExplicitDrop, Mutation, NodeConstruct, Statement};
+use crate::node::{Binding, ExplicitDrop, Mutation, NodeConstruct, Statement, Variable};
 use crate::source::Spanned;
 
 use super::{Component, LowerTransform};
@@ -76,6 +76,22 @@ pub fn mutation<'a>(transform: &mut LowerTransform<'a>, mutation: &mut Spanned<M
 			let component = Component::new_single(transform.next_block(), block);
 			return transform.push_component(component);
 		}
+		Mutation::Assign(target, expression) => {
+			expression.accept(transform);
+			let value = transform.pop_evaluation();
+			let (variable, data_type) = (transform.next_temporary(), value.data_type());
+			let mutation = basic::Mutation::Swap(target.clone(), Spanned::new(variable.clone(), span));
+			let mutation = basic::Statement::Mutation(Spanned::new(mutation, span));
+
+			let variable = Variable { target: variable, data_type, is_mutable: true };
+			let binding = basic::Binding { variable: Spanned::new(variable, span), value };
+			let statement = basic::Statement::Binding(Spanned::new(binding, span));
+
+			let component = transform.pop_component()
+				.append(transform.next_block(), Spanned::new(statement, span))
+				.append(transform.next_block(), Spanned::new(mutation, span));
+			return transform.push_component(component);
+		}
 		Mutation::AddAssign(_, expression) => expression,
 		Mutation::MinusAssign(_, expression) => expression,
 		Mutation::MultiplyAssign(_, expression) => expression,
@@ -84,7 +100,7 @@ pub fn mutation<'a>(transform: &mut LowerTransform<'a>, mutation: &mut Spanned<M
 	expression.accept(transform);
 	let (expression, other) = transform.pop_expression();
 	let mutation = Spanned::new(match &mut mutation.node {
-		Mutation::Swap(_, _) => unreachable!(),
+		Mutation::Swap(_, _) | Mutation::Assign(_, _) => unreachable!(),
 		Mutation::AddAssign(target, _) =>
 			basic::Mutation::AddAssign(target.clone(), expression),
 		Mutation::MinusAssign(target, _) =>

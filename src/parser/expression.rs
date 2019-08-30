@@ -13,9 +13,12 @@ pub fn parse_expression_root<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 pub fn parse_expression<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, precedence: usize)
                             -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	let mut context = parse_terminal(lexer, end_span)?;
-	while let Ok(operator) = parse_operator(lexer, end_span) {
+	while let Ok(operator) = peek_operator(lexer, end_span) {
 		match operator.precedence() > precedence {
-			true => context = parse_binder(lexer, end_span, context, operator)?,
+			true => {
+				lexer.next();
+				context = parse_binder(lexer, end_span, context, operator)?
+			},
 			false => break,
 		}
 	}
@@ -113,19 +116,16 @@ pub fn parse_binder<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, context: Span
 	Ok(Spanned::new(expression.into(), span))
 }
 
-pub fn parse_operator<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
-                          -> ParserResult<'a, Spanned<BinaryOperator>> {
+pub fn peek_operator<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
+                         -> ParserResult<'a, Spanned<BinaryOperator>> {
 	let error = Spanned::new(ParserError::ExpectedOperator, end_span);
 	let operator = lexer.peek().ok_or(error)?;
 
-	let operator = Spanned::new(match operator.node {
+	Ok(Spanned::new(match operator.node {
 		Token::Equal => BinaryOperator::Equal,
 		Token::Add => BinaryOperator::Add,
 		Token::Minus => BinaryOperator::Minus,
 		Token::Multiply => BinaryOperator::Multiply,
 		_ => return Err(Spanned::new(ParserError::ExpectedOperator, operator.span).into()),
-	}, operator.span);
-
-	lexer.next();
-	Ok(operator)
+	}, operator.span))
 }

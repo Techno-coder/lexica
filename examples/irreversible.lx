@@ -17,6 +17,13 @@ fn fibonacci(n: u64) -> u64 {
 	second
 }
 
+fn assignment() -> u64 {
+	let ~variable = 0;
+	variable = fibonacci(35);
+	variable
+}
+
 fn main() {
 	trace(fibonacci(35));
+	trace(assignment());
 }

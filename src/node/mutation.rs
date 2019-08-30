@@ -7,6 +7,7 @@ use super::{ExpressionNode, NodeConstruct, NodeVisitor, VariableTarget};
 #[derive(Debug, Clone)]
 pub enum Mutation<'a> {
 	Swap(Spanned<VariableTarget<'a>>, Spanned<VariableTarget<'a>>),
+	Assign(Spanned<VariableTarget<'a>>, Spanned<ExpressionNode<'a>>),
 	AddAssign(Spanned<VariableTarget<'a>>, Spanned<ExpressionNode<'a>>),
 	MinusAssign(Spanned<VariableTarget<'a>>, Spanned<ExpressionNode<'a>>),
 	MultiplyAssign(Spanned<VariableTarget<'a>>, Spanned<ExpressionNode<'a>>),
@@ -22,6 +23,7 @@ impl<'a> fmt::Display for Mutation<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Mutation::Swap(left, right) => write!(f, "{} <=> {}", left, right),
+			Mutation::Assign(identifier, expression) => write!(f, "{} = {}", identifier, expression),
 			Mutation::AddAssign(identifier, expression) => write!(f, "{} += {}", identifier, expression),
 			Mutation::MinusAssign(identifier, expression) => write!(f, "{} -= {}", identifier, expression),
 			Mutation::MultiplyAssign(identifier, expression) => write!(f, "{} *= {}", identifier, expression),

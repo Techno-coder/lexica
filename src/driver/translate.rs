@@ -31,7 +31,7 @@ pub fn emit_errors<T, E>(source_map: &TextMap, result: Result<T, ErrorCollate<Sp
 				crate::source::emit(&source_map, &error);
 				println!()
 			}
-			return None;
+			None
 		}
 	}
 }

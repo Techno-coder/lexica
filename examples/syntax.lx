@@ -63,8 +63,15 @@ fn nested_drop() {
 	};
 }
 
+fn nested_expression() -> u64 {
+	let variable = 0;
+//	variable += 1 * 2 + 3;
+	variable
+}
+
 fn main() {
 	trace(function(5, 3));
 	trace(return_position_conditional(1));
+	trace(nested_expression());
 	nested_drop();
 }

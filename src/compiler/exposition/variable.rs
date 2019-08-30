@@ -155,6 +155,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 				self.resolve_target(left)?;
 				self.resolve_target(right)
 			}
+			Mutation::Assign(target, expression) |
 			Mutation::AddAssign(target, expression) |
 			Mutation::MinusAssign(target, expression) |
 			Mutation::MultiplyAssign(target, expression) => {

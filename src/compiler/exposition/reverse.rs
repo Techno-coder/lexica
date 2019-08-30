@@ -110,6 +110,7 @@ impl<'a> NodeVisitor<'a> for ReverseExposition<'a> {
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
 		match &mut mutation.node {
 			Mutation::Swap(_, _) => {}
+			Mutation::Assign(_, expression) |
 			Mutation::AddAssign(_, expression) |
 			Mutation::MinusAssign(_, expression) |
 			Mutation::MultiplyAssign(_, expression) => expression.accept(self),
