@@ -58,7 +58,7 @@ impl<'a> ElementParser<'a> {
 	}
 
 	/// Parses the annotation arguments from the subsequent tokens.
-	fn annotation_arguments(&mut self, span: Span, annotation: &Annotator)
+	fn annotation_arguments(&mut self, span: Span, annotation: &dyn Annotator)
 	                        -> ParserResult<'a, Vec<Spanned<Argument<'a>>>> {
 		let mut arguments: Vec<Spanned<Argument>> = Vec::new();
 		for _ in 0..annotation.arity() {

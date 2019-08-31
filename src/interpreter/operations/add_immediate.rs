@@ -55,7 +55,7 @@ impl Operation for AddImmediate {
 		})
 	}
 
-	fn reversible(&self) -> Option<&Reversible> {
+	fn reversible(&self) -> Option<&dyn Reversible> {
 		Some(self)
 	}
 }

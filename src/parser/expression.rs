@@ -68,7 +68,7 @@ pub fn parse_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 			let expression = Expression::ExpressionBlock(expression_block);
 			Ok(Spanned::new(expression.into(), span))
 		}
-		_ => return Err(Spanned::new(ParserError::ExpectedExpression, next_token.span).into()),
+		_ => Err(Spanned::new(ParserError::ExpectedExpression, next_token.span).into()),
 	}
 }
 

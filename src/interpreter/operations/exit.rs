@@ -24,7 +24,7 @@ impl Operation for Exit {
 		Ok(())
 	}
 
-	fn reversible(&self) -> Option<&Reversible> {
+	fn reversible(&self) -> Option<&dyn Reversible> {
 		Some(self)
 	}
 }

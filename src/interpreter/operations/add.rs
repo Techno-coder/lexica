@@ -59,7 +59,7 @@ impl Operation for Add {
 		})
 	}
 
-	fn reversible(&self) -> Option<&Reversible> {
+	fn reversible(&self) -> Option<&dyn Reversible> {
 		match self.accumulator == self.operand {
 			false => Some(self),
 			true => None,

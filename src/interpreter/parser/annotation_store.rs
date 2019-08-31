@@ -5,7 +5,7 @@ use super::{AnnotationKey, Annotator};
 /// Stores a register of annotation types keyed by their identifiers.
 #[derive(Debug, Default)]
 pub struct AnnotationStore {
-	annotations: HashMap<&'static str, Box<Annotator>>,
+	annotations: HashMap<&'static str, Box<dyn Annotator>>,
 }
 
 impl AnnotationStore {
@@ -19,13 +19,13 @@ impl AnnotationStore {
 
 	/// Adds an annotation type to the store.
 	/// Existing annotations by the same identifier are overwritten.
-	pub fn register(&mut self, identifier: AnnotationKey, annotation: Box<Annotator>) {
+	pub fn register(&mut self, identifier: AnnotationKey, annotation: Box<dyn Annotator>) {
 		let identifier = identifier.into();
 		self.annotations.insert(identifier, annotation);
 	}
 
 	/// Retrieves an annotation by the specified identifier key.
-	pub fn get(&self, identifier: &str) -> Option<&Annotator> {
+	pub fn get(&self, identifier: &str) -> Option<&dyn Annotator> {
 		self.annotations.get(identifier)
 			.map(|annotation| annotation.as_ref())
 	}

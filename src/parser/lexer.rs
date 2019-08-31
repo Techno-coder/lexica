@@ -6,8 +6,8 @@ use super::Token;
 
 pub type PeekLexer<'a> = Peekable<Lexer<'a>>;
 
-const SINGULARITIES: &'static [char] = &['(', ')', '{', '}', ';', ',', '~', ':'];
-const COMMENT: &'static str = "//";
+const SINGULARITIES: &[char] = &['(', ')', '{', '}', ';', ',', '~', ':'];
+const COMMENT: &str = "//";
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {

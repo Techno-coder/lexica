@@ -35,7 +35,7 @@ impl Operation for DropImmediate {
 		Ok(self.immediate.clone().drop(context.drop_stack()))
 	}
 
-	fn reversible(&self) -> Option<&Reversible> {
+	fn reversible(&self) -> Option<&dyn Reversible> {
 		Some(self)
 	}
 }

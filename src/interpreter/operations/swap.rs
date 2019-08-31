@@ -48,7 +48,7 @@ impl Operation for Swap {
 		Ok(())
 	}
 
-	fn reversible(&self) -> Option<&Reversible> {
+	fn reversible(&self) -> Option<&dyn Reversible> {
 		Some(self)
 	}
 }

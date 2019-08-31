@@ -86,7 +86,7 @@ mod tests {
 
 	#[test]
 	fn test_singularities() {
-		const SINGULARITIES: &'static [char] = &['(', ')', ';'];
+		const SINGULARITIES: &[char] = &['(', ')', ';'];
 		let text = TextMap::new("let print_result = trace(variable);".to_owned());
 		let iterator = SplitSource::new(&text, &SINGULARITIES, "");
 		let lexemes: Vec<_> = iterator.map(|(_, lexeme)| lexeme).collect();

@@ -2,6 +2,7 @@ use std::fmt;
 use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use smallvec::SmallVec;
 
 use crate::interpreter::InterpreterError;
 
@@ -27,7 +28,7 @@ impl Integer {
 	}
 
 	pub fn drop(&self, drop_stack: &mut DropStack) {
-		let mut bytes = Vec::new();
+		let mut bytes = SmallVec::<[u8; std::mem::size_of::<u64>()]>::new();
 		match self.size {
 			Size::Unsigned8 | Size::Signed8 => bytes.write_u8(self.data as u8),
 			Size::Unsigned16 | Size::Signed16 => bytes.write_u16::<Endian>(self.data as u16),
@@ -35,13 +36,12 @@ impl Integer {
 			Size::Unsigned64 | Size::Signed64 => bytes.write_u64::<Endian>(self.data as u64),
 			_ => unreachable!(),
 		}.unwrap();
-		bytes.into_iter().for_each(|byte| drop_stack.push_byte(byte));
+		bytes.into_iter().rev().for_each(|byte| drop_stack.push_byte(byte));
 	}
 
 	pub fn restore(&mut self, drop_stack: &mut DropStack) -> InterpreterResult<()> {
-		let mut bytes = vec![0; self.size.byte_count()];
-		(0..bytes.len()).rev().try_for_each(|index| Ok(bytes[index] = drop_stack.pop_byte()?))?;
-
+		let mut bytes = SmallVec::<[u8; std::mem::size_of::<u64>()]>::new();
+		(0..self.size.byte_count()).try_for_each(|_| Ok(bytes.push(drop_stack.pop_byte()?)))?;
 		let mut bytes = Cursor::new(bytes);
 		Ok(match self.size {
 			Size::Unsigned8 | Size::Signed8 => self.data = bytes.read_u8().unwrap() as u64,

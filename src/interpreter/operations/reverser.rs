@@ -30,7 +30,7 @@ impl<T> Operation for Reverser<T> where T: Operational {
 		self.operation.reversible().unwrap().reverse(context, unit)
 	}
 
-	fn reversible(&self) -> Option<&Reversible> {
+	fn reversible(&self) -> Option<&dyn Reversible> {
 		Some(self)
 	}
 }

@@ -45,7 +45,7 @@ impl Operation for Call {
 		Ok(())
 	}
 
-	fn reversible(&self) -> Option<&Reversible> {
+	fn reversible(&self) -> Option<&dyn Reversible> {
 		Some(self)
 	}
 }
