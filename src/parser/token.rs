@@ -12,6 +12,7 @@ pub enum Token<'a> {
 	ParenthesisClose,
 	BlockOpen,
 	BlockClose,
+	Accessor,
 	VariableSeparator,
 	ListSeparator,
 	Terminator,

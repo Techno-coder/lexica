@@ -36,7 +36,7 @@ impl<'a> fmt::Display for TypeError<'a> {
 			UnresolvedType(unresolved_type) => write!(f, "Type: {}, has not been resolved", unresolved_type),
 			UndefinedStructure(structure) => write!(f, "Structure: {}, is not defined", structure),
 			UndefinedAccessory(structure, identifier) =>
-				write!(f, "Accessory: {}, does not exist for structure: {}", identifier, structure),
+				write!(f, "Structure: {}, does not have accessory: {}", structure, identifier),
 		}
 	}
 }

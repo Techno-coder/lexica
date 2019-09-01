@@ -65,7 +65,9 @@ pub fn parse_statement_identifier<'a>(lexer: &mut PeekLexer<'a>, end_span: Span,
 				Ok(function_call) => {
 					let span_end = expect_token!(lexer, end_span, terminator).byte_end;
 					let span = Span::new(function_call.span.byte_start, span_end);
-					let function_call = Statement::Expression(function_call);
+					let expression = Expression::FunctionCall(function_call);
+					let expression = Spanned::new(expression.into(), span);
+					let function_call = Statement::Expression(expression);
 					Ok(Spanned::new(function_call, span))
 				}
 				Err(_) => Err(statement_error)

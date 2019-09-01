@@ -3,7 +3,7 @@ use hashbrown::HashMap;
 use crate::basic::*;
 use crate::interpreter::Size;
 use crate::intrinsics::IntrinsicStore;
-use crate::node::{Identifier, Structure, Variable, VariableTarget};
+use crate::node::{Identifier, Variable, VariableTarget, StructureMap};
 use crate::source::Spanned;
 
 type Element = Spanned<super::Element>;
@@ -17,7 +17,7 @@ pub struct Translator<'a, 'b> {
 	/// Stores the index of the last element encountered when advancing a block.
 	advance_mapping: HashMap<BlockTarget, usize>,
 
-	structures: HashMap<Identifier<'a>, Spanned<Structure<'a>>>,
+	structures: StructureMap<'a>,
 	intrinsics: &'b IntrinsicStore,
 	elements: Vec<Element>,
 }

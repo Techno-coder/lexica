@@ -6,6 +6,8 @@ use crate::source::Spanned;
 
 use super::{DataType, Identifier, NodeConstruct, NodeVisitor};
 
+pub type StructureMap<'a> = HashMap<Identifier<'a>, Spanned<Structure<'a>>>;
+
 #[derive(Debug, Clone)]
 pub struct Structure<'a> {
 	pub identifier: Spanned<Identifier<'a>>,

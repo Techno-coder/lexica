@@ -1,3 +1,4 @@
+pub use self::accessor::*;
 pub use self::block::*;
 pub use self::conditional::*;
 pub use self::error::*;
@@ -7,6 +8,7 @@ pub use self::lexer::*;
 pub use self::parse::*;
 pub use self::statement::*;
 pub use self::structure::*;
+pub use self::terminal::*;
 pub use self::token::*;
 pub use self::variable::*;
 
@@ -23,3 +25,5 @@ mod statement;
 mod block;
 mod conditional;
 mod structure;
+mod terminal;
+mod accessor;

@@ -6,7 +6,7 @@ use super::Token;
 
 pub type PeekLexer<'a> = Peekable<Lexer<'a>>;
 
-const SINGULARITIES: &[char] = &['(', ')', '{', '}', ';', ',', '~', ':'];
+const SINGULARITIES: &[char] = &['(', ')', '{', '}', ';', ',', '~', ':', '.'];
 const COMMENT: &str = "//";
 
 #[derive(Debug, Clone)]
@@ -42,6 +42,7 @@ impl<'a> Iterator for Lexer<'a> {
 			")" => Token::ParenthesisClose,
 			"{" => Token::BlockOpen,
 			"}" => Token::BlockClose,
+			"." => Token::Accessor,
 			":" => Token::VariableSeparator,
 			"," => Token::ListSeparator,
 			"~" => Token::MutableModifier,

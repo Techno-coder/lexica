@@ -10,7 +10,7 @@ use super::{TypeError, TypeResult};
 /// Verifies accessories on structure exists.
 #[derive(Debug)]
 pub struct AccessResolver<'a> {
-	structures: HashMap<Identifier<'a>, Spanned<Structure<'a>>>,
+	structures: StructureMap<'a>,
 	context: Context<Identifier<'a>>,
 }
 
@@ -49,6 +49,8 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
+		function.parameters.iter().try_for_each(|parameter|
+			super::application::defined(&self.structures, &parameter.data_type, parameter.span))?;
 		function.expression_block.accept(self)
 	}
 
@@ -74,11 +76,11 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 
 	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
 		accessor.expression.accept(self)?;
-		let evaluation_type = accessor.expression.evaluation_type.clone();
-		let error = TypeError::UnresolvedType(evaluation_type.as_ref().clone());
+		let expression_type = accessor.expression.evaluation_type.clone();
+		let error = TypeError::UnresolvedType(expression_type.as_ref().clone());
 		let error = Spanned::new(error, accessor.expression.span);
 
-		let identifier = Identifier(evaluation_type.resolved().ok_or(error)?);
+		let identifier = Identifier(expression_type.resolved().ok_or(error)?);
 		let mut identifier = Spanned::new(identifier, accessor.span);
 
 		for accessory in &mut accessor.accessories {
@@ -91,14 +93,15 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 				}
 				Accessory::Field(field) => {
 					let error = TypeError::UndefinedAccessory(identifier.node.clone(), field.node.clone());
-					structure.fields.get(&field.node).ok_or(Spanned::new(error, field.span))?
-						.identifier.clone()
+					let field = structure.fields.get(&field.node).ok_or(Spanned::new(error, field.span))?;
+					let data_type = Identifier(field.data_type.resolved().unwrap());
+					Spanned::new(data_type, field.data_type.span)
 				}
 			}
 		}
 
 		let DataType(data_type) = DataType::new(identifier.node);
-		let evaluation_type = evaluation_type.as_ref().clone();
+		let evaluation_type = accessor.evaluation_type.as_ref().clone();
 		Ok(super::application::unify(evaluation_type, data_type, &mut self.context)
 			.map_err(|error| Spanned::new(error.into(), accessor.span))?)
 	}

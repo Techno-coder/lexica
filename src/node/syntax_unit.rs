@@ -4,11 +4,11 @@ use hashbrown::HashMap;
 
 use crate::source::Spanned;
 
-use super::{Function, Identifier, NodeConstruct, NodeVisitor, Structure};
+use super::{Function, Identifier, NodeConstruct, NodeVisitor, StructureMap};
 
 #[derive(Debug)]
 pub struct SyntaxUnit<'a> {
-	pub structures: HashMap<Identifier<'a>, Spanned<Structure<'a>>>,
+	pub structures: StructureMap<'a>,
 	pub functions: HashMap<Identifier<'a>, Spanned<Function<'a>>>,
 }
 

@@ -12,7 +12,7 @@ use super::{TypeError, TypeResult};
 /// Verifies data types are defined.
 #[derive(Debug)]
 pub struct TypeAnnotator<'a> {
-	structures: HashMap<Identifier<'a>, Spanned<Structure<'a>>>,
+	structures: StructureMap<'a>,
 	context: Context<Identifier<'a>>,
 }
 
@@ -26,22 +26,7 @@ impl<'a> TypeAnnotator<'a> {
 		assert_ne!(internal_type, &TYPE_SENTINEL);
 
 		super::application::apply(&self.context, internal_type);
-		self.defined(data_type, span)
-	}
-
-	pub fn defined(&self, data_type: &DataType<'a>, span: Span) -> TypeResult<'a, ()> {
-		let DataType(internal_type) = data_type;
-		let type_error = TypeError::UnresolvedType(internal_type.clone());
-		let identifier = data_type.resolved().ok_or(Spanned::new(type_error, span))?;
-
-		if !data_type.is_intrinsic() {
-			let identifier = Identifier(identifier);
-			if !self.structures.contains_key(&identifier) {
-				let error = TypeError::UndefinedStructure(identifier);
-				return Err(Spanned::new(error, span).into());
-			}
-		}
-		Ok(())
+		super::application::defined(&self.structures, data_type, span)
 	}
 }
 
@@ -64,8 +49,6 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		function.parameters.iter()
-			.try_for_each(|parameter| self.defined(&parameter.data_type, parameter.span))?;
 		function.expression_block.accept(self)
 	}
 
