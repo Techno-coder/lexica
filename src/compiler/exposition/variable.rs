@@ -81,14 +81,18 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
 		let mut error_collate = ErrorCollate::new();
-		for function in &mut syntax_unit.functions.values_mut() {
-			if let Err(errors) = function.accept(self) {
+		apply_unit!(syntax_unit, {
+			if let Err(errors) = construct.accept(self) {
 				error_collate.combine(errors);
 			}
 
 			*self = Self::default();
-		}
+		}, construct);
 		error_collate.collapse(())
+	}
+
+	fn structure(&mut self, _: &mut Spanned<Structure>) -> Self::Result {
+		Ok(())
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
@@ -106,6 +110,7 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 			Expression::WhenConditional(when_conditional) => when_conditional.accept(self),
 			Expression::ExpressionBlock(expression_block) => expression_block.accept(self),
 			Expression::FunctionCall(function_call) => function_call.accept(self),
+			Expression::Accessor(accessor) => accessor.accept(self),
 		}
 	}
 
@@ -116,6 +121,15 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 
 	fn block(&mut self, block: &mut Spanned<Block<'a>>) -> Self::Result {
 		block.statements.iter_mut().try_for_each(|statement| statement.accept(self))
+	}
+
+	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
+		accessor.expression.accept(self)?;
+		accessor.accessories.iter_mut()
+			.try_for_each(|accessory| match accessory {
+				Accessory::FunctionCall(function_call) => function_call.accept(self),
+				Accessory::Field(_) => Ok(()),
+			})
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {

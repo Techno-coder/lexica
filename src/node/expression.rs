@@ -4,7 +4,7 @@ use crate::interpreter::Primitive;
 use crate::source::Spanned;
 
 use super::{BinaryOperation, DataType, ExpressionBlock, FunctionCall, NodeConstruct, NodeVisitor,
-	VariableTarget, WhenConditional};
+	VariableTarget, WhenConditional, Accessor};
 
 #[derive(Debug, Clone)]
 pub enum Expression<'a> {
@@ -15,6 +15,7 @@ pub enum Expression<'a> {
 	WhenConditional(Spanned<WhenConditional<'a>>),
 	ExpressionBlock(Spanned<ExpressionBlock<'a>>),
 	FunctionCall(Spanned<FunctionCall<'a>>),
+	Accessor(Spanned<Accessor<'a>>),
 }
 
 #[derive(Debug, Clone)]
@@ -63,6 +64,7 @@ impl<'a> fmt::Display for ExpressionNode<'a> {
 			Expression::WhenConditional(when_conditional) => write!(f, "{}", when_conditional),
 			Expression::ExpressionBlock(expression_block) => write!(f, "{}", expression_block),
 			Expression::FunctionCall(function_call) => write!(f, "{}", function_call),
+			Expression::Accessor(accessor) => write!(f, "{}", accessor),
 		}
 	}
 }

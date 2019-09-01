@@ -24,3 +24,11 @@ impl<'a> fmt::Display for SyntaxUnit<'a> {
 		self.functions.values().try_for_each(|function| writeln!(f, "{}\n", function))
 	}
 }
+
+/// Applies a function to all constructs within the unit.
+macro_rules! apply_unit {
+    ($unit:expr, $transformer:block, $variable:ident) => {
+        $unit.structures.values_mut().for_each(|$variable| $transformer);
+        $unit.functions.values_mut().for_each(|$variable| $transformer);
+    };
+}

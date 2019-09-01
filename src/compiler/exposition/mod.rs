@@ -1,6 +1,6 @@
-pub use self::error::ExpositionError;
-pub use self::reverse::ReverseExposition;
-pub use self::variable::VariableExposition;
+pub use error::ExpositionError;
+pub use reverse::ReverseExposition;
+pub use variable::VariableExposition;
 
 mod variable;
 mod reverse;

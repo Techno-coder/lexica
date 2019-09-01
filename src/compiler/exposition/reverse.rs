@@ -29,8 +29,11 @@ impl<'a> NodeVisitor<'a> for ReverseExposition<'a> {
 	type Result = ();
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
+		syntax_unit.structures.values_mut().for_each(|structure| structure.accept(self));
 		syntax_unit.functions.values_mut().for_each(|function| function.accept(self));
 	}
+
+	fn structure(&mut self, _: &mut Spanned<Structure>) -> Self::Result {}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
 		self.next_temporary = 0;
@@ -44,6 +47,7 @@ impl<'a> NodeVisitor<'a> for ReverseExposition<'a> {
 			Expression::WhenConditional(when_conditional) => when_conditional.accept(self),
 			Expression::ExpressionBlock(expression_block) => expression_block.accept(self),
 			Expression::FunctionCall(function_call) => function_call.accept(self),
+			Expression::Accessor(accessor) => accessor.accept(self),
 		}
 	}
 
@@ -61,6 +65,14 @@ impl<'a> NodeVisitor<'a> for ReverseExposition<'a> {
 			statements.push(statement.clone());
 		}
 		block.statements = statements;
+	}
+
+	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
+		accessor.expression.accept(self);
+		accessor.accessories.iter_mut().for_each(|accessory| match accessory {
+			Accessory::FunctionCall(function_call) => function_call.accept(self),
+			Accessory::Field(_) => (),
+		})
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {

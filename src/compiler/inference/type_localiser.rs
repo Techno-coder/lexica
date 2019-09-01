@@ -43,8 +43,11 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 			self.function_parameters.insert(identifier.clone(), parameters.cloned().collect());
 		}
 
+		syntax_unit.structures.values_mut().for_each(|structure| structure.accept(self));
 		syntax_unit.functions.values_mut().for_each(|function| function.accept(self));
 	}
+
+	fn structure(&mut self, _: &mut Spanned<Structure<'a>>) -> Self::Result {}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
 		function.expression_block.accept(self);
@@ -57,6 +60,7 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 			Expression::WhenConditional(when_conditional) => when_conditional.accept(self),
 			Expression::ExpressionBlock(expression_block) => expression_block.accept(self),
 			Expression::FunctionCall(function_call) => function_call.accept(self),
+			Expression::Accessor(accessor) => accessor.accept(self),
 		}
 	}
 
@@ -67,6 +71,15 @@ impl<'a> NodeVisitor<'a> for TypeLocaliser<'a> {
 
 	fn block(&mut self, block: &mut Spanned<Block<'a>>) -> Self::Result {
 		block.statements.iter_mut().for_each(|statement| statement.accept(self));
+	}
+
+	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
+		accessor.expression.accept(self);
+		accessor.accessories.iter_mut()
+			.for_each(|accessory| match accessory {
+				Accessory::FunctionCall(function_call) => function_call.accept(self),
+				Accessory::Field(_) => (),
+			})
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {

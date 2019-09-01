@@ -3,7 +3,7 @@ use hashbrown::HashMap;
 use crate::basic::*;
 use crate::interpreter::Size;
 use crate::intrinsics::IntrinsicStore;
-use crate::node::{Identifier, Variable, VariableTarget};
+use crate::node::{Identifier, Structure, Variable, VariableTarget};
 use crate::source::Spanned;
 
 type Element = Spanned<super::Element>;
@@ -16,6 +16,8 @@ pub struct Translator<'a, 'b> {
 	reverse_mapping: HashMap<BlockTarget, usize>,
 	/// Stores the index of the last element encountered when advancing a block.
 	advance_mapping: HashMap<BlockTarget, usize>,
+
+	structures: HashMap<Identifier<'a>, Spanned<Structure<'a>>>,
 	intrinsics: &'b IntrinsicStore,
 	elements: Vec<Element>,
 }
@@ -27,13 +29,16 @@ impl<'a, 'b> Translator<'a, 'b> {
 			bindings: HashMap::new(),
 			reverse_mapping: HashMap::new(),
 			advance_mapping: HashMap::new(),
+			structures: HashMap::new(),
 			intrinsics,
 			elements: Vec::new(),
 		}
 	}
 
-	pub fn translate(&mut self, functions: Vec<Spanned<Function<'a>>>) -> Vec<Element> {
-		functions.into_iter().for_each(|function| self.translate_function(function));
+	pub fn translate(&mut self, unit: BasicUnit<'a>) -> Vec<Element> {
+		self.structures = unit.structures.into_iter()
+			.map(|structure| (structure.identifier.node.clone(), structure)).collect();
+		unit.functions.into_iter().for_each(|function| self.translate_function(function));
 		std::mem::replace(&mut self.elements, Vec::new())
 	}
 

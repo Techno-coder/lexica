@@ -11,14 +11,16 @@ pub fn translate(source_map: &TextMap, intrinsics: &IntrinsicStore) -> Option<Tr
 	let mut inference_engine = crate::compiler::InferenceEngine::default();
 	syntax_unit.accept(&mut crate::compiler::TypeLocaliser::new(intrinsics));
 	emit_errors(source_map, syntax_unit.accept(&mut inference_engine))?;
-	let mut type_annotator = crate::compiler::TypeAnnotator::new(inference_engine.context());
+	let mut access_resolver = crate::compiler::AccessResolver::new(inference_engine.context());
+	emit_errors(source_map, syntax_unit.accept(&mut access_resolver))?;
+	let mut type_annotator = crate::compiler::TypeAnnotator::new(access_resolver.context());
 	emit_errors(source_map, syntax_unit.accept(&mut type_annotator))?;
 
 	let mut lower_transform = crate::compiler::LowerTransform::default();
 	syntax_unit.accept(&mut lower_transform);
 
 	let mut translator = crate::compiler::Translator::new(intrinsics);
-	let elements = translator.translate(lower_transform.functions());
+	let elements = translator.translate(lower_transform.unit());
 	Some(crate::compiler::TranslationMap::new(elements))
 }
 

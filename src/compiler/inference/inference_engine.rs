@@ -19,11 +19,9 @@ impl<'a> InferenceEngine<'a> {
 		self.context
 	}
 
-	pub fn unify(&mut self, mut left: Type<Identifier<'a>>, mut right: Type<Identifier<'a>>)
+	pub fn unify(&mut self, left: Type<Identifier<'a>>, right: Type<Identifier<'a>>)
 	             -> Result<(), UnificationError<Identifier<'a>>> {
-		super::application::apply(&self.context, &mut left);
-		super::application::apply(&self.context, &mut right);
-		self.context.unify_fast(left, right)
+		super::application::unify(left, right, &mut self.context)
 	}
 }
 
@@ -32,14 +30,18 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
 		let mut error_collate = ErrorCollate::new();
-		for function in syntax_unit.functions.values_mut() {
-			if let Err(errors) = function.accept(self) {
+		apply_unit!(syntax_unit, {
+			if let Err(errors) = construct.accept(self) {
 				error_collate.combine(errors);
 			}
 
 			self.environment.clear();
-		}
+		}, construct);
 		error_collate.collapse(())
+	}
+
+	fn structure(&mut self, _: &mut Spanned<Structure<'a>>) -> Self::Result {
+		Ok(())
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
@@ -83,6 +85,10 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 				function_call.accept(self)?;
 				function_call.evaluation_type.clone()
 			}
+			Expression::Accessor(accessor) => {
+				accessor.accept(self)?;
+				accessor.evaluation_type.clone()
+			}
 		};
 
 		let expression_type = expression.evaluation_type.as_ref();
@@ -115,6 +121,16 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 					.map_err(|error| Spanned::new(error.into(), statement.span))?)
 			}
 		}
+	}
+
+	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
+		accessor.evaluation_type = DataType(self.context.new_variable());
+		accessor.expression.accept(self)?;
+		accessor.accessories.iter_mut()
+			.try_for_each(|accessory| match accessory {
+				Accessory::FunctionCall(function_call) => function_call.accept(self),
+				Accessory::Field(_) => Ok(()),
+			})
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {

@@ -1,51 +1,36 @@
 use hashbrown::HashMap;
 use polytype::Context;
 
-use crate::interpreter::Size;
 use crate::node::*;
-use crate::source::{ErrorCollate, Span, Spanned};
+use crate::source::{ErrorCollate, Spanned};
 
 use super::{TypeError, TypeResult};
 
-/// Applies resolved types from a type context.
-/// Checks for type equality within nodes that cannot be checked at unification.
-/// Verifies data types are defined.
+/// Resolves evaluation types on accessors.
+/// Verifies accessories on structure exists.
 #[derive(Debug)]
-pub struct TypeAnnotator<'a> {
+pub struct AccessResolver<'a> {
 	structures: HashMap<Identifier<'a>, Spanned<Structure<'a>>>,
 	context: Context<Identifier<'a>>,
 }
 
-impl<'a> TypeAnnotator<'a> {
+impl<'a> AccessResolver<'a> {
 	pub fn new(context: Context<Identifier<'a>>) -> Self {
 		Self { structures: HashMap::new(), context }
 	}
 
-	pub fn apply(&mut self, data_type: &mut DataType<'a>, span: Span) -> TypeResult<'a, ()> {
-		let DataType(internal_type) = data_type;
-		assert_ne!(internal_type, &TYPE_SENTINEL);
-
-		super::application::apply(&self.context, internal_type);
-		self.defined(data_type, span)
+	pub fn get_structure(&self, identifier: &Spanned<Identifier<'a>>)
+	                     -> TypeResult<'a, &Spanned<Structure<'a>>> {
+		let error = TypeError::UndefinedStructure(identifier.node.clone());
+		self.structures.get(&identifier).ok_or(Spanned::new(error, identifier.span).into())
 	}
 
-	pub fn defined(&self, data_type: &DataType<'a>, span: Span) -> TypeResult<'a, ()> {
-		let DataType(internal_type) = data_type;
-		let type_error = TypeError::UnresolvedType(internal_type.clone());
-		let identifier = data_type.resolved().ok_or(Spanned::new(type_error, span))?;
-
-		if !data_type.is_intrinsic() {
-			let identifier = Identifier(identifier);
-			if !self.structures.contains_key(&identifier) {
-				let error = TypeError::UndefinedStructure(identifier);
-				return Err(Spanned::new(error, span).into());
-			}
-		}
-		Ok(())
+	pub fn context(self) -> Context<Identifier<'a>> {
+		self.context
 	}
 }
 
-impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
+impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 	type Result = TypeResult<'a, ()>;
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
@@ -64,25 +49,12 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		function.parameters.iter()
-			.try_for_each(|parameter| self.defined(&parameter.data_type, parameter.span))?;
 		function.expression_block.accept(self)
 	}
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
-		let expression_span = expression.span;
-		self.apply(&mut expression.evaluation_type, expression_span)?;
-		let evaluation_type = expression.evaluation_type.as_ref().clone();
-
-		let type_identifier = expression.evaluation_type.resolved().unwrap();
 		match expression.node.as_mut() {
-			Expression::Unit | Expression::Variable(_) => Ok(()),
-			Expression::Primitive(primitive) => {
-				let error = TypeError::PrimitiveConflict(primitive.clone(), evaluation_type);
-				let error = Spanned::new(error, expression_span);
-				let size = Size::parse(type_identifier).map_err(|_| error.clone())?;
-				Ok(*primitive = primitive.clone().cast(size).ok_or(error)?)
-			}
+			Expression::Unit | Expression::Variable(_) | Expression::Primitive(_) => Ok(()),
 			Expression::BinaryOperation(binary_operation) => binary_operation.accept(self),
 			Expression::WhenConditional(when_conditional) => when_conditional.accept(self),
 			Expression::ExpressionBlock(expression_block) => expression_block.accept(self),
@@ -102,11 +74,33 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 
 	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
 		accessor.expression.accept(self)?;
-		accessor.accessories.iter_mut()
-			.try_for_each(|accessory| match accessory {
-				Accessory::FunctionCall(function_call) => function_call.accept(self),
-				Accessory::Field(_) => Ok(()),
-			})
+		let evaluation_type = accessor.expression.evaluation_type.clone();
+		let error = TypeError::UnresolvedType(evaluation_type.as_ref().clone());
+		let error = Spanned::new(error, accessor.expression.span);
+
+		let identifier = Identifier(evaluation_type.resolved().ok_or(error)?);
+		let mut identifier = Spanned::new(identifier, accessor.span);
+
+		for accessory in &mut accessor.accessories {
+			let structure = self.get_structure(&identifier)?;
+			identifier = match accessory {
+				Accessory::FunctionCall(function_call) => {
+					function_call.accept(self)?;
+					// TODO: Check method exists
+					unimplemented!()
+				}
+				Accessory::Field(field) => {
+					let error = TypeError::UndefinedAccessory(identifier.node.clone(), field.node.clone());
+					structure.fields.get(&field.node).ok_or(Spanned::new(error, field.span))?
+						.identifier.clone()
+				}
+			}
+		}
+
+		let DataType(data_type) = DataType::new(identifier.node);
+		let evaluation_type = evaluation_type.as_ref().clone();
+		Ok(super::application::unify(evaluation_type, data_type, &mut self.context)
+			.map_err(|error| Spanned::new(error.into(), accessor.span))?)
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {
@@ -116,8 +110,6 @@ impl<'a> NodeVisitor<'a> for TypeAnnotator<'a> {
 	}
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
-		let variable_span = binding.variable.span.clone();
-		self.apply(&mut binding.variable.data_type, variable_span)?;
 		binding.expression.accept(self)
 	}
 

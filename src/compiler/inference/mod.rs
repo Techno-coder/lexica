@@ -1,10 +1,12 @@
-pub use self::error::*;
-pub use self::inference_engine::*;
-pub use self::type_annotator::*;
-pub use self::type_localiser::*;
+pub use access_resolver::*;
+pub use error::*;
+pub use inference_engine::*;
+pub use type_annotator::*;
+pub use type_localiser::*;
 
 pub mod application;
-mod inference_engine;
-mod type_annotator;
 mod type_localiser;
+mod inference_engine;
+mod access_resolver;
+mod type_annotator;
 mod error;

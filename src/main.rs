@@ -4,12 +4,13 @@
 
 #[macro_use]
 mod utility;
+#[macro_use]
+mod node;
 mod driver;
 mod compiler;
 mod interpreter;
 mod intrinsics;
 mod basic;
-mod node;
 mod parser;
 mod source;
 

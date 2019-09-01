@@ -10,6 +10,7 @@ type BindingFrame<'a> = HashMap<VariableTarget<'a>, Spanned<Variable<'a>>>;
 
 #[derive(Debug, Default)]
 pub struct LowerTransform<'a> {
+	structures: Vec<Spanned<Structure<'a>>>,
 	functions: Vec<Spanned<basic::Function<'a>>>,
 	bindings: Vec<BindingFrame<'a>>,
 
@@ -98,8 +99,11 @@ impl<'a> LowerTransform<'a> {
 		self.bindings.iter().rev().find_map(|frame| frame.get(target)).expect(&error)
 	}
 
-	pub fn functions(self) -> Vec<Spanned<basic::Function<'a>>> {
-		self.functions
+	pub fn unit(self) -> basic::BasicUnit<'a> {
+		basic::BasicUnit {
+			structures: self.structures,
+			functions: self.functions,
+		}
 	}
 }
 
@@ -107,7 +111,12 @@ impl<'a> NodeVisitor<'a> for LowerTransform<'a> {
 	type Result = ();
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result {
+		syntax_unit.structures.values_mut().for_each(|structure| structure.accept(self));
 		syntax_unit.functions.values_mut().for_each(|function| function.accept(self));
+	}
+
+	fn structure(&mut self, structure: &mut Spanned<Structure<'a>>) -> Self::Result {
+		self.structures.push(structure.clone());
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
@@ -136,6 +145,10 @@ impl<'a> NodeVisitor<'a> for LowerTransform<'a> {
 
 	fn statement(&mut self, statement: &mut Spanned<Statement<'a>>) -> Self::Result where Self: Sized {
 		super::statement(self, statement);
+	}
+
+	fn accessor(&mut self, _: &mut Spanned<Accessor<'a>>) -> Self::Result {
+		unimplemented!()
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {

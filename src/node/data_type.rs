@@ -6,6 +6,8 @@ use super::Identifier;
 pub const TYPE_SENTINEL: Type<Identifier> = Type::Variable(0);
 pub const BOOLEAN_TYPE: Type<Identifier> = Type::Constructed(Identifier("bool"), Vec::new());
 
+const INTRINSICS: &[DataType] = &[DataType::UNIT, DataType::EMPTY];
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataType<'a>(pub Type<Identifier<'a>>);
 
@@ -24,6 +26,15 @@ impl<'a> DataType<'a> {
 		match self {
 			DataType(Type::Constructed(Identifier(string), _)) => Some(string),
 			DataType(Type::Variable(_)) => None,
+		}
+	}
+
+	/// Returns whether the data type is an intrinsic type.
+	pub fn is_intrinsic(&self) -> bool {
+		use crate::interpreter::Size;
+		match self.resolved() {
+			Some(identifier) => Size::parse(identifier).is_ok() || INTRINSICS.contains(self),
+			None => false,
 		}
 	}
 }

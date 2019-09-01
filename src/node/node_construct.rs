@@ -12,6 +12,7 @@ pub trait NodeVisitor<'a> {
 	type Result;
 
 	fn syntax_unit(&mut self, syntax_unit: &mut Spanned<SyntaxUnit<'a>>) -> Self::Result;
+	fn structure(&mut self, structure: &mut Spanned<Structure<'a>>) -> Self::Result;
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result;
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result;
 	fn expression_block(&mut self, expression_block: &mut Spanned<ExpressionBlock<'a>>) -> Self::Result;
@@ -27,6 +28,7 @@ pub trait NodeVisitor<'a> {
 		}
 	}
 
+	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result;
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result;
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result;
 	fn conditional_loop(&mut self, conditional_loop: &mut Spanned<ConditionalLoop<'a>>) -> Self::Result;

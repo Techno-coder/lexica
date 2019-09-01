@@ -23,6 +23,11 @@ fn assignment() -> u64 {
 	variable
 }
 
+fn step(position: Position, velocity: Velocity) -> Position {
+	let new_position: Position = position;
+	position
+}
+
 fn main() {
 	trace(fibonacci(35));
 	trace(assignment());

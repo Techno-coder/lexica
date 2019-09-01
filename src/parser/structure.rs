@@ -1,3 +1,5 @@
+use hashbrown::HashMap;
+
 use crate::node::{DataType, Field, Structure};
 use crate::source::{Span, Spanned};
 
@@ -9,12 +11,13 @@ pub fn parse_structure<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 	let identifier = identifier!(lexer, end_span);
 	expect!(lexer, end_span, BlockOpen);
 
-	let mut fields = Vec::new();
+	let mut fields = HashMap::new();
 	while let Some(token) = lexer.peek() {
 		match token.node {
 			Token::BlockClose => break,
 			_ => {
-				fields.push(parse_field(lexer, end_span)?);
+				let field = parse_field(lexer, end_span)?;
+				fields.insert(field.identifier.node.clone(), field);
 				match lexer.peek() {
 					Some(token) if token.node == Token::ListSeparator => lexer.next(),
 					_ => break,

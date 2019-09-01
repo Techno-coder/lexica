@@ -14,6 +14,7 @@ pub fn expression<'a>(transform: &mut LowerTransform<'a>, expression: &mut Spann
 		Expression::WhenConditional(when_conditional) => return when_conditional.accept(transform),
 		Expression::ExpressionBlock(expression_block) => return expression_block.accept(transform),
 		Expression::FunctionCall(function_call) => return function_call.accept(transform),
+		Expression::Accessor(accessor) => return accessor.accept(transform),
 	}, expression_span);
 
 	let next_block = transform.next_block();

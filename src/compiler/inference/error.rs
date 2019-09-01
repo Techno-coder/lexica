@@ -13,6 +13,8 @@ pub enum TypeError<'a> {
 	TypeConflict(Type<Identifier<'a>>, Type<Identifier<'a>>),
 	PrimitiveConflict(Primitive, Type<Identifier<'a>>),
 	UnresolvedType(Type<Identifier<'a>>),
+	UndefinedStructure(Identifier<'a>),
+	UndefinedAccessory(Identifier<'a>, Identifier<'a>),
 }
 
 impl<'a> From<UnificationError<Identifier<'a>>> for TypeError<'a> {
@@ -29,8 +31,12 @@ impl<'a> fmt::Display for TypeError<'a> {
 		use self::TypeError::*;
 		match self {
 			TypeConflict(left, right) => write!(f, "Type: {}, conflicts with: {}", left, right),
-			PrimitiveConflict(primitive, expected) => write!(f, "Primitive: {}, conflicts with expected type: {}", primitive, expected),
+			PrimitiveConflict(primitive, expected) =>
+				write!(f, "Primitive: {}, conflicts with expected type: {}", primitive, expected),
 			UnresolvedType(unresolved_type) => write!(f, "Type: {}, has not been resolved", unresolved_type),
+			UndefinedStructure(structure) => write!(f, "Structure: {}, is not defined", structure),
+			UndefinedAccessory(structure, identifier) =>
+				write!(f, "Accessory: {}, does not exist for structure: {}", identifier, structure),
 		}
 	}
 }
