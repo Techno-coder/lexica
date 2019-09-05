@@ -1,8 +1,8 @@
 use hashbrown::HashMap;
-use polytype::Context;
+use polytype::{Context, Type};
 
 use crate::node::*;
-use crate::source::{ErrorCollate, Spanned};
+use crate::source::{ErrorCollate, Span, Spanned};
 
 use super::{TypeError, TypeResult};
 
@@ -10,19 +10,20 @@ use super::{TypeError, TypeResult};
 /// Verifies accessories on structure exists.
 #[derive(Debug)]
 pub struct AccessResolver<'a> {
+	environment: HashMap<VariableTarget<'a>, Type<Identifier<'a>>>,
 	structures: StructureMap<'a>,
 	context: Context<Identifier<'a>>,
 }
 
 impl<'a> AccessResolver<'a> {
 	pub fn new(context: Context<Identifier<'a>>) -> Self {
-		Self { structures: HashMap::new(), context }
+		Self { environment: HashMap::new(), structures: HashMap::new(), context }
 	}
 
-	pub fn get_structure(&self, identifier: &Spanned<Identifier<'a>>)
+	pub fn get_structure(&self, identifier: &Identifier<'a>, span: Span)
 	                     -> TypeResult<'a, &Spanned<Structure<'a>>> {
-		let error = TypeError::UndefinedStructure(identifier.node.clone());
-		self.structures.get(&identifier).ok_or(Spanned::new(error, identifier.span).into())
+		let error = TypeError::UndefinedStructure(identifier.clone());
+		self.structures.get(identifier).ok_or(Spanned::new(error, span).into())
 	}
 
 	pub fn context(self) -> Context<Identifier<'a>> {
@@ -40,6 +41,8 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 			if let Err(errors) = construct.accept(self) {
 				error_collate.combine(errors);
 			}
+
+			self.environment.clear();
 		}, construct);
 		error_collate.collapse(())
 	}
@@ -49,14 +52,37 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 	}
 
 	fn function(&mut self, function: &mut Spanned<Function<'a>>) -> Self::Result {
-		function.parameters.iter().try_for_each(|parameter|
-			super::application::defined(&self.structures, &parameter.data_type, parameter.span))?;
+		for parameter in &function.parameters {
+			super::application::defined(&self.structures, &parameter.data_type, parameter.span)?;
+			self.environment.insert(parameter.target.clone(), parameter.data_type.as_ref().clone());
+		}
 		function.expression_block.accept(self)
 	}
 
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		match expression.node.as_mut() {
-			Expression::Unit | Expression::Variable(_) | Expression::Primitive(_) => Ok(()),
+			Expression::Variable(variable) => {
+				let mut data_type = self.environment[&variable.root()].clone();
+				super::application::apply(&self.context, &mut data_type);
+
+				let error = TypeError::UnresolvedType(data_type.clone());
+				let mut identifier = Identifier(DataType(data_type).resolved()
+					.ok_or(Spanned::new(error, expression.span))?);
+
+				let VariableTarget(_, _, accessor) = variable;
+				for accessory in accessor.split() {
+					let structure = self.get_structure(&identifier, expression.span)?;
+					let error = TypeError::UndefinedAccessory(structure.identifier.node.clone(), accessory.clone());
+					let field = structure.fields.get(&accessory).ok_or(Spanned::new(error, expression.span))?;
+					identifier = Identifier(field.data_type.resolved().unwrap());
+				}
+
+				let DataType(data_type) = DataType::new(identifier);
+				let evaluation_type = expression.evaluation_type.as_ref().clone();
+				Ok(super::application::unify(evaluation_type, data_type, &mut self.context)
+					.map_err(|error| Spanned::new(error.into(), expression.span))?)
+			}
+			Expression::Unit | Expression::Primitive(_) => Ok(()),
 			Expression::BinaryOperation(binary_operation) => binary_operation.accept(self),
 			Expression::WhenConditional(when_conditional) => when_conditional.accept(self),
 			Expression::ExpressionBlock(expression_block) => expression_block.accept(self),
@@ -74,6 +100,7 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 		block.statements.iter_mut().try_for_each(|statement| statement.accept(self))
 	}
 
+	// TODO: Evaluate AccessorCall
 	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
 		accessor.expression.accept(self)?;
 		let expression_type = accessor.expression.evaluation_type.clone();
@@ -84,7 +111,7 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 		let mut identifier = Spanned::new(identifier, accessor.span);
 
 		for accessory in &mut accessor.accessories {
-			let structure = self.get_structure(&identifier)?;
+			let structure = self.get_structure(&identifier, identifier.span)?;
 			identifier = match accessory {
 				Accessory::FunctionCall(function_call) => {
 					function_call.accept(self)?;
@@ -113,7 +140,10 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 	}
 
 	fn binding(&mut self, binding: &mut Spanned<Binding<'a>>) -> Self::Result {
-		binding.expression.accept(self)
+		binding.expression.accept(self)?;
+		let binding_type = binding.variable.data_type.as_ref().clone();
+		self.environment.insert(binding.variable.target.clone(), binding_type);
+		Ok(())
 	}
 
 	fn conditional_loop(&mut self, conditional_loop: &mut Spanned<ConditionalLoop<'a>>) -> Self::Result {

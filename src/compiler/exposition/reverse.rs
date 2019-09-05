@@ -12,7 +12,7 @@ pub struct ReverseExposition<'a> {
 impl<'a> ReverseExposition<'a> {
 	pub fn next_target(&mut self) -> VariableTarget<'a> {
 		self.next_temporary += 1;
-		VariableTarget(Identifier::TEMPORARY_REVERSE, self.next_temporary - 1)
+		VariableTarget::new_root(Identifier::TEMPORARY_REVERSE, self.next_temporary - 1)
 	}
 
 	pub fn pop_bindings(&mut self) -> Vec<Spanned<Statement<'a>>> {

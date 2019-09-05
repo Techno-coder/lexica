@@ -23,7 +23,7 @@ pub struct LowerTransform<'a> {
 impl<'a> LowerTransform<'a> {
 	pub fn next_temporary(&mut self) -> VariableTarget<'a> {
 		self.next_temporary += 1;
-		VariableTarget(Identifier::TEMPORARY_LOWER, self.next_temporary - 1)
+		VariableTarget::new_root(Identifier::TEMPORARY_LOWER, self.next_temporary - 1)
 	}
 
 	pub fn next_block(&mut self) -> basic::BlockTarget {

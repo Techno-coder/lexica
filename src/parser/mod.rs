@@ -1,4 +1,3 @@
-pub use self::accessor::*;
 pub use self::block::*;
 pub use self::conditional::*;
 pub use self::error::*;
@@ -26,4 +25,3 @@ mod block;
 mod conditional;
 mod structure;
 mod terminal;
-mod accessor;

@@ -8,7 +8,7 @@ pub struct Identifier<'a>(pub &'a str);
 impl<'a> Identifier<'a> {
 	pub const TEMPORARY_PREFIX: char = '.';
 	pub const TEMPORARY_LOWER: Self = Identifier(".");
-	pub const TEMPORARY_REVERSE: Self = Identifier(".reverse.");
+	pub const TEMPORARY_REVERSE: Self = Identifier(".reverse");
 }
 
 impl<'a> fmt::Display for Identifier<'a> {

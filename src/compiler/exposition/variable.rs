@@ -14,7 +14,9 @@ type Result<'a> = std::result::Result<(), ErrorCollate<Spanned<ExpositionError<'
 /// Checks that explicitly dropped variables are no longer used.
 #[derive(Debug)]
 pub struct VariableExposition<'a> {
+	/// Stores the latest generation of a variable.
 	generation_frames: Vec<GenerationFrame<'a>>,
+	/// Stores which variables have been dropped.
 	drop_frames: Vec<DropFrame<'a>>,
 }
 
@@ -33,7 +35,8 @@ impl<'a> VariableExposition<'a> {
 			None => 0,
 		};
 
-		let VariableTarget(identifier, generation) = target;
+		assert!(target.is_root());
+		let VariableTarget(identifier, generation, _) = target;
 		self.generation_frame().insert(identifier.clone(), target_generation);
 		*generation = target_generation;
 	}
@@ -45,18 +48,18 @@ impl<'a> VariableExposition<'a> {
 
 	pub fn resolve_target_span(&self, target: &mut VariableTarget<'a>, span: Span) -> Result<'a> {
 		if let Some(target_generation) = self.resolve_generation(target) {
-			let VariableTarget(_, generation) = target;
+			let VariableTarget(_, generation, _) = target;
 			*generation = target_generation;
 			return self.check_alive(target, span);
 		}
 
-		let VariableTarget(identifier, _) = target;
+		let VariableTarget(identifier, _, _) = target;
 		let undefined_error = ExpositionError::UndefinedVariable(identifier.clone());
 		Err(Spanned::new(undefined_error, span).into())
 	}
 
 	pub fn resolve_generation(&self, target: &VariableTarget<'a>) -> Option<usize> {
-		let VariableTarget(identifier, _) = target;
+		let VariableTarget(identifier, _, _) = target;
 		for frame in self.generation_frames.iter().rev() {
 			if let Some(target_generation) = frame.get(identifier) {
 				return Some(*target_generation);
@@ -155,7 +158,11 @@ impl<'a> NodeVisitor<'a> for VariableExposition<'a> {
 
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
 		self.resolve_target(&mut explicit_drop.target)?;
-		self.drop_frame().insert(explicit_drop.target.node.clone());
+		let VariableTarget(identifier, generation, accessor) = &explicit_drop.target.node;
+		for prefix in accessor.prefixes() {
+			let target = VariableTarget(identifier.clone(), *generation, prefix);
+			self.drop_frame().insert(target);
+		}
 		explicit_drop.expression.accept(self)
 	}
 

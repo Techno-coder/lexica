@@ -1,24 +1,12 @@
 use crate::node::{BinaryOperation, BinaryOperator, DataType, Expression, ExpressionNode,
-	FunctionCall, Identifier, Accessor};
+	FunctionCall, Identifier};
 use crate::source::{Span, Spanned};
 
 use super::{ParserError, ParserResult, PeekLexer, Token};
 
 pub fn parse_expression_root<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
                                  -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
-	let expression = parse_expression(lexer, end_span, 0)?;
-	Ok(match lexer.peek() {
-		Some(token) if token.node == Token::Accessor => {
-			let evaluation_type = DataType::default();
-			let accessories = super::parse_accessories(lexer, end_span)?;
-			let byte_end = accessories.last().unwrap().span().byte_end;
-
-			let span = Span::new(expression.span.byte_start, byte_end);
-			let accessor = Accessor { expression, accessories, evaluation_type };
-			Spanned::new(Expression::Accessor(Spanned::new(accessor, span)).into(), span)
-		}
-		_ => expression,
-	})
+	parse_expression(lexer, end_span, 0)
 }
 
 pub fn parse_expression<'a>(lexer: &mut PeekLexer<'a>, end_span: Span, precedence: usize)

@@ -23,16 +23,20 @@ fn assignment() -> u64 {
 	variable
 }
 
-data Tuple {
+data Position {
+	x: u64,
+	y: u64
+}
+
+data Velocity {
 	x: u64,
 	y: u64,
 }
 
-fn tuple_add(tuple: Tuple) -> u64 {
-	let ~summation = 0;
-	summation += tuple.x;
-	summation += tuple.y;
-	summation
+fn step(position: Position, velocity: Velocity) -> Position {
+	position.x += velocity.x;
+	position.y += velocity.y;
+	position
 }
 
 fn main() {

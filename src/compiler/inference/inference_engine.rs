@@ -60,7 +60,10 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		let evaluation_type = match expression.node.as_mut() {
 			Expression::Unit => DataType::UNIT,
-			Expression::Variable(target) => DataType(self.environment[target].clone()),
+			Expression::Variable(target) => match target.is_root() {
+				true => DataType(self.environment[target].clone()),
+				false => DataType(self.context.new_variable()),
+			},
 			Expression::Primitive(primitive) => match primitive {
 				Primitive::Boolean(_) => DataType::BOOLEAN,
 				_ => DataType(self.context.new_variable()),
@@ -171,10 +174,15 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 	fn explicit_drop(&mut self, explicit_drop: &mut Spanned<ExplicitDrop<'a>>) -> Self::Result {
 		explicit_drop.expression.accept(self)?;
-		let identifier_type = self.environment[&explicit_drop.target].clone();
-		let expression_type = explicit_drop.expression.evaluation_type.as_ref();
-		Ok(self.unify(identifier_type, expression_type.clone())
-			.map_err(|error| Spanned::new(error.into(), explicit_drop.span))?)
+		Ok(match explicit_drop.target.is_root() {
+			true => {
+				let identifier_type = self.environment[&explicit_drop.target].clone();
+				let expression_type = explicit_drop.expression.evaluation_type.as_ref();
+				self.unify(identifier_type, expression_type.clone())
+					.map_err(|error| Spanned::new(error.into(), explicit_drop.span))?
+			}
+			false => (),
+		})
 	}
 
 	fn function_call(&mut self, function_call: &mut Spanned<FunctionCall<'a>>) -> Self::Result {
@@ -184,18 +192,28 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 	fn mutation(&mut self, mutation: &mut Spanned<Mutation<'a>>) -> Self::Result {
 		Ok(match &mut mutation.node {
 			Mutation::Swap(left, right) => {
-				let left = self.environment[left].clone();
-				let right = self.environment[right].clone();
-				self.unify(left, right)
+				match left.is_root() && right.is_root() {
+					true => {
+						let left = self.environment[left].clone();
+						let right = self.environment[right].clone();
+						self.unify(left, right)
+					}
+					false => return Ok(()),
+				}
 			}
 			Mutation::Assign(identifier, expression) |
 			Mutation::AddAssign(identifier, expression) |
 			Mutation::MinusAssign(identifier, expression) |
 			Mutation::MultiplyAssign(identifier, expression) => {
 				expression.accept(self)?;
-				let identifier_type = self.environment[identifier].clone();
-				let evaluation_type = expression.evaluation_type.as_ref();
-				self.unify(identifier_type, evaluation_type.clone())
+				match identifier.is_root() {
+					true => {
+						let identifier_type = self.environment[identifier].clone();
+						let evaluation_type = expression.evaluation_type.as_ref();
+						self.unify(identifier_type, evaluation_type.clone())
+					}
+					false => return Ok(()),
+				}
 			}
 		}.map_err(|error| Spanned::new(error.into(), mutation.span))?)
 	}
