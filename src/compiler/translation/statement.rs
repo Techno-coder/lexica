@@ -20,8 +20,8 @@ impl<'a, 'b> Translator<'a, 'b> {
 	pub fn mutation(&mut self, mutation: &Spanned<Mutation<'a>>, elements: &mut Vec<Element>) {
 		let (target, expression, operation) = match &mutation.node {
 			Mutation::Swap(left, right) => {
-				let left = self.binding_local(left);
-				let right = self.binding_local(right);
+				let left = self.binding_local(&left.node.clone().into());
+				let right = self.binding_local(&right.node.clone().into());
 				let instruction = format!("swap {} {}", left, right);
 				return elements.push(instruction!(Advance, instruction, mutation.span));
 			}
@@ -30,7 +30,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 			Mutation::MultiplyAssign(target, expression) => (target, expression, "multiply"),
 		};
 
-		let local = self.binding_local(target);
+		let local = self.binding_local(&target.node.clone().into());
 		self.mutate(local, expression, operation, elements);
 	}
 
@@ -39,7 +39,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 		elements.push(instruction!(Advance, match &expression.node {
 			Expression::Unit => return,
 			Expression::Variable(variable) => {
-				let other = self.binding_local(&variable.target);
+				let other = self.binding_local(&variable.target.clone().into());
 				format!("{} {} {}", operation, local, other)
 			},
 			Expression::Primitive(primitive) =>
@@ -78,12 +78,15 @@ impl<'a, 'b> Translator<'a, 'b> {
 	}
 
 	pub fn drop_target(&self, target: &VariableTarget<'a>, span: Span, elements: &mut Vec<Element>) {
-		let instruction = format!("drop {}", self.binding_local(&target));
-		elements.push(instruction!(Advance, instruction, span));
+		let incorporates = self.structure_incorporates(target);
+		super::structure_primitives(target, &mut |target, _| {
+			let instruction = format!("drop {}", self.binding_local(&target));
+			elements.push(instruction!(Advance, instruction, span));
+		}, true, incorporates);
 	}
 
 	pub fn assignment(&mut self, assignment: &Spanned<Assignment<'a>>, elements: &mut Vec<Element>) {
-		let local = self.binding_local(&assignment.target);
+		let local = self.binding_local(&assignment.target.node.clone().into());
 		self.assign_expression(local, &assignment.expression, elements);
 	}
 
@@ -93,7 +96,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 		match &expression.node {
 			Expression::Unit => (),
 			Expression::Variable(variable) => {
-				let other = self.binding_local(&variable.target);
+				let other = self.binding_local(&variable.target.clone().into());
 				let instruction = format!("clone {} {}", local, other);
 				let instruction = instruction!(Advance, Advance, instruction, span);
 				elements.push(instruction);

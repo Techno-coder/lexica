@@ -30,7 +30,7 @@ impl<'a> VariableTarget<'a> {
 	}
 
 	pub fn is_root(&self) -> bool {
-		let VariableTarget(_, _, AccessorTarget(accessor)) = self;
+		let VariableTarget(_, _, accessor) = self;
 		accessor.is_empty()
 	}
 
@@ -46,8 +46,7 @@ impl<'a> From<Identifier<'a>> for VariableTarget<'a> {
 		match string.find('.') {
 			Some(index) => {
 				let (identifier, accessor) = string.split_at(index);
-				let accessor = AccessorTarget(&accessor[1..]);
-				VariableTarget(Identifier(identifier), 0, accessor)
+				VariableTarget(Identifier(identifier), 0, AccessorTarget(accessor))
 			}
 			None => Self::new_root(identifier, 0)
 		}
@@ -70,9 +69,6 @@ impl<'a> fmt::Display for VariableTarget<'a> {
 			write!(f, "${}", generation)?;
 		}
 
-		if !self.is_root() {
-			write!(f, ".{}", accessor)?;
-		}
-		Ok(())
+		write!(f, "{}", accessor)
 	}
 }

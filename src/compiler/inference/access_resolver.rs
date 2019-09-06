@@ -20,6 +20,24 @@ impl<'a> AccessResolver<'a> {
 		Self { environment: HashMap::new(), structures: HashMap::new(), context }
 	}
 
+	pub fn resolve(&self, mut data_type: Type<Identifier<'a>>, accessor: &AccessorTarget<'a>,
+	               span: Span) -> TypeResult<'a, Identifier<'a>> {
+		super::application::apply(&self.context, &mut data_type);
+		let error = TypeError::UnresolvedType(data_type.clone());
+		let mut identifier = Identifier(DataType(data_type).resolved()
+			.ok_or(Spanned::new(error, span))?);
+
+		for accessory in accessor.split() {
+			let structure = self.get_structure(&identifier, span)?;
+			let structure_identifier = structure.identifier.node.clone();
+			let error = TypeError::UndefinedAccessory(structure_identifier, accessory.clone());
+			let field = structure.fields.get(&accessory).ok_or(Spanned::new(error, span))?;
+			identifier = Identifier(field.data_type.resolved().unwrap());
+		}
+
+		Ok(identifier)
+	}
+
 	pub fn get_structure(&self, identifier: &Identifier<'a>, span: Span)
 	                     -> TypeResult<'a, &Spanned<Structure<'a>>> {
 		let error = TypeError::UndefinedStructure(identifier.clone());
@@ -62,20 +80,9 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 	fn expression(&mut self, expression: &mut Spanned<ExpressionNode<'a>>) -> Self::Result {
 		match expression.node.as_mut() {
 			Expression::Variable(variable) => {
-				let mut data_type = self.environment[&variable.root()].clone();
-				super::application::apply(&self.context, &mut data_type);
-
-				let error = TypeError::UnresolvedType(data_type.clone());
-				let mut identifier = Identifier(DataType(data_type).resolved()
-					.ok_or(Spanned::new(error, expression.span))?);
-
-				let VariableTarget(_, _, accessor) = variable;
-				for accessory in accessor.split() {
-					let structure = self.get_structure(&identifier, expression.span)?;
-					let error = TypeError::UndefinedAccessory(structure.identifier.node.clone(), accessory.clone());
-					let field = structure.fields.get(&accessory).ok_or(Spanned::new(error, expression.span))?;
-					identifier = Identifier(field.data_type.resolved().unwrap());
-				}
+				let VariableTarget(_, _, accessor) = &variable;
+				let data_type = self.environment[&variable.root()].clone();
+				let identifier = self.resolve(data_type, accessor, expression.span)?;
 
 				let DataType(data_type) = DataType::new(identifier);
 				let evaluation_type = expression.evaluation_type.as_ref().clone();
@@ -100,37 +107,9 @@ impl<'a> NodeVisitor<'a> for AccessResolver<'a> {
 		block.statements.iter_mut().try_for_each(|statement| statement.accept(self))
 	}
 
-	// TODO: Evaluate AccessorCall
 	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
 		accessor.expression.accept(self)?;
-		let expression_type = accessor.expression.evaluation_type.clone();
-		let error = TypeError::UnresolvedType(expression_type.as_ref().clone());
-		let error = Spanned::new(error, accessor.expression.span);
-
-		let identifier = Identifier(expression_type.resolved().ok_or(error)?);
-		let mut identifier = Spanned::new(identifier, accessor.span);
-
-		for accessory in &mut accessor.accessories {
-			let structure = self.get_structure(&identifier, identifier.span)?;
-			identifier = match accessory {
-				Accessory::FunctionCall(function_call) => {
-					function_call.accept(self)?;
-					// TODO: Check method exists
-					unimplemented!()
-				}
-				Accessory::Field(field) => {
-					let error = TypeError::UndefinedAccessory(identifier.node.clone(), field.node.clone());
-					let field = structure.fields.get(&field.node).ok_or(Spanned::new(error, field.span))?;
-					let data_type = Identifier(field.data_type.resolved().unwrap());
-					Spanned::new(data_type, field.data_type.span)
-				}
-			}
-		}
-
-		let DataType(data_type) = DataType::new(identifier.node);
-		let evaluation_type = accessor.evaluation_type.as_ref().clone();
-		Ok(super::application::unify(evaluation_type, data_type, &mut self.context)
-			.map_err(|error| Spanned::new(error.into(), accessor.span))?)
+		unimplemented!() // TODO Evaluate accessor
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {

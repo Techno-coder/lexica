@@ -20,19 +20,19 @@ impl<'a, 'b> Translator<'a, 'b> {
 			Value::Uninitialized(_) => return,
 			Value::Expression(expression) => match expression.is_unit() {
 				false => {
-					let local = self.binding_local(&binding.variable.target);
+					let local = self.binding_local(&binding.variable.target.clone().into());
 					self.assign_expression(local, expression, elements)
 				}
 				true => return,
 			},
 			Value::FunctionCall(function_call) => {
-				let local = self.binding_local(&binding.variable.target);
+				let local = self.binding_local(&binding.variable.target.clone().into());
 				self.function_call(function_call, elements);
 				let instruction = format!("restore {}", local);
 				elements.push(instruction!(Advance, instruction, function_call.span));
 			}
 			Value::BinaryOperation(binary_operation) => {
-				let local = self.binding_local(&binding.variable.target);
+				let local = self.binding_local(&binding.variable.target.clone().into());
 				let operation = match binary_operation.operator.node {
 					BinaryOperator::Equal => {
 						let left = self.promote(&binary_operation.left, elements);

@@ -6,10 +6,15 @@ use super::{Component, LowerTransform};
 
 pub fn expression<'a>(transform: &mut LowerTransform<'a>, expression: &mut Spanned<ExpressionNode<'a>>) {
 	let expression_span = expression.span;
-	let expression = Spanned::new(match expression.node.as_mut() {
+	let expression = Spanned::new(match expression.node.expression.as_mut() {
 		Expression::Unit => basic::Expression::Unit,
 		Expression::Primitive(primitive) => basic::Expression::Primitive(primitive.clone()),
-		Expression::Variable(target) => basic::Expression::Variable(transform.get_binding(target).clone()),
+		Expression::Variable(target) => {
+			let mut variable = transform.get_binding(&target.root()).clone();
+			variable.data_type = expression.node.evaluation_type.clone();
+			variable.target = target.clone();
+			basic::Expression::Variable(variable)
+		}
 		Expression::BinaryOperation(binary_operation) => return binary_operation.accept(transform),
 		Expression::WhenConditional(when_conditional) => return when_conditional.accept(transform),
 		Expression::ExpressionBlock(expression_block) => return expression_block.accept(transform),

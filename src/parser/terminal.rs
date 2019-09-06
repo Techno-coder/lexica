@@ -54,7 +54,6 @@ pub fn parse_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
 pub fn match_identifier_terminal<'a>(lexer: &mut PeekLexer<'a>, end_span: Span)
                                      -> ParserResult<'a, Spanned<ExpressionNode<'a>>> {
 	let identifier = identifier!(lexer, end_span);
-	// TODO: Parse AccessorCall
 	let expression_variable = Expression::Variable(identifier.node.clone().into());
 	Ok(match lexer.peek() {
 		Some(token) if token.node == Token::ParenthesisOpen => {

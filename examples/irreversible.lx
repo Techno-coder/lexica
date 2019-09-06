@@ -23,22 +23,6 @@ fn assignment() -> u64 {
 	variable
 }
 
-data Position {
-	x: u64,
-	y: u64
-}
-
-data Velocity {
-	x: u64,
-	y: u64,
-}
-
-fn step(position: Position, velocity: Velocity) -> Position {
-	position.x += velocity.x;
-	position.y += velocity.y;
-	position
-}
-
 fn main() {
 	trace(fibonacci(35));
 	trace(assignment());

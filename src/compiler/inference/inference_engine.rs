@@ -128,12 +128,8 @@ impl<'a> NodeVisitor<'a> for InferenceEngine<'a> {
 
 	fn accessor(&mut self, accessor: &mut Spanned<Accessor<'a>>) -> Self::Result {
 		accessor.evaluation_type = DataType(self.context.new_variable());
-		accessor.expression.accept(self)?;
-		accessor.accessories.iter_mut()
-			.try_for_each(|accessory| match accessory {
-				Accessory::FunctionCall(function_call) => function_call.accept(self),
-				Accessory::Field(_) => Ok(()),
-			})
+		accessor.function_call.iter_mut().try_for_each(|function_call| function_call.accept(self))?;
+		accessor.expression.accept(self)
 	}
 
 	fn binary_operation(&mut self, operation: &mut Spanned<BinaryOperation<'a>>) -> Self::Result {

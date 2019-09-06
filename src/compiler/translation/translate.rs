@@ -39,9 +39,12 @@ impl<'a, 'b> Translator<'a, 'b> {
 		self.block_reverse_branch(target, function, elements);
 
 		for parameter in function.parameters.iter().rev() {
-			let instruction = format!("restore {}", self.binding_local(&parameter.target));
-			let instruction = instruction!(Advance, instruction, parameter.span);
-			elements.push(instruction);
+			let incorporates = self.structure_incorporates(&parameter.target);
+			super::structure_primitives(&parameter.target, |target, _| {
+				let instruction = format!("restore {}", self.binding_local(&target.into()));
+				let instruction = instruction!(Advance, instruction, parameter.span);
+				elements.push(instruction);
+			}, false, incorporates);
 		}
 
 		self.block_statements(target, function, elements);

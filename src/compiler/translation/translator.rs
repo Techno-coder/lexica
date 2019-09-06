@@ -1,23 +1,28 @@
+use std::rc::Rc;
 use hashbrown::HashMap;
 
 use crate::basic::*;
 use crate::interpreter::Size;
 use crate::intrinsics::IntrinsicStore;
-use crate::node::{Identifier, Variable, VariableTarget, StructureMap};
+use crate::node::{DataType, Identifier, StructureMap, Variable, VariableTarget};
 use crate::source::Spanned;
+
+use super::StorageTarget;
 
 type Element = Spanned<super::Element>;
 
 #[derive(Debug)]
 pub struct Translator<'a, 'b> {
 	locals: Vec<Size>,
-	bindings: HashMap<VariableTarget<'a>, usize>,
+	bindings: HashMap<StorageTarget<'a>, usize>,
+	root_bindings: HashMap<VariableTarget<'a>, Variable<'a>>,
+
 	/// Stores the index of the last element encountered when reversing a block.
 	reverse_mapping: HashMap<BlockTarget, usize>,
 	/// Stores the index of the last element encountered when advancing a block.
 	advance_mapping: HashMap<BlockTarget, usize>,
 
-	structures: StructureMap<'a>,
+	structures: Rc<StructureMap<'a>>,
 	intrinsics: &'b IntrinsicStore,
 	elements: Vec<Element>,
 }
@@ -27,17 +32,18 @@ impl<'a, 'b> Translator<'a, 'b> {
 		Translator {
 			locals: Vec::new(),
 			bindings: HashMap::new(),
+			root_bindings: HashMap::new(),
 			reverse_mapping: HashMap::new(),
 			advance_mapping: HashMap::new(),
-			structures: HashMap::new(),
+			structures: Rc::new(HashMap::new()),
 			intrinsics,
 			elements: Vec::new(),
 		}
 	}
 
 	pub fn translate(&mut self, unit: BasicUnit<'a>) -> Vec<Element> {
-		self.structures = unit.structures.into_iter()
-			.map(|structure| (structure.identifier.node.clone(), structure)).collect();
+		self.structures = Rc::new(unit.structures.into_iter()
+			.map(|structure| (structure.identifier.node.clone(), structure)).collect());
 		unit.functions.into_iter().for_each(|function| self.translate_function(function));
 		std::mem::replace(&mut self.elements, Vec::new())
 	}
@@ -76,12 +82,18 @@ impl<'a, 'b> Translator<'a, 'b> {
 		}
 	}
 
-	pub fn register_variable(&mut self, variable: &Variable<'a>) -> usize {
-		let size = Size::parse(variable.data_type.resolved().unwrap())
-			.expect("Invalid size type for binding");
-		let index = self.register_local(size);
-		self.bindings.insert(variable.target.clone(), index);
-		index
+	pub fn register_variable(&mut self, variable: &Variable<'a>) {
+		assert!(variable.target.is_root());
+		self.root_bindings.insert(variable.target.clone(), variable.clone());
+		let incorporates = self.structure_incorporates(&variable.target);
+		super::structure_primitives(&variable.target, &mut |target, size| {
+			let index = self.register_local(size);
+			self.bindings.insert(target, index);
+		}, false, incorporates);
+	}
+
+	pub fn structure_incorporates(&self, target: &VariableTarget<'a>) -> (DataType<'a>, Rc<StructureMap<'a>>) {
+		(self.root_bindings[target].data_type.clone(), self.structures.clone())
 	}
 
 	pub fn register_local(&mut self, size: Size) -> usize {
@@ -89,7 +101,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 		self.locals.len() - 1
 	}
 
-	pub fn binding_local(&self, target: &VariableTarget<'a>) -> usize {
+	pub fn binding_local(&self, target: &StorageTarget<'a>) -> usize {
 		let error = format!("Binding for target: {}, does not exist", target);
 		self.bindings.get(target).expect(&error).clone()
 	}
@@ -118,7 +130,7 @@ impl<'a, 'b> Translator<'a, 'b> {
 	pub fn promote(&mut self, expression: &Spanned<Expression<'a>>, elements: &mut Vec<Element>) -> usize {
 		match &expression.node {
 			Expression::Unit => panic!("Unit type cannot be promoted"),
-			Expression::Variable(variable) => self.bindings[&variable.target],
+			Expression::Variable(variable) => self.bindings[&variable.target.clone().into()],
 			Expression::Primitive(_) => {
 				let size = Size::parse(expression.data_type().resolved().unwrap())
 					.expect("Invalid size type for expression");

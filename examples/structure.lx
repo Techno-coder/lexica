@@ -1,0 +1,25 @@
+data XPosition {
+	value: u64,
+}
+
+data YPosition {
+	value: u64,
+}
+
+data Position {
+	x: XPosition,
+	y: YPosition,
+}
+
+data Velocity {
+	x: XPosition,
+	y: YPosition,
+}
+
+fn step(position: Position, velocity: Velocity) -> Position {
+	position.x.value += velocity.x.value;
+	position.y.value += velocity.y.value;
+	position
+}
+
+fn main() {}
