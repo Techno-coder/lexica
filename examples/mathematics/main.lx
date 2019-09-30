@@ -1,0 +1,15 @@
+module vector
+
+module empty:
+	module box:
+		fn zeroth():
+			pass
+
+		fn maria():
+			pass
+
+		fn maria():
+			pass
+
+fn main():
+	pass
