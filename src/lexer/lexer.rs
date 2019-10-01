@@ -5,37 +5,33 @@ use super::direct_lexer::DirectLexer;
 use super::Token;
 
 /// Adds one token lookahead to `DirectLexer`.
-/// Replaces `LineBreak` followed by `BlockOpen` with just `BlockOpen`.
 #[derive(Debug)]
 pub struct Lexer<'a> {
 	lexer: DirectLexer<'a>,
 	token: Option<Spanned<Token>>,
+	byte_offset: usize,
 }
 
 impl<'a> Lexer<'a> {
-	pub fn new(string: &'a str, source_key: SourceKey) -> Self {
+	/// Creates a new `Lexer` instance.
+	/// `byte_offset` specifies where to start lexing.
+	pub fn new(string: &'a str, byte_offset: usize, source_key: SourceKey) -> Self {
 		Lexer {
-			lexer: DirectLexer::new(string, source_key),
+			lexer: DirectLexer::new(&string[byte_offset..], source_key),
 			token: None,
+			byte_offset,
 		}
 	}
 
 	pub fn next(&mut self) -> Spanned<Token> {
 		let lexer = &mut self.lexer;
-		let token = self.token.take().unwrap_or_else(|| lexer.next());
-		match token.node {
-			Token::LineBreak => {
-				let other = lexer.next();
-				match other.node {
-					Token::BlockOpen => other,
-					_ => {
-						self.token = Some(other);
-						token
-					}
-				}
-			}
-			_ => token
-		}
+		let byte_offset = self.byte_offset;
+		self.token.take().unwrap_or_else(|| {
+			let mut token = lexer.next();
+			token.span.byte_start += byte_offset;
+			token.span.byte_end += byte_offset;
+			token
+		})
 	}
 
 	pub fn peek(&mut self) -> &Spanned<Token> {

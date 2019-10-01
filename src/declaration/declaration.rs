@@ -6,13 +6,14 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 use crate::error::CompileError;
+use crate::extension::LineOffset;
 use crate::source::SourceKey;
 use crate::span::Span;
 
 pub type ModulesPending = RwLock<HashMap<Arc<ModulePath>, ModulePending>>;
 pub type DeclarationsModule = RwLock<HashMap<Arc<ModulePath>, Declaration>>;
-pub type DeclarationsFunction = RwLock<HashMap<FunctionPath, Declaration>>;
-pub type DeclarationsStructure = RwLock<HashMap<StructurePath, Declaration>>;
+pub type DeclarationsFunction = RwLock<HashMap<Arc<FunctionPath>, Declaration>>;
+pub type DeclarationsStructure = RwLock<HashMap<Arc<StructurePath>, Declaration>>;
 
 #[derive(Debug)]
 pub enum DeclarationError {
@@ -20,11 +21,11 @@ pub enum DeclarationError {
 	ExpectedModuleTerminator,
 	ExpectedBlock,
 	NestedExternalModule,
-	UndefinedModule,
+	UndefinedModule(Arc<ModulePath>),
 	ModuleDeclarationLocation,
 	ExpectedDeclaration,
-	DuplicateFunction(FunctionPath),
-	DuplicateStructure(StructurePath),
+	DuplicateFunction(Arc<FunctionPath>),
+	DuplicateStructure(Arc<StructurePath>),
 }
 
 impl fmt::Display for DeclarationError {
@@ -38,8 +39,8 @@ impl fmt::Display for DeclarationError {
 				write!(f, "Expected opening block"),
 			DeclarationError::NestedExternalModule =>
 				write!(f, "External module declarations must be at top level"),
-			DeclarationError::UndefinedModule =>
-				write!(f, "Module definition does not exist"),
+			DeclarationError::UndefinedModule(path) =>
+				write!(f, "Module definition: {}, does not exist", path),
 			DeclarationError::ModuleDeclarationLocation =>
 				write!(f, "Module can only be declared in root or module file"),
 			DeclarationError::ExpectedDeclaration =>
@@ -52,9 +53,9 @@ impl fmt::Display for DeclarationError {
 	}
 }
 
-impl Into<CompileError> for DeclarationError {
-	fn into(self) -> CompileError {
-		CompileError::Declaration(self)
+impl From<DeclarationError> for CompileError {
+	fn from(error: DeclarationError) -> Self {
+		CompileError::Declaration(error)
 	}
 }
 
@@ -99,7 +100,7 @@ impl Into<Declaration> for ModulePending {
 	fn into(self) -> Declaration {
 		Declaration {
 			source: self.declaration_span.source,
-			byte_offset: self.declaration_span.byte_start,
+			line_offset: LineOffset(self.declaration_span.byte_start),
 		}
 	}
 }
@@ -139,11 +140,11 @@ impl fmt::Display for StructurePath {
 #[derive(Debug)]
 pub struct Declaration {
 	pub source: SourceKey,
-	pub byte_offset: usize,
+	pub line_offset: LineOffset,
 }
 
 impl Declaration {
 	pub fn span(&self) -> Span {
-		Span::new_point(self.source, self.byte_offset)
+		Span::new_point(self.source, *self.line_offset)
 	}
 }

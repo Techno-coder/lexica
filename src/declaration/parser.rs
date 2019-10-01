@@ -1,10 +1,9 @@
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::context::Context;
 use crate::error::Diagnostic;
-use crate::extension::StringExtension;
+use crate::extension::{LineOffsets, StringExtension};
 use crate::lexer::{Lexer, Token};
 use crate::source::SourceKey;
 use crate::span::{Span, Spanned};
@@ -23,20 +22,21 @@ pub struct SourceParse<'a> {
 	source_key: SourceKey,
 	lexer: Lexer<'a>,
 
-	line_offsets: BTreeMap<usize, usize>,
+	line_offsets: LineOffsets,
 	module_indents: Vec<usize>,
 	current_module: Arc<ModulePath>,
 	current_indent: usize,
 }
 
 impl<'a> SourceParse<'a> {
+	/// Parses and loads the declarations of the source.
 	pub fn parse(context: &Context, module_path: Arc<ModulePath>, declaration_span: Span,
 	             physical_path: &Arc<PathBuf>, source_key: SourceKey) -> Option<()> {
 		assert!(physical_path.is_file());
 		let source = source_key.get(context);
 		let string = context.emit(source.read_string()
 			.map_err(|error| Diagnostic::new(Spanned::new(error, declaration_span))))?;
-		let lexer = Lexer::new(string, source_key);
+		let lexer = Lexer::new(string, 0, source_key);
 
 		SourceParse {
 			context,
@@ -70,31 +70,34 @@ impl<'a> SourceParse<'a> {
 			let identifier = match identifier_token.node {
 				Token::Identifier(identifier) => identifier,
 				_ => {
-					let error = Spanned::new(DeclarationError::ExpectedIdentifier, token.span);
-					return self.context.emit(Err(Diagnostic::new(error)));
+					let error = Spanned::new(DeclarationError::ExpectedIdentifier, identifier_token.span);
+					return self.context.emit(Err(Diagnostic::new(error)
+						.note(format!("In parsing declaration for: {:?}", token.node))));
 				}
 			};
 
-			let (&byte_offset, _) = self.line_offsets.range(..=token.span.byte_start)
+			let (&line_offset, _) = self.line_offsets.range(..=token.span.byte_start)
 				.next_back().unwrap();
 			let placement_span = token.span.extend(identifier_token.span.byte_end);
 			match token.node {
 				Token::Data | Token::Function => {
 					let module_path = self.current_module.clone();
 					let path = DeclarationPath { module_path, identifier };
-					let declaration = Declaration { source: self.source_key, byte_offset };
+					let declaration = Declaration { source: self.source_key, line_offset };
 
 					match token.node {
-						Token::Data => self.structure(StructurePath(path), declaration, placement_span),
-						Token::Function => self.function(FunctionPath(path), declaration, placement_span),
+						Token::Data => self.structure(Arc::new(StructurePath(path)),
+							declaration, placement_span),
+						Token::Function => self.function(Arc::new(FunctionPath(path)),
+							declaration, placement_span),
 						_ => unreachable!(),
 					};
 
 					self.skip_next_block()?;
 				}
 				Token::Module => {
-					let declaration_span = Span::new(self.source_key, byte_offset,
-						placement_span.byte_end);
+					let declaration_span = Span::new(self.source_key,
+						*line_offset, placement_span.byte_end);
 					self.module(identifier, declaration_span, placement_span)?;
 				}
 				_ => unreachable!(),
@@ -102,7 +105,7 @@ impl<'a> SourceParse<'a> {
 		}
 	}
 
-	fn structure(&mut self, structure_path: StructurePath, declaration: Declaration, placement_span: Span) {
+	fn structure(&mut self, structure_path: Arc<StructurePath>, declaration: Declaration, placement_span: Span) {
 		let mut declarations = self.context.declarations_structure.write();
 		match declarations.get(&structure_path) {
 			None => declarations.insert(structure_path, declaration),
@@ -115,7 +118,7 @@ impl<'a> SourceParse<'a> {
 		};
 	}
 
-	fn function(&mut self, function_path: FunctionPath, declaration: Declaration, placement_span: Span) {
+	fn function(&mut self, function_path: Arc<FunctionPath>, declaration: Declaration, placement_span: Span) {
 		let mut declarations = self.context.declarations_function.write();
 		match declarations.get(&function_path) {
 			None => declarations.insert(function_path, declaration),

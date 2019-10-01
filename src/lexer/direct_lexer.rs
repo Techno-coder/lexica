@@ -12,10 +12,12 @@ type LexerTokenizer<'a> = Peekable<LexerTokenize<'a>>;
 /// Flattens lexer tokens into parser tokens.
 /// Resolves indentation into semantic blocks.
 /// Emits `End` tokens upon stream exhaustion.
+/// Replaces `LineBreak` followed by a block change with just the block change.
 #[derive(Debug)]
 pub struct DirectLexer<'a> {
 	lexer: LexerTokenizer<'a>,
 	end_token: Spanned<LexerToken>,
+	buffer: Option<Spanned<Token>>,
 
 	base_indent: usize,
 	indent_level: usize,
@@ -40,6 +42,7 @@ impl<'a> DirectLexer<'a> {
 		DirectLexer {
 			lexer,
 			end_token,
+			buffer: None,
 			base_indent,
 			indent_level: base_indent,
 			current_indent: base_indent,
@@ -49,6 +52,20 @@ impl<'a> DirectLexer<'a> {
 	}
 
 	pub fn next(&mut self) -> Spanned<Token> {
+		let token = self.buffer.take()
+			.unwrap_or_else(|| self.next_token());
+		if let Token::LineBreak = token.node {
+			let other = self.next_token();
+			match other.node {
+				Token::BlockOpen => return other,
+				Token::BlockClose => return other,
+				_ => self.buffer = Some(other),
+			}
+		}
+		token
+	}
+
+	fn next_token(&mut self) -> Spanned<Token> {
 		if let Some(token) = self.resolve_indent() {
 			return token;
 		}
@@ -66,14 +83,14 @@ impl<'a> DirectLexer<'a> {
 						byte_end = token.span.byte_end;
 						self.lexer.next();
 					}
-					LexerToken::Token(Token::LineBreak) => return self.next(),
+					LexerToken::Token(Token::LineBreak) => return self.next_token(),
 					_ => break,
 				}
 			}
 
 			self.current_indent = indent_level;
 			self.current_indent_span = Some(start_span.extend(byte_end));
-			return self.next();
+			return self.next_token();
 		}
 
 		let lexer_token = self.lexer.next().unwrap_or(self.end_token.clone());
@@ -92,7 +109,7 @@ impl<'a> DirectLexer<'a> {
 			LexerToken::Indent => (),
 		}
 
-		self.next()
+		self.next_token()
 	}
 
 	fn resolve_indent(&mut self) -> Option<Spanned<Token>> {
@@ -123,16 +140,16 @@ mod tests {
 	#[test]
 	fn test_indentation() {
 		let tokens = collect(DirectLexer::new("\t\t\n\t\t\t\t:\n\t\t", SourceKey::INTERNAL));
-		assert_eq!(&tokens, &[Token::LineBreak, Token::BlockOpen, Token::BlockOpen,
-			Token::Separator, Token::LineBreak, Token::BlockClose, Token::BlockClose,
-			Token::BlockClose, Token::BlockClose, Token::End]);
+		assert_eq!(&tokens, &[Token::BlockOpen, Token::BlockOpen, Token::Separator,
+			Token::BlockClose, Token::BlockClose, Token::BlockClose,
+			Token::BlockClose, Token::End]);
 	}
 
 	#[test]
 	fn test_blank_line() {
 		let tokens = collect(DirectLexer::new("\t\n\n\t\t:\n", SourceKey::INTERNAL));
-		assert_eq!(&tokens, &[Token::LineBreak, Token::LineBreak, Token::BlockOpen,
-			Token::Separator, Token::LineBreak, Token::BlockClose, Token::BlockClose, Token::End]);
+		assert_eq!(&tokens, &[Token::BlockOpen, Token::Separator, Token::BlockClose,
+			Token::BlockClose, Token::End]);
 	}
 
 	fn collect(mut lexer: DirectLexer) -> Vec<Token> {

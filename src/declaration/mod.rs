@@ -1,5 +1,5 @@
 pub use declaration::*;
-pub use module::module_pending;
+pub use module::load_modules;
 use parser::SourceParse;
 
 mod declaration;

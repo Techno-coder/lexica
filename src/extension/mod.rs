@@ -1,3 +1,3 @@
-pub use string::StringExtension;
+pub use string::*;
 
 mod string;

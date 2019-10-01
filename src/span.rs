@@ -19,6 +19,10 @@ impl Span {
 		Self::new(source, byte_offset, byte_offset)
 	}
 
+	pub fn merge(self, other: Span) -> Self {
+		self.extend(other.byte_end)
+	}
+
 	pub fn extend(mut self, byte_end: usize) -> Self {
 		assert!(self.byte_end <= byte_end);
 		self.byte_end = byte_end;

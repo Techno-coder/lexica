@@ -4,12 +4,13 @@ mod declaration;
 mod source;
 mod span;
 mod lexer;
+mod parser;
+mod node;
 mod extension;
 
 fn main() {
 	use std::sync::Arc;
 	use crate::context::Context;
-	use crate::error::Diagnostic;
 	use crate::declaration::*;
 	use crate::span::*;
 	use std::path::PathBuf;
@@ -23,17 +24,12 @@ fn main() {
 	};
 
 	let context = &Context::default();
-	let source_key = crate::source::source_key(context, &path).unwrap();
-	let byte_end = source_key.get(context).data.len();
-
-	let _: Option<()> = context.emit(Err(Diagnostic::new(Spanned::new(
-		DeclarationError::ExpectedModuleTerminator, Span::INTERNAL))));
-	let _: Option<()> = context.emit(Err(Diagnostic::new(Spanned::new(
-		DeclarationError::ExpectedModuleTerminator, Span::new(source_key, 0, byte_end)))));
-
 	context.modules_pending.write().insert(ModulePath::root(), module);
-	let _ = module_pending(context, ModulePath::root());
-	let _ = module_pending(context, ModulePath::root().append("vector".into()));
+	let _ = context.emit(crate::parser::function(context, Spanned::new(Arc::new(
+		FunctionPath(crate::declaration::DeclarationPath {
+			module_path: ModulePath::root(),
+			identifier: "fibonacci".into(),
+		})), Span::INTERNAL)));
 
 	for error in context.errors.read().iter() {
 		crate::error::display(context, error);

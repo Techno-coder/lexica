@@ -10,4 +10,6 @@ pub struct Context {
 	pub declarations_module: declaration::DeclarationsModule,
 	pub declarations_function: declaration::DeclarationsFunction,
 	pub declarations_structure: declaration::DeclarationsStructure,
+
+	pub node_functions: node::NodeFunctions,
 }

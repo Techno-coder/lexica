@@ -1,8 +1,6 @@
-use std::collections::BTreeMap;
-
 use crate::context::Context;
 use crate::error::Diagnostic;
-use crate::extension::StringExtension;
+use crate::extension::{LineOffset, LineOffsets, StringExtension};
 use crate::span::Span;
 
 const GUTTER: &str = "    ";
@@ -16,6 +14,7 @@ pub fn display(context: &Context, diagnostic: &Diagnostic) {
 	println!("{} {}", LOCATION_GUTTER, location);
 
 	if has_error {
+		display_notes(diagnostic, true);
 		return println!();
 	}
 
@@ -27,40 +26,42 @@ pub fn display(context: &Context, diagnostic: &Diagnostic) {
 
 	display_prefix(string, line_offsets, start_offset);
 	let (end_offset, end_index) = line_offsets.range(span.byte_end..).next()
-		.map(|(offset, index)| (*offset, *index - 1)).unwrap_or((string.len(), line_offsets.len()));
+		.map(|(offset, index)| (*offset, *index - 1))
+		.unwrap_or((LineOffset(string.len()), line_offsets.len()));
 	match end_index > start_index {
 		true => display_multiple(string, line_offsets, start_offset, end_offset, start_index),
 		false => display_single(string, start_offset, end_offset, start_index, span),
 	}
 
 	display_suffix(string, line_offsets, end_offset);
-	display_notes(diagnostic);
+	display_notes(diagnostic, false);
 	println!();
 }
 
-fn display_multiple(string: &str, line_offsets: &BTreeMap<usize, usize>,
-                    start_offset: usize, end_offset: usize, start_index: usize) {
+fn display_multiple(string: &str, line_offsets: &LineOffsets,
+                    start_offset: LineOffset, end_offset: LineOffset, start_index: usize) {
 	let mut lines = line_offsets.range(start_offset..end_offset).skip(1).peekable();
-	let (&start_offset_end, _) = lines.peek().unwrap();
-	println!("{} / \t{}", format!("{:4}", start_index), &string[start_offset..(start_offset_end - 1)]);
+	let (&LineOffset(start_offset_end), _) = lines.peek().unwrap();
+	println!("{} / \t{}", format!("{:4}", start_index), &string[*start_offset..(start_offset_end - 1)]);
 
-	while let Some((&line_offset, line_index)) = lines.next() {
+	while let Some((&LineOffset(line_offset), line_index)) = lines.next() {
 		match lines.peek() {
-			Some((&offset_end, _)) => {
-				let slice = &string[line_offset..(offset_end - 1)];
+			Some((&LineOffset(offset_end), _)) => {
+				let slice = &string[line_offset..offset_end - 1];
 				println!("{} | \t{}", format!("{:4}", line_index), slice);
 			}
 			None => {
-				let slice = &string[line_offset..(end_offset - 1)];
+				let slice = &string[line_offset..(*end_offset - 1)];
 				println!("{} \\ \t{}", format!("{:4}", line_index), slice);
 			}
 		}
 	}
 }
 
-fn display_single(string: &str, start_offset: usize, end_offset: usize, start_index: usize, span: Span) {
-	println!("{} | \t{}", format!("{:4}", start_index), &string[start_offset..(end_offset - 1)]);
-	let initial: String = string[start_offset..span.byte_start].chars()
+fn display_single(string: &str, start_offset: LineOffset, end_offset: LineOffset,
+                  start_index: usize, span: Span) {
+	println!("{} | \t{}", format!("{:4}", start_index), &string[*start_offset..(*end_offset - 1)]);
+	let initial: String = string[*start_offset..span.byte_start].chars()
 		.map(|character| match character.is_whitespace() {
 			true => character,
 			false => ' ',
@@ -69,27 +70,28 @@ fn display_single(string: &str, start_offset: usize, end_offset: usize, start_in
 	println!("     | \t{}{}", initial, "^".repeat(specific_length));
 }
 
-fn display_prefix(string: &str, line_offsets: &BTreeMap<usize, usize>, start_offset: usize) {
+fn display_prefix(string: &str, line_offsets: &LineOffsets, start_offset: LineOffset) {
 	match line_offsets.range(..start_offset).next_back() {
-		Some((&prefix_offset, prefix_index)) =>
-			println!("{} | \t{}", format!("{:4}", prefix_index),
-				&string[prefix_offset..(start_offset - 1)]),
+		Some((&LineOffset(prefix_offset), _)) =>
+			println!("{} | \t{}", GUTTER, &string[prefix_offset..(*start_offset - 1)]),
 		None => println!("{} |", GUTTER),
 	}
 }
 
-fn display_suffix(string: &str, line_offsets: &BTreeMap<usize, usize>, end_offset: usize) {
-	match line_offsets.range(end_offset + 1..).next() {
-		Some((&suffix_offset, suffix_index)) =>
-			println!("{} | \t{}", format!("{:4}", suffix_index - 1),
-				&string[end_offset..(suffix_offset - 1)]),
+fn display_suffix(string: &str, line_offsets: &LineOffsets, end_offset: LineOffset) {
+	match line_offsets.range(*end_offset + 1..).next() {
+		Some((&LineOffset(suffix_offset), _)) =>
+			println!("{} | \t{}", GUTTER, &string[*end_offset..(suffix_offset - 1)]),
 		None => println!("{} |", GUTTER),
 	}
 }
 
-fn display_notes(diagnostic: &Diagnostic) {
+fn display_notes(diagnostic: &Diagnostic, internal_source: bool) {
 	if !diagnostic.notes.is_empty() {
-		println!("{} |", GUTTER);
+		if !internal_source {
+			println!("{} |", GUTTER);
+		}
+
 		diagnostic.notes.iter()
 			.for_each(|note| println!("{} = {}", GUTTER, note))
 	}

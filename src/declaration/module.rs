@@ -6,7 +6,30 @@ use crate::span::Spanned;
 
 use super::{DeclarationError, ModulePath};
 
-pub fn module_pending(context: &Context, module_path: Arc<ModulePath>) -> Option<()> {
+/// Recursively loads the modules in the path.
+pub fn load_modules(context: &Context, module_path: Arc<ModulePath>) -> Result<(), DeclarationError> {
+	if let Some(parent) = &module_path.parent {
+		load_modules(context, parent.clone())?;
+	}
+
+	let exists_declaration = context.declarations_module.read().contains_key(&module_path);
+	match exists_declaration {
+		true => Ok(()),
+		false => {
+			let exists_pending = context.modules_pending.read().contains_key(&module_path);
+			match exists_pending {
+				false => Err(DeclarationError::UndefinedModule(module_path)),
+				true => {
+					module_pending(context, module_path);
+					Ok(())
+				}
+			}
+		}
+	}
+}
+
+/// Loads and parses a pending module. Panics if the module is not pending.
+fn module_pending(context: &Context, module_path: Arc<ModulePath>) -> Option<()> {
 	let module = context.modules_pending.write().remove(&module_path)
 		.expect(&format!("Pending module: {:?}, does not exist", module_path));
 	let mut sources = Vec::new();
@@ -25,8 +48,11 @@ pub fn module_pending(context: &Context, module_path: Arc<ModulePath>) -> Option
 	}
 
 	if sources.is_empty() {
-		let error = Spanned::new(DeclarationError::UndefinedModule, module.declaration_span);
-		return context.emit(Err(Diagnostic::new(error)));
+		let error = DeclarationError::UndefinedModule(module_path);
+		let diagnostic = Diagnostic::new(Spanned::new(error, module.declaration_span));
+		let diagnostic = source_errors.into_iter().fold(diagnostic, |diagnostic, error|
+			diagnostic.note(error.to_string()));
+		return context.emit(Err(diagnostic));
 	}
 
 	sources.into_iter().try_for_each(|(source_key, physical_path)|

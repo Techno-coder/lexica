@@ -23,7 +23,7 @@ impl SourceKey {
 
 	pub fn get(&self, context: &Context) -> Arc<Source> {
 		context.sources.read().get(self).cloned()
-			.expect(&format!("Source key: {:?}, is not present in context", self))
+			.unwrap_or_else(|| panic!("Source key: {:?}, is not present in context", self))
 	}
 }
 
@@ -59,9 +59,9 @@ impl fmt::Display for SourceError {
 	}
 }
 
-impl Into<CompileError> for SourceError {
-	fn into(self) -> CompileError {
-		CompileError::Source(self)
+impl From<SourceError> for CompileError {
+	fn from(error: SourceError) -> Self {
+		CompileError::Source(error)
 	}
 }
 

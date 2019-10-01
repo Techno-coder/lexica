@@ -1,15 +1,21 @@
 module vector
 
-module empty:
-	module box:
-		fn zeroth():
-			pass
-
-		fn maria():
-			pass
-
-		fn maria():
-			pass
-
 fn main():
+	fibonacci(35)
 	pass
+
+fn fibonacci(n: u64) -> u64:
+	let ~first = 1
+	let ~second = 1
+
+	let ~counter = 1
+	loop counter == 1 => counter == n:
+		let summation = first + second
+		first <=> second
+		second <=> summation
+
+		drop summation = second - first
+		counter += 1
+
+	drop n = second
+	second
