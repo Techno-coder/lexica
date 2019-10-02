@@ -50,7 +50,7 @@ impl Span {
 					}
 				}
 
-				let character_offset = (self.byte_start - last_line_offset) + 1;
+				let character_offset = (self.byte_start + 1) - last_line_offset;
 				(format!("{}:{}:{}", source.path.display(), line_index, character_offset), false)
 			}
 		}

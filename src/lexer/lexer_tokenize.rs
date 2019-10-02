@@ -39,11 +39,25 @@ impl<'a> Iterator for LexerTokenize<'a> {
 				":" => Token::Separator,
 				"," => Token::ListSeparator,
 				"~" => Token::Mutable,
+				"+" => Token::Add,
+				"-" => Token::Minus,
+				"+=" => Token::AddAssign,
+				"-=" => Token::MinusAssign,
 				"=" => Token::Equals,
 				"=>" => Token::Implies,
 				"<=>" => Token::Swap,
 				"->" => Token::ReturnSeparator,
-				other => Token::Identifier(other.into()),
+				other => {
+					if let Ok(integer) = other.parse::<u64>() {
+						Token::Unsigned(integer)
+					} else if let Ok(integer) = other.parse::<i64>() {
+						Token::Signed(integer)
+					} else if let Ok(truth) = other.parse::<bool>() {
+						Token::Truth(truth)
+					} else {
+						Token::Identifier(other.into())
+					}
+				}
 			})
 		}, lexeme.span))
 	}

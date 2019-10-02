@@ -56,7 +56,7 @@ impl<'a> SourceParse<'a> {
 			let token = self.lexer.next();
 			self.handle_block_change(&token);
 			match token.node {
-				Token::Data | Token::Function | Token::Module => (),
+				Token::Module | Token::Function | Token::Data => (),
 				Token::BlockOpen | Token::BlockClose => continue,
 				Token::Export | Token::LineBreak => continue,
 				Token::End => break Some(()),

@@ -4,7 +4,7 @@ use crate::context::Context;
 use crate::declaration::{self, FunctionPath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{AscriptionPattern, BindingPattern, FunctionContext};
+use crate::node::{AscriptionPattern, BindingPattern, Function, FunctionContext};
 use crate::span::Spanned;
 
 use super::ParserError;
@@ -26,11 +26,16 @@ pub fn function(context: &Context, function_path: Spanned<Arc<FunctionPath>>) ->
 	super::expect(lexer, Token::Function)?;
 	let identifier = super::identifier(lexer)?;
 	let parameters = parameters(lexer).map_err(|diagnostic|
-		diagnostic.note("In parsing function parameters".to_owned()))?;
-	// TODO Parse rest of function
+		diagnostic.note("In parsing function parameters"))?;
+	super::expect(lexer, Token::ReturnSeparator)?;
+	let return_type = super::ascription(lexer).map_err(|diagnostic|
+		diagnostic.note("In parsing function return type"))?;
+	super::expect(lexer, Token::Separator)?;
 
-	let mut context = FunctionContext::new(function_path.node.clone());
-	let expression = super::expression(&mut context, lexer)?;
+	let mut function_context = FunctionContext::new(function_path.node.clone());
+	let expression = super::expression(&mut function_context, lexer)?;
+	let function = Function::new(function_context, parameters, return_type, expression);
+	context.node_functions.write().insert(function_path.node, function);
 	Ok(())
 }
 

@@ -60,7 +60,7 @@ pub fn pattern<F, T>(lexer: &mut Lexer, terminal: &F) -> Result<Pattern<T>, Diag
 			let mut elements = Vec::new();
 			while lexer.peek().node != Token::ParenthesisClose {
 				elements.push(pattern(lexer, terminal).map_err(|diagnostic|
-					diagnostic.note("In parsing a tuple pattern".to_owned()))?);
+					diagnostic.note("In parsing a tuple pattern"))?);
 				match lexer.peek().node {
 					Token::ListSeparator => lexer.next(),
 					_ => break,

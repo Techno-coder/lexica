@@ -1,13 +1,13 @@
 use crate::source::SourceKey;
 use crate::span::Spanned;
 
-use super::direct_lexer::DirectLexer;
+use super::space_lexer::SpaceLexer;
 use super::Token;
 
-/// Adds one token lookahead to `DirectLexer`.
+/// Adds one token lookahead.
 #[derive(Debug)]
 pub struct Lexer<'a> {
-	lexer: DirectLexer<'a>,
+	lexer: SpaceLexer<'a>,
 	token: Option<Spanned<Token>>,
 	byte_offset: usize,
 }
@@ -17,7 +17,7 @@ impl<'a> Lexer<'a> {
 	/// `byte_offset` specifies where to start lexing.
 	pub fn new(string: &'a str, byte_offset: usize, source_key: SourceKey) -> Self {
 		Lexer {
-			lexer: DirectLexer::new(&string[byte_offset..], source_key),
+			lexer: SpaceLexer::new(&string[byte_offset..], source_key),
 			token: None,
 			byte_offset,
 		}

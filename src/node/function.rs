@@ -18,6 +18,13 @@ pub struct Function {
 	pub expression: ExpressionKey,
 }
 
+impl Function {
+	pub fn new(context: FunctionContext, parameters: Vec<(BindingPattern, AscriptionPattern)>,
+	           return_type: Spanned<Ascription>, expression: ExpressionKey) -> Function {
+		Function { context, parameters, return_type, expression }
+	}
+}
+
 #[derive(Debug, Clone)]
 pub struct FunctionContext {
 	pub function_path: Arc<FunctionPath>,

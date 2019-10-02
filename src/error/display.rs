@@ -72,16 +72,18 @@ fn display_single(string: &str, start_offset: LineOffset, end_offset: LineOffset
 
 fn display_prefix(string: &str, line_offsets: &LineOffsets, start_offset: LineOffset) {
 	match line_offsets.range(..start_offset).next_back() {
-		Some((&LineOffset(prefix_offset), _)) =>
-			println!("{} | \t{}", GUTTER, &string[prefix_offset..(*start_offset - 1)]),
+		Some((&LineOffset(prefix_offset), prefix_index)) =>
+			println!("{} | \t{}", format!("{:4}", prefix_index),
+				&string[prefix_offset..(*start_offset - 1)]),
 		None => println!("{} |", GUTTER),
 	}
 }
 
 fn display_suffix(string: &str, line_offsets: &LineOffsets, end_offset: LineOffset) {
 	match line_offsets.range(*end_offset + 1..).next() {
-		Some((&LineOffset(suffix_offset), _)) =>
-			println!("{} | \t{}", GUTTER, &string[*end_offset..(suffix_offset - 1)]),
+		Some((&LineOffset(suffix_offset), suffix_index)) =>
+			println!("{} | \t{}", format!("{:4}", suffix_index - 1),
+				&string[*end_offset..(suffix_offset - 1)]),
 		None => println!("{} |", GUTTER),
 	}
 }

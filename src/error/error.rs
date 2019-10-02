@@ -20,8 +20,8 @@ impl Diagnostic {
 		Self { error, notes: Vec::new() }
 	}
 
-	pub fn note(mut self, note: String) -> Self {
-		self.notes.push(note);
+	pub fn note<T>(mut self, note: T) -> Self where T: Into<String> {
+		self.notes.push(note.into());
 		self
 	}
 }
