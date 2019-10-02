@@ -52,26 +52,28 @@ pub fn expect(lexer: &mut Lexer, expected: Token) -> Result<Span, Diagnostic> {
 	}
 }
 
-pub fn pattern<F, T>(lexer: &mut Lexer, terminal: &F) -> Result<Pattern<T>, Diagnostic>
-	where F: Fn(&mut Lexer) -> Result<T, Diagnostic> {
-	Ok(match lexer.peek().node {
+pub fn pattern<F, T>(lexer: &mut Lexer, terminal: &mut F) -> Result<Spanned<Pattern<T>>, Diagnostic>
+	where F: FnMut(&mut Lexer) -> Result<T, Diagnostic> {
+	let token = lexer.peek();
+	let token_span = token.span;
+	Ok(match token.node {
 		Token::ParenthesisOpen => {
 			lexer.next();
 			let mut elements = Vec::new();
 			while lexer.peek().node != Token::ParenthesisClose {
 				elements.push(pattern(lexer, terminal).map_err(|diagnostic|
-					diagnostic.note("In parsing a tuple pattern"))?);
+					diagnostic.note("In parsing a tuple pattern"))?.node);
 				match lexer.peek().node {
 					Token::ListSeparator => lexer.next(),
 					_ => break,
 				};
 			}
 
-			super::expect(lexer, Token::ParenthesisClose)?;
-			Pattern::Tuple(elements)
+			let end_span = super::expect(lexer, Token::ParenthesisClose)?;
+			Spanned::new(Pattern::Tuple(elements), token_span.merge(end_span))
 		}
-		Token::Wildcard => Pattern::Wildcard,
-		_ => Pattern::Terminal(terminal(lexer)?)
+		Token::Wildcard => Spanned::new(Pattern::Wildcard, lexer.next().span),
+		_ => Spanned::new(Pattern::Terminal(terminal(lexer)?), token_span),
 	})
 }
 

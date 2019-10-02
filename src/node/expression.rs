@@ -3,7 +3,7 @@ use std::ops::Index;
 use crate::declaration::FunctionPath;
 use crate::span::Spanned;
 
-use super::{Ascription, BindingPattern, FunctionContext, Variable};
+use super::{Ascription, BindingPattern, ExpressionPattern, FunctionContext, Variable};
 
 pub type ConditionStart = ExpressionKey;
 pub type ConditionEnd = ExpressionKey;
@@ -45,6 +45,8 @@ pub enum Expression {
 	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>),
 //	Tuple(Vec<ExpressionKey>),
 
+	Pattern(ExpressionPattern),
+	Variable(Variable),
 	Unsigned(u64),
 	Signed(i64),
 	Truth(bool),
@@ -54,6 +56,7 @@ pub enum Expression {
 pub enum BinaryOperator {
 	Add,
 	Minus,
+	Multiply,
 }
 
 #[derive(Debug, Clone)]

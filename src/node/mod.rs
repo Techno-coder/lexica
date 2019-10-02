@@ -1,7 +1,7 @@
-pub use self::expression::{Expression, ExpressionKey};
+pub use self::expression::{BinaryOperator, Expression, ExpressionKey, MutationKind};
 pub use self::function::{Function, FunctionContext, NodeFunctions};
 pub use self::variable::{Ascription, AscriptionPattern, BindingPattern, BindingVariable,
-	Mutability, Pattern, Variable};
+	ExpressionPattern, Mutability, Pattern, Variable};
 
 mod function;
 mod expression;

@@ -7,21 +7,22 @@ use crate::span::Spanned;
 pub fn expression(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {
 	let token = lexer.peek();
 	match &token.node {
-		Token::LineBreak => consume(context, lexer),
 		Token::Let => binding(context, lexer).map_err(|diagnostic|
 			diagnostic.note("In parsing a binding")),
-		_ => super::value(context, lexer),
+		_ => {
+			let value = super::root_value(context, lexer)?;
+			match &context[&value].node {
+				Expression::Block(_) => return Ok(value),
+				_ => super::expect(lexer, Token::LineBreak)?,
+			};
+			Ok(value)
+		}
 	}
-}
-
-fn consume(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {
-	lexer.next();
-	expression(context, lexer)
 }
 
 fn binding(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {
 	let initial_span = super::expect(lexer, Token::Let)?;
-	let pattern = super::pattern(lexer, &binding_variable)?;
+	let pattern = super::pattern(lexer, &mut binding_variable)?;
 	let mut binding_ascription = None;
 	if lexer.peek().node == Token::Separator {
 		lexer.next();
@@ -29,9 +30,9 @@ fn binding(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Expressio
 	}
 
 	super::expect(lexer, Token::Equals)?;
-	let value = super::value(context, lexer)?;
+	let value = super::root_value(context, lexer)?;
 	let span = initial_span.merge(super::expect(lexer, Token::LineBreak)?);
-	let binding = Expression::Binding(pattern, binding_ascription, value);
+	let binding = Expression::Binding(pattern.node, binding_ascription, value);
 	Ok(context.register(Spanned::new(binding, span)))
 }
 

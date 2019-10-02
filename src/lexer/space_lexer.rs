@@ -58,7 +58,7 @@ impl<'a> SpaceLexer<'a> {
 	}
 
 	fn block_close(&mut self) -> Spanned<Token> {
-		self.bracket_indent.saturating_sub(1);
+		self.bracket_indent = self.bracket_indent.saturating_sub(1);
 		self.next()
 	}
 

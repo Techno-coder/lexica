@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
+use crate::node::ExpressionKey;
 use crate::span::Spanned;
 
 pub type BindingPattern = Pattern<Spanned<BindingVariable>>;
 pub type AscriptionPattern = Pattern<Spanned<Ascription>>;
+pub type ExpressionPattern = Pattern<ExpressionKey>;
 
 #[derive(Debug, Clone)]
 pub struct Variable(pub Arc<str>, pub usize);
@@ -11,11 +13,6 @@ pub struct Variable(pub Arc<str>, pub usize);
 impl Variable {
 	pub fn new(identifier: Arc<str>) -> Self {
 		Variable(identifier, usize::max_value())
-	}
-
-	pub fn is_internal(&self) -> bool {
-		let Variable(_, generation) = self;
-		generation == &usize::max_value()
 	}
 }
 

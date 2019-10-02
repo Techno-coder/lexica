@@ -27,8 +27,10 @@ pub enum Token {
 	Mutable,
 	Add,
 	Minus,
+	Multiply,
 	AddAssign,
 	MinusAssign,
+	MultiplyAssign,
 	LineBreak,
 	End,
 }

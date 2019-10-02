@@ -24,7 +24,8 @@ pub fn function(context: &Context, function_path: Spanned<Arc<FunctionPath>>) ->
 		*declaration.line_offset, declaration.source);
 
 	super::expect(lexer, Token::Function)?;
-	let identifier = super::identifier(lexer)?;
+	super::identifier(lexer)?;
+
 	let parameters = parameters(lexer).map_err(|diagnostic|
 		diagnostic.note("In parsing function parameters"))?;
 	super::expect(lexer, Token::ReturnSeparator)?;
@@ -43,10 +44,10 @@ fn parameters(lexer: &mut Lexer) -> Result<Vec<(BindingPattern, AscriptionPatter
 	let mut parameters = Vec::new();
 	super::expect(lexer, Token::ParenthesisOpen)?;
 	while lexer.peek().node != Token::ParenthesisClose {
-		let pattern = super::pattern(lexer, &super::binding_variable)?;
+		let pattern = super::pattern(lexer, &mut super::binding_variable)?;
 		super::expect(lexer, Token::Separator)?;
-		let ascription = super::pattern(lexer, &super::ascription)?;
-		parameters.push((pattern, ascription));
+		let ascription = super::pattern(lexer, &mut super::ascription)?;
+		parameters.push((pattern.node, ascription.node));
 
 		match lexer.peek().node {
 			Token::ListSeparator => lexer.next(),
