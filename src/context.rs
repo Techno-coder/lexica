@@ -11,5 +11,6 @@ pub struct Context {
 	pub declarations_function: declaration::DeclarationsFunction,
 	pub declarations_structure: declaration::DeclarationsStructure,
 
+	pub function_types: node::FunctionTypes,
 	pub node_functions: node::NodeFunctions,
 }

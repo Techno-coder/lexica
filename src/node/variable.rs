@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::node::ExpressionKey;
 use crate::span::Spanned;
 
+pub type VariablePattern = Pattern<Spanned<Variable>>;
 pub type BindingPattern = Pattern<Spanned<BindingVariable>>;
 pub type AscriptionPattern = Pattern<Spanned<Ascription>>;
 pub type ExpressionPattern = Pattern<ExpressionKey>;

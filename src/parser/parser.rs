@@ -13,6 +13,7 @@ pub enum ParserError {
 	ExpectedExpression(Token),
 	ExpectedIdentifier(Token),
 	ExpectedToken(Token, Token),
+	ExpectedExpressionTerminator(Token),
 }
 
 impl fmt::Display for ParserError {
@@ -26,6 +27,8 @@ impl fmt::Display for ParserError {
 				write!(f, "Expected an identifier, instead got: {:?}", token),
 			ParserError::ExpectedToken(expected, token) =>
 				write!(f, "Expected token: {:?}, instead got: {:?}", expected, token),
+			ParserError::ExpectedExpressionTerminator(token) =>
+				write!(f, "Expected line break or mutation operator, instead got: {:?}", token),
 		}
 	}
 }
@@ -60,17 +63,28 @@ pub fn pattern<F, T>(lexer: &mut Lexer, terminal: &mut F) -> Result<Spanned<Patt
 		Token::ParenthesisOpen => {
 			lexer.next();
 			let mut elements = Vec::new();
+			let mut trailing_separator = false;
 			while lexer.peek().node != Token::ParenthesisClose {
+				trailing_separator = false;
 				elements.push(pattern(lexer, terminal).map_err(|diagnostic|
 					diagnostic.note("In parsing a tuple pattern"))?.node);
 				match lexer.peek().node {
-					Token::ListSeparator => lexer.next(),
+					Token::ListSeparator => {
+						trailing_separator = true;
+						lexer.next();
+					}
 					_ => break,
-				};
+				}
 			}
 
 			let end_span = super::expect(lexer, Token::ParenthesisClose)?;
-			Spanned::new(Pattern::Tuple(elements), token_span.merge(end_span))
+			Spanned::new(match trailing_separator {
+				false if elements.len() == 1 => match elements.pop().unwrap() {
+					Pattern::Terminal(terminal) => Pattern::Terminal(terminal),
+					_ => Pattern::Tuple(elements),
+				},
+				_ => Pattern::Tuple(elements),
+			}, token_span.merge(end_span))
 		}
 		Token::Wildcard => Spanned::new(Pattern::Wildcard, lexer.next().span),
 		_ => Spanned::new(Pattern::Terminal(terminal(lexer)?), token_span),

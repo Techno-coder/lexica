@@ -1,6 +1,6 @@
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{BinaryOperator, Expression, ExpressionKey, FunctionContext, Variable};
+use crate::node::{Arithmetic, BinaryOperator, Expression, ExpressionKey, FunctionContext, Variable};
 use crate::span::Spanned;
 
 use super::ParserError;
@@ -28,15 +28,19 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
 
 	match binder.node {
 		Token::Add => {
-			let operator = Spanned::new(BinaryOperator::Add, binder.span);
+			let operator = Spanned::new(BinaryOperator::Arithmetic(Arithmetic::Add), binder.span);
 			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
 		}
 		Token::Minus => {
-			let operator = Spanned::new(BinaryOperator::Minus, binder.span);
+			let operator = Spanned::new(BinaryOperator::Arithmetic(Arithmetic::Minus), binder.span);
 			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
 		}
 		Token::Multiply => {
-			let operator = Spanned::new(BinaryOperator::Multiply, binder.span);
+			let operator = Spanned::new(BinaryOperator::Arithmetic(Arithmetic::Multiply), binder.span);
+			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
+		}
+		Token::Equality => {
+			let operator = Spanned::new(BinaryOperator::Equality, binder.span);
 			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
 		}
 		_ => panic!("Invalid value binder: {:?}", binder.node),
@@ -45,8 +49,9 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
 
 fn token_precedence(token: &Token) -> usize {
 	match token {
-		Token::Add | Token::Minus => 1,
-		Token::Multiply => 2,
+		Token::Equality => 1,
+		Token::Add | Token::Minus => 2,
+		Token::Multiply => 3,
 		_ => 0,
 	}
 }

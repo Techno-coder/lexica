@@ -1,9 +1,9 @@
 use std::ops::Index;
 
-use crate::declaration::FunctionPath;
 use crate::span::Spanned;
 
-use super::{Ascription, BindingPattern, ExpressionPattern, FunctionContext, Variable};
+use super::{AscriptionPattern, BindingPattern, ExpressionPattern, FunctionContext,
+	Variable, VariablePattern};
 
 pub type ConditionStart = ExpressionKey;
 pub type ConditionEnd = ExpressionKey;
@@ -33,16 +33,16 @@ impl Index<&ExpressionKey> for FunctionContext {
 #[derive(Debug, Clone)]
 pub enum Expression {
 	Block(Vec<ExpressionKey>),
-	Binding(BindingPattern, Option<Spanned<Ascription>>, ExpressionKey),
+	Binding(BindingPattern, Option<AscriptionPattern>, ExpressionKey),
 	TerminationLoop(Option<ConditionStart>, ConditionEnd, ExpressionKey),
 	Mutation(Spanned<MutationKind>, ExpressionKey, ExpressionKey),
-	ExplicitDrop(Spanned<Variable>, ExpressionKey),
+	ExplicitDrop(VariablePattern, ExpressionKey),
 
 	Binary(Spanned<BinaryOperator>, ExpressionKey, ExpressionKey),
 	//	Conditional(Vec<(ConditionStart, Option<ConditionEnd>, ExpressionKey)>),
 //	Accessor(ExpressionKey, Arc<str>),
 //	AccessorCall(ExpressionKey, Arc<str>, Vec<ExpressionKey>),
-	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>),
+//	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>),
 //	Tuple(Vec<ExpressionKey>),
 
 	Pattern(ExpressionPattern),
@@ -53,15 +53,21 @@ pub enum Expression {
 }
 
 #[derive(Debug, Clone)]
-pub enum BinaryOperator {
+pub enum Arithmetic {
 	Add,
 	Minus,
 	Multiply,
 }
 
 #[derive(Debug, Clone)]
+pub enum BinaryOperator {
+	Arithmetic(Arithmetic),
+	Equality,
+}
+
+#[derive(Debug, Clone)]
 pub enum MutationKind {
-	Arithmetic(BinaryOperator),
+	Arithmetic(Arithmetic),
 	//	Assignment,
 	Swap,
 }

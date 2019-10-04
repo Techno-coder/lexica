@@ -8,20 +8,35 @@ use crate::span::Spanned;
 
 use super::{Ascription, AscriptionPattern, BindingPattern, Expression, ExpressionKey};
 
-pub type NodeFunctions = RwLock<HashMap<Arc<FunctionPath>, Function>>;
+pub type FunctionTypes = RwLock<HashMap<Arc<FunctionPath>, Arc<FunctionType>>>;
+pub type NodeFunctions = RwLock<HashMap<Arc<FunctionPath>, Arc<Function>>>;
+
+#[derive(Debug, Clone)]
+pub struct FunctionType {
+	pub parameters: Vec<Parameter>,
+	pub return_type: Spanned<Ascription>,
+	pub function_offset: usize,
+}
+
+impl FunctionType {
+	pub fn new(parameters: Vec<Parameter>, return_type: Spanned<Ascription>,
+	           function_offset: usize) -> Self {
+		FunctionType { parameters, return_type, function_offset }
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct Parameter(pub BindingPattern, pub AscriptionPattern);
 
 #[derive(Debug, Clone)]
 pub struct Function {
 	pub context: FunctionContext,
-	pub parameters: Vec<(BindingPattern, AscriptionPattern)>,
-	pub return_type: Spanned<Ascription>,
 	pub expression: ExpressionKey,
 }
 
 impl Function {
-	pub fn new(context: FunctionContext, parameters: Vec<(BindingPattern, AscriptionPattern)>,
-	           return_type: Spanned<Ascription>, expression: ExpressionKey) -> Function {
-		Function { context, parameters, return_type, expression }
+	pub fn new(context: FunctionContext, expression: ExpressionKey) -> Function {
+		Function { context, expression }
 	}
 }
 
