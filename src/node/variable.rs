@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::declaration::StructurePath;
 use crate::node::ExpressionKey;
 use crate::span::Spanned;
 
@@ -27,7 +28,7 @@ pub enum Mutability {
 }
 
 #[derive(Debug, Clone)]
-pub struct Ascription(pub Arc<str>);
+pub struct Ascription(pub StructurePath);
 
 #[derive(Debug, Clone)]
 pub enum Pattern<T> {

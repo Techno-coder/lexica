@@ -1,3 +1,5 @@
+#![feature(mem_take)]
+
 mod error;
 mod context;
 mod declaration;
@@ -7,6 +9,7 @@ mod lexer;
 mod parser;
 mod node;
 mod extension;
+mod inference;
 
 fn main() {
 	use std::sync::Arc;
@@ -25,12 +28,12 @@ fn main() {
 
 	let context = &Context::default();
 	context.modules_pending.write().insert(ModulePath::root(), module);
-	let _ = context.emit(crate::parser::function(context, Spanned::new(Arc::new(
+	let _ = context.emit(crate::parser::function(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
 			identifier: "math_expression".into(),
 		})), Span::INTERNAL)));
-	let _ = context.emit(crate::parser::function(context, Spanned::new(Arc::new(
+	let _ = context.emit(crate::parser::function(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
 			identifier: "fibonacci".into(),

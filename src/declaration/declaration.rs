@@ -70,6 +70,10 @@ impl ModulePath {
 		ModulePath { parent, identifier }
 	}
 
+	pub fn intrinsic() -> Arc<Self> {
+		Arc::new(Self::new(None, "".into()))
+	}
+
 	pub fn root() -> Arc<Self> {
 		Arc::new(Self::new(None, "crate".into()))
 	}

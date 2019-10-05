@@ -42,6 +42,7 @@ impl Context {
 pub enum CompileError {
 	Source(source::SourceError),
 	Declaration(declaration::DeclarationError),
+	Inference(inference::InferenceError),
 	Parser(parser::ParserError),
 }
 
@@ -50,6 +51,7 @@ impl fmt::Display for CompileError {
 		match self {
 			CompileError::Source(error) => write!(f, "{}", error),
 			CompileError::Declaration(error) => write!(f, "{}", error),
+			CompileError::Inference(error) => write!(f, "{}", error),
 			CompileError::Parser(error) => write!(f, "{}", error),
 		}
 	}

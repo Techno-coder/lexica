@@ -1,3 +1,4 @@
+use crate::declaration::{DeclarationPath, ModulePath, StructurePath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
 use crate::node::{Arithmetic, Ascription, BindingVariable, Expression, ExpressionKey,
@@ -110,7 +111,10 @@ pub fn binding_variable(lexer: &mut Lexer) -> Result<Spanned<BindingVariable>, D
 pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> {
 	Ok(super::identifier(lexer)
 		.map_err(|diagnostic| diagnostic.note("In parsing an ascription"))?
-		.map(|identifier| Ascription(identifier)))
+		.map(|identifier| Ascription(StructurePath(DeclarationPath {
+			module_path: ModulePath::intrinsic(),
+			identifier,
+		}))))
 }
 
 fn expect_terminator(lexer: &mut Lexer, expression: &Spanned<Expression>) -> Result<Span, Diagnostic> {

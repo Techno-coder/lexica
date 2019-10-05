@@ -9,7 +9,7 @@ use crate::span::Spanned;
 
 use super::ParserError;
 
-pub fn function_type(context: &Context, function_path: Spanned<Arc<FunctionPath>>)
+pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                      -> Result<Arc<FunctionType>, Diagnostic> {
 	if let Some(function_type) = context.function_types.read().get(&function_path.node) {
 		return Ok(function_type.clone());
@@ -38,17 +38,17 @@ pub fn function_type(context: &Context, function_path: Spanned<Arc<FunctionPath>
 	let function_offset = super::expect(lexer, Token::Separator)?.byte_end;
 
 	let function_type = Arc::new(FunctionType::new(parameters, return_type, function_offset));
-	context.function_types.write().insert(function_path.node, function_type.clone());
+	context.function_types.write().insert(function_path.node.clone(), function_type.clone());
 	Ok(function_type)
 }
 
-pub fn function(context: &Context, function_path: Spanned<Arc<FunctionPath>>)
+pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                 -> Result<Arc<Function>, Diagnostic> {
 	if let Some(function) = context.node_functions.read().get(&function_path.node) {
 		return Ok(function.clone());
 	}
 
-	let offset = function_type(context, function_path.clone())?.function_offset;
+	let offset = function_type(context, function_path)?.function_offset;
 	let declarations_function = context.declarations_function.read();
 	let source_key = declarations_function.get(&function_path.node).unwrap().source;
 	let source = source_key.get(context);
@@ -57,7 +57,7 @@ pub fn function(context: &Context, function_path: Spanned<Arc<FunctionPath>>)
 	let mut function_context = FunctionContext::new(function_path.node.clone());
 	let expression = super::expression(&mut function_context, lexer)?;
 	let function = Arc::new(Function::new(function_context, expression));
-	context.node_functions.write().insert(function_path.node, function.clone());
+	context.node_functions.write().insert(function_path.node.clone(), function.clone());
 	Ok(function)
 }
 

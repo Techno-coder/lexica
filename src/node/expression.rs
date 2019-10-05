@@ -9,7 +9,7 @@ pub type ConditionStart = ExpressionKey;
 pub type ConditionEnd = ExpressionKey;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
-pub struct ExpressionKey(usize);
+pub struct ExpressionKey(pub usize);
 
 impl FunctionContext {
 	pub fn register(&mut self, expression: Spanned<Expression>) -> ExpressionKey {
