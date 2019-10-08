@@ -11,10 +11,6 @@ use super::ParserError;
 
 pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                      -> Result<Arc<FunctionType>, Diagnostic> {
-	if let Some(function_type) = context.function_types.read().get(&function_path.node) {
-		return Ok(function_type.clone());
-	}
-
 	let FunctionPath(declaration_path) = &*function_path.node;
 	declaration::load_modules(context, declaration_path.module_path.clone())
 		.map_err(|error| Diagnostic::new(Spanned::new(error, function_path.span)))?;
@@ -33,8 +29,8 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 	let parameters = parameters(lexer).map_err(|diagnostic|
 		diagnostic.note("In parsing function parameters"))?;
 	super::expect(lexer, Token::ReturnSeparator)?;
-	let return_type = super::ascription(lexer).map_err(|diagnostic|
-		diagnostic.note("In parsing function return type"))?;
+	let return_type = super::pattern(lexer, &mut super::ascription)
+		.map_err(|diagnostic| diagnostic.note("In parsing function return type"))?;
 	let function_offset = super::expect(lexer, Token::Separator)?.byte_end;
 
 	let function_type = Arc::new(FunctionType::new(parameters, return_type, function_offset));
@@ -44,10 +40,6 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                 -> Result<Arc<Function>, Diagnostic> {
-	if let Some(function) = context.node_functions.read().get(&function_path.node) {
-		return Ok(function.clone());
-	}
-
 	let offset = function_type(context, function_path)?.function_offset;
 	let declarations_function = context.declarations_function.read();
 	let source_key = declarations_function.get(&function_path.node).unwrap().source;
@@ -61,15 +53,16 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 	Ok(function)
 }
 
-fn parameters(lexer: &mut Lexer) -> Result<Vec<Parameter>, Diagnostic> {
+fn parameters(lexer: &mut Lexer) -> Result<Vec<Spanned<Parameter>>, Diagnostic> {
 	let mut parameters = Vec::new();
 	super::expect(lexer, Token::ParenthesisOpen)?;
 	while lexer.peek().node != Token::ParenthesisClose {
 		let pattern = super::pattern(lexer, &mut super::binding_variable)?;
 		super::expect(lexer, Token::Separator)?;
 		let ascription = super::pattern(lexer, &mut super::ascription)?;
-		parameters.push(Parameter(pattern.node, ascription.node));
 
+		let span = pattern.span.merge(ascription.span);
+		parameters.push(Spanned::new(Parameter(pattern.node, ascription.node), span));
 		match lexer.peek().node {
 			Token::ListSeparator => lexer.next(),
 			_ => break,

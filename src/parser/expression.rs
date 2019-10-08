@@ -34,7 +34,7 @@ fn binding(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Expressio
 	super::expect(lexer, Token::Assign)?;
 	let value = super::root_value(context, lexer)?;
 	let span = initial_span.merge(expect_terminator(lexer, &context[&value])?);
-	let expression = Expression::Binding(pattern.node, binding_ascription, value);
+	let expression = Expression::Binding(pattern, binding_ascription, value);
 	Ok(context.register(Spanned::new(expression, span)))
 }
 

@@ -71,7 +71,7 @@ impl ModulePath {
 	}
 
 	pub fn intrinsic() -> Arc<Self> {
-		Arc::new(Self::new(None, "".into()))
+		Arc::new(Self::new(None, "intrinsic".into()))
 	}
 
 	pub fn root() -> Arc<Self> {

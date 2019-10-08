@@ -9,7 +9,7 @@ pub type BindingPattern = Pattern<Spanned<BindingVariable>>;
 pub type AscriptionPattern = Pattern<Spanned<Ascription>>;
 pub type ExpressionPattern = Pattern<ExpressionKey>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Variable(pub Arc<str>, pub usize);
 
 impl Variable {

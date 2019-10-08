@@ -33,7 +33,7 @@ impl Index<&ExpressionKey> for FunctionContext {
 #[derive(Debug, Clone)]
 pub enum Expression {
 	Block(Vec<ExpressionKey>),
-	Binding(BindingPattern, Option<AscriptionPattern>, ExpressionKey),
+	Binding(Spanned<BindingPattern>, Option<AscriptionPattern>, ExpressionKey),
 	TerminationLoop(Option<ConditionStart>, ConditionEnd, ExpressionKey),
 	Mutation(Spanned<MutationKind>, ExpressionKey, ExpressionKey),
 	ExplicitDrop(VariablePattern, ExpressionKey),

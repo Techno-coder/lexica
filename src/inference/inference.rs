@@ -1,13 +1,17 @@
+use std::collections::HashMap;
 use std::fmt;
+use std::sync::Arc;
 
 use crate::declaration::StructurePath;
 use crate::error::CompileError;
-use crate::node::Ascription;
+use crate::node::Variable;
+
+pub type Environment = HashMap<Variable, TypeVariable>;
 
 #[derive(Debug)]
 pub enum InferenceError {
-	Unification(InferenceType, InferenceType),
-	Recursive(TypeVariable),
+	Unification(Arc<InferenceType>, Arc<InferenceType>),
+	Recursive(InferenceType),
 	Unresolved(TypeVariable),
 }
 
@@ -40,24 +44,30 @@ impl fmt::Display for TypeVariable {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum InferenceType {
-	Instance(StructurePath, Vec<TypeVariable>),
+	Instance(StructurePath, Vec<Arc<InferenceType>>),
 	Variable(TypeVariable),
 }
 
-impl From<Ascription> for InferenceType {
-	fn from(ascription: Ascription) -> Self {
-		let Ascription(ascription) = ascription;
-		InferenceType::Instance(ascription, Vec::new())
+impl InferenceType {
+	pub fn occurs(&self, variable: TypeVariable) -> Result<(), InferenceError> {
+		match self {
+			InferenceType::Instance(_, variables) => variables.iter()
+				.try_for_each(|type_variable| type_variable.occurs(variable)),
+			InferenceType::Variable(type_variable) => match type_variable == &variable {
+				true => Err(InferenceError::Recursive(self.clone())),
+				false => Ok(())
+			},
+		}
 	}
 }
 
 impl fmt::Display for InferenceType {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			InferenceType::Instance(data_type, variables) => {
-				write!(f, "{}", data_type)?;
+			InferenceType::Instance(structure, variables) => {
+				write!(f, "{}", structure)?;
 				if let Some((last, rest)) = variables.split_last() {
 					write!(f, "<")?;
 					rest.iter().try_for_each(|variable| write!(f, "{}, ", variable))?;

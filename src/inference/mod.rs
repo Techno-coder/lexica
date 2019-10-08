@@ -1,8 +1,10 @@
-use inference::{InferenceType, TypeVariable};
+use engine::TypeEngine;
+pub use function::function;
+use inference::{InferenceType, TypeVariable, Environment};
 pub use inference::InferenceError;
-pub use type_register::{DataType, ExpressionTypes, TypeRegister};
 
 mod inference;
-mod type_context;
-mod type_register;
 mod function;
+mod engine;
+mod pattern;
+mod intrinsic;
