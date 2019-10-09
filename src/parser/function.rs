@@ -40,7 +40,7 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                 -> Result<Arc<Function>, Diagnostic> {
-	let offset = function_type(context, function_path)?.function_offset;
+	let offset = function_type(context, function_path)?.function_byte_offset;
 	let declarations_function = context.declarations_function.read();
 	let source_key = declarations_function.get(&function_path.node).unwrap().source;
 	let source = source_key.get(context);

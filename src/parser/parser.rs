@@ -1,7 +1,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use crate::declaration::FunctionPath;
+use crate::declaration::{FunctionPath, StructurePath};
 use crate::error::{CompileError, Diagnostic};
 use crate::lexer::{Lexer, Token};
 use crate::node::Pattern;
@@ -10,10 +10,12 @@ use crate::span::{Span, Spanned};
 #[derive(Debug)]
 pub enum ParserError {
 	UndefinedFunction(Arc<FunctionPath>),
+	UndefinedStructure(Arc<StructurePath>),
 	ExpectedExpression(Token),
 	ExpectedIdentifier(Token),
 	ExpectedToken(Token, Token),
 	ExpectedExpressionTerminator(Token),
+	DuplicateField(Arc<str>),
 }
 
 impl fmt::Display for ParserError {
@@ -21,6 +23,8 @@ impl fmt::Display for ParserError {
 		match self {
 			ParserError::UndefinedFunction(path) =>
 				write!(f, "Function: {}, is not defined", path),
+			ParserError::UndefinedStructure(path) =>
+				write!(f, "Structure: {}, is not defined", path),
 			ParserError::ExpectedExpression(token) =>
 				write!(f, "Expected an expression, instead got: {:?}", token),
 			ParserError::ExpectedIdentifier(token) =>
@@ -29,6 +33,8 @@ impl fmt::Display for ParserError {
 				write!(f, "Expected token: {:?}, instead got: {:?}", expected, token),
 			ParserError::ExpectedExpressionTerminator(token) =>
 				write!(f, "Expected line break or mutation operator, instead got: {:?}", token),
+			ParserError::DuplicateField(field) =>
+				write!(f, "Field with identifier: {}, has already been defined", field),
 		}
 	}
 }
@@ -52,6 +58,12 @@ pub fn expect(lexer: &mut Lexer, expected: Token) -> Result<Span, Diagnostic> {
 	match token.node == expected {
 		false => Err(Diagnostic::new(token.map(|token| ParserError::ExpectedToken(expected, token)))),
 		true => Ok(token.span),
+	}
+}
+
+pub fn skip(lexer: &mut Lexer, token: Token) {
+	while lexer.peek().node == token {
+		lexer.next();
 	}
 }
 

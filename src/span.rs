@@ -42,7 +42,7 @@ impl Span {
 			Ok(string) => {
 				let mut line_index = 1;
 				let mut last_line_offset = 0;
-				let slice = &string[..=self.byte_start];
+				let slice = &string[..self.byte_start];
 				for (index, character) in slice.char_indices() {
 					if character == '\n' {
 						line_index += 1;

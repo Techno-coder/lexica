@@ -15,13 +15,13 @@ pub type NodeFunctions = RwLock<HashMap<Arc<FunctionPath>, Arc<Function>>>;
 pub struct FunctionType {
 	pub parameters: Vec<Spanned<Parameter>>,
 	pub return_type: Spanned<AscriptionPattern>,
-	pub function_offset: usize,
+	pub function_byte_offset: usize,
 }
 
 impl FunctionType {
 	pub fn new(parameters: Vec<Spanned<Parameter>>, return_type: Spanned<AscriptionPattern>,
-	           function_offset: usize) -> Self {
-		FunctionType { parameters, return_type, function_offset }
+	           function_byte_offset: usize) -> Self {
+		FunctionType { parameters, return_type, function_byte_offset }
 	}
 }
 

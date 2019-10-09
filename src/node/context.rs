@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use crate::context::Context;
-use crate::declaration::FunctionPath;
+use crate::declaration::{FunctionPath, StructurePath};
 use crate::error::Diagnostic;
-use crate::node::{Function, FunctionType};
+use crate::node::{Function, FunctionType, Structure};
 use crate::span::Spanned;
 
 pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
@@ -23,4 +23,13 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 	}
 
 	crate::parser::function(context, function_path)
+}
+
+pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>)
+                 -> Result<Arc<Structure>, Diagnostic> {
+	if let Some(structure) = context.node_structures.read().get(&structure_path.node) {
+		return Ok(structure.clone());
+	}
+
+	crate::parser::structure(context, structure_path)
 }

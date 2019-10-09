@@ -4,14 +4,14 @@ use crate::extension::{LineOffset, LineOffsets, StringExtension};
 use crate::span::Span;
 
 const GUTTER: &str = "    ";
-const LOCATION_GUTTER: &str = "    -->";
+const LOCATION_PREFIX: &str = "    -->";
 
 pub fn display(context: &Context, diagnostic: &Diagnostic) {
 	println!("{} {}", "[Error]", diagnostic.error.node);
 
 	let span = diagnostic.error.span;
 	let (location, has_error) = span.location(context);
-	println!("{} {}", LOCATION_GUTTER, location);
+	println!("{} {}", LOCATION_PREFIX, location);
 
 	if has_error {
 		display_notes(diagnostic, true);
@@ -60,13 +60,15 @@ fn display_multiple(string: &str, line_offsets: &LineOffsets,
 
 fn display_single(string: &str, start_offset: LineOffset, end_offset: LineOffset,
                   start_index: usize, span: Span) {
-	println!("{} | \t{}", format!("{:4}", start_index), &string[*start_offset..(*end_offset - 1)]);
+	println!("{} | \t{}", format!("{:4}", start_index),
+		string.get(*start_offset..(*end_offset - 1)).unwrap_or(""));
 	let initial: String = string[*start_offset..span.byte_start].chars()
 		.map(|character| match character.is_whitespace() {
 			true => character,
 			false => ' ',
 		}).collect();
-	let specific_length = string[span.byte_start..span.byte_end].chars().count();
+	let specific_length = string.get(span.byte_start..span.byte_end)
+		.map(|specific| specific.chars().count()).unwrap_or(1);
 	println!("     | \t{}{}", initial, "^".repeat(specific_length));
 }
 

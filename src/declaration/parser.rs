@@ -93,7 +93,7 @@ impl<'a> SourceParse<'a> {
 						_ => unreachable!(),
 					};
 
-					self.skip_next_block()?;
+					self.skip_next_block();
 				}
 				Token::Module => {
 					let declaration_span = Span::new(self.source_key,
@@ -167,7 +167,7 @@ impl<'a> SourceParse<'a> {
 			}
 			_ => {
 				let error = Spanned::new(DeclarationError::ExpectedModuleTerminator, placement_span);
-				return self.context.emit(Err(Diagnostic::new(error)));
+				self.context.emit(Err(Diagnostic::new(error)))
 			}
 		}
 	}
@@ -189,22 +189,26 @@ impl<'a> SourceParse<'a> {
 		}
 	}
 
-	fn skip_next_block(&mut self) -> Option<()> {
+	fn skip_next_block(&mut self) {
 		self.advance_until_break();
-		self.require_block();
+		if self.lexer.peek().node == Token::LineBreak {
+			self.lexer.next();
+			return;
+		}
 
+		self.require_block();
 		let target_indent = self.current_indent;
 		loop {
 			let token = self.lexer.next();
 			match token.node {
 				Token::BlockOpen => self.current_indent += 1,
 				Token::BlockClose => self.current_indent -= 1,
-				Token::End => break Some(()),
+				Token::End => break,
 				_ => (),
 			}
 
 			if self.current_indent == target_indent {
-				break Some(());
+				break;
 			}
 		}
 	}
@@ -219,12 +223,12 @@ impl<'a> SourceParse<'a> {
 		}
 	}
 
-	fn require_block(&mut self) -> Option<()> {
+	fn require_block(&mut self) {
 		match self.lexer.peek().node {
-			Token::BlockOpen => Some(()),
+			Token::BlockOpen => (),
 			_ => {
 				let error = Spanned::new(DeclarationError::ExpectedBlock, self.lexer.peek().span);
-				self.context.emit(Err(Diagnostic::new(error)))
+				let _: Option<()> = self.context.emit(Err(Diagnostic::new(error)));
 			}
 		}
 	}

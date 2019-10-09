@@ -13,5 +13,5 @@ pub struct Context {
 
 	pub function_types: node::FunctionTypes,
 	pub node_functions: node::NodeFunctions,
-//	pub expression_types: inference::ExpressionTypes,
+	pub node_structures: node::NodeStructures,
 }

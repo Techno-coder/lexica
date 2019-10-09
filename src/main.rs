@@ -33,6 +33,11 @@ fn main() {
 			module_path: ModulePath::root(),
 			identifier: "fibonacci".into(),
 		})), Span::INTERNAL)));
+	let _ = context.emit(crate::node::structure(context, &Spanned::new(Arc::new(
+		StructurePath(crate::declaration::DeclarationPath {
+			module_path: ModulePath::root().append("vector".into()).append("vector".into()),
+			identifier: "Vector".into(),
+		})), Span::INTERNAL)));
 
 	for error in context.errors.read().iter() {
 		crate::error::display(context, error);
