@@ -1,5 +1,7 @@
 module vector
 
+use vector::vector::Vector
+
 fn main():
 	fibonacci(35)
 	pass

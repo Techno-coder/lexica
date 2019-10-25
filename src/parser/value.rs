@@ -35,7 +35,7 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
 			let operator = Spanned::new(BinaryOperator::Arithmetic(Arithmetic::Minus), binder.span);
 			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
 		}
-		Token::Multiply => {
+		Token::Asterisk => {
 			let operator = Spanned::new(BinaryOperator::Arithmetic(Arithmetic::Multiply), binder.span);
 			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
 		}
@@ -51,7 +51,7 @@ fn token_precedence(token: &Token) -> usize {
 	match token {
 		Token::Equality => 1,
 		Token::Add | Token::Minus => 2,
-		Token::Multiply => 3,
+		Token::Asterisk => 3,
 		_ => 0,
 	}
 }

@@ -4,7 +4,7 @@ use std::str::CharIndices;
 use crate::source::SourceKey;
 use crate::span::{Span, Spanned};
 
-pub const SINGULARITIES: &[char] = &['\t', '\n', '(', ')', ':', '~', ','];
+pub const SINGULARITIES: &[char] = &['\t', '\n', '(', ')', '~', ',', '*'];
 
 /// Splits a source string into spanned string slices.
 #[derive(Debug)]
@@ -31,20 +31,23 @@ impl<'a> Iterator for SourceSplit<'a> {
 	type Item = Spanned<&'a str>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		let (byte_start, character) = self.characters.next()?;
-		if SINGULARITIES.contains(&character) {
+		let (byte_start, initial) = self.characters.next()?;
+		if SINGULARITIES.contains(&initial) {
 			let byte_end = self.characters.peek()
 				.map(|(index, _)| *index).unwrap_or(self.byte_end);
 			return Some(self.slice(byte_start, byte_end));
 		}
 
-		if character.is_whitespace() {
+		if initial.is_whitespace() {
 			return self.next();
 		}
 
 		let mut byte_end: Option<usize> = None;
 		while let Some((index, character)) = self.characters.peek() {
-			if SINGULARITIES.contains(character) || character.is_whitespace() {
+			let class_difference = initial.is_ascii_punctuation()
+				!= character.is_ascii_punctuation();
+			if SINGULARITIES.contains(character) ||
+				character.is_whitespace() || class_difference {
 				byte_end = Some(*index);
 				break;
 			} else {
@@ -67,5 +70,13 @@ mod tests {
 		let lexemes: Vec<_> = SourceSplit::new(string, SourceKey::INTERNAL)
 			.map(|node| node.node).collect();
 		assert_eq!(&lexemes, &["\t", "fn", "identifier", "(", "argument", ":", "type", ")", ":"]);
+	}
+
+	#[test]
+	fn test_path() {
+		let string = "root::first::second::third";
+		let lexemes: Vec<_> = SourceSplit::new(string, SourceKey::INTERNAL)
+			.map(|node| node.node).collect();
+		assert_eq!(&lexemes, &["root", "::", "first", "::", "second", "::", "third"]);
 	}
 }

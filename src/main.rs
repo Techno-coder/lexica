@@ -1,4 +1,5 @@
 #![feature(mem_take)]
+#![feature(option_unwrap_none)]
 
 mod error;
 mod context;

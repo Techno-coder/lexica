@@ -12,8 +12,8 @@ use parking_lot::RwLock;
 use crate::context::Context;
 use crate::error::CompileError;
 
-pub type SourceMap = RwLock<HashMap<SourceKey, Arc<Source>>>;
-pub type SourceKeyMap = RwLock<HashMap<Arc<PathBuf>, SourceKey>>;
+pub type Sources = RwLock<HashMap<SourceKey, Arc<Source>>>;
+pub type SourceKeys = RwLock<HashMap<Arc<PathBuf>, SourceKey>>;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct SourceKey(usize);

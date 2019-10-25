@@ -4,7 +4,7 @@ use crate::context::Context;
 use crate::error::Diagnostic;
 use crate::span::Spanned;
 
-use super::{DeclarationError, ModulePath};
+use super::{DeclarationError, ModuleContext, ModulePath};
 
 /// Recursively loads the modules in the path.
 pub fn load_modules(context: &Context, module_path: Arc<ModulePath>) -> Result<(), DeclarationError> {
@@ -12,7 +12,7 @@ pub fn load_modules(context: &Context, module_path: Arc<ModulePath>) -> Result<(
 		load_modules(context, parent.clone())?;
 	}
 
-	let exists_declaration = context.declarations_module.read().contains_key(&module_path);
+	let exists_declaration = context.module_contexts.read().contains_key(&module_path);
 	match exists_declaration {
 		true => Ok(()),
 		false => {
@@ -55,10 +55,10 @@ fn module_pending(context: &Context, module_path: Arc<ModulePath>) -> Option<()>
 		return context.emit(Err(diagnostic));
 	}
 
+	context.module_contexts.write().insert(module_path.clone(),
+		ModuleContext::default()).unwrap_none();
 	sources.into_iter().try_for_each(|(source_key, physical_path)|
 		super::SourceParse::parse(context, module_path.clone(), module.declaration_span,
-			physical_path, source_key))?;
-	context.declarations_module.write().insert(module_path, module.into());
-	Some(())
+			physical_path, source_key))
 }
 

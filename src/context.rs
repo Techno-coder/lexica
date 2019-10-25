@@ -3,11 +3,11 @@ use crate::*;
 #[derive(Debug, Default)]
 pub struct Context {
 	pub errors: error::Errors,
-	pub sources: source::SourceMap,
-	pub source_keys: source::SourceKeyMap,
+	pub sources: source::Sources,
+	pub source_keys: source::SourceKeys,
 
 	pub modules_pending: declaration::ModulesPending,
-	pub declarations_module: declaration::DeclarationsModule,
+	pub module_contexts: declaration::ModuleContexts,
 	pub declarations_function: declaration::DeclarationsFunction,
 	pub declarations_structure: declaration::DeclarationsStructure,
 
