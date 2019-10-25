@@ -5,6 +5,7 @@ authors = ["Techno-coder <8334328+Techno-coder@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
+chashmap = "^2.2"
 
 [dependencies.parking_lot]
 version = "^0.9"

@@ -10,13 +10,12 @@ use crate::span::Spanned;
 use super::ParserError;
 
 pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
-                     -> Result<Arc<FunctionType>, Diagnostic> {
+                     -> Result<FunctionType, Diagnostic> {
 	let FunctionPath(declaration_path) = &*function_path.node;
 	declaration::load_modules(context, declaration_path.module_path.clone())
 		.map_err(|error| Diagnostic::new(Spanned::new(error, function_path.span)))?;
 
-	let declarations_function = context.declarations_function.read();
-	let declaration = declarations_function.get(&function_path.node).ok_or_else(||
+	let declaration = context.declarations_function.get(&function_path.node).ok_or_else(||
 		Diagnostic::new(function_path.clone().map(|path| ParserError::UndefinedFunction(path))))?;
 	let source = declaration.source.get(context);
 	let lexer = &mut Lexer::new(source.read_string()
@@ -32,25 +31,19 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 	let return_type = super::pattern(lexer, &mut super::ascription)
 		.map_err(|diagnostic| diagnostic.note("In parsing function return type"))?;
 	let function_offset = super::expect(lexer, Token::Separator)?.byte_end;
-
-	let function_type = Arc::new(FunctionType::new(parameters, return_type, function_offset));
-	context.function_types.write().insert(function_path.node.clone(), function_type.clone());
-	Ok(function_type)
+	Ok(FunctionType::new(parameters, return_type, function_offset))
 }
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
-                -> Result<Arc<Function>, Diagnostic> {
+                -> Result<Function, Diagnostic> {
 	let offset = function_type(context, function_path)?.function_byte_offset;
-	let declarations_function = context.declarations_function.read();
-	let source_key = declarations_function.get(&function_path.node).unwrap().source;
+	let source_key = context.declarations_function.get(&function_path.node).unwrap().source;
 	let source = source_key.get(context);
 	let lexer = &mut Lexer::new(source.read_string().unwrap(), offset, source_key);
 
 	let mut function_context = FunctionContext::new(function_path.node.clone());
 	let expression = super::expression(&mut function_context, lexer)?;
-	let function = Arc::new(Function::new(function_context, expression));
-	context.node_functions.write().insert(function_path.node.clone(), function.clone());
-	Ok(function)
+	Ok(Function::new(function_context, expression))
 }
 
 fn parameters(lexer: &mut Lexer) -> Result<Vec<Spanned<Parameter>>, Diagnostic> {

@@ -11,13 +11,12 @@ use crate::span::Spanned;
 use super::ParserError;
 
 pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>)
-                 -> Result<Arc<Structure>, Diagnostic> {
+                 -> Result<Structure, Diagnostic> {
 	let StructurePath(declaration_path) = &*structure_path.node;
 	declaration::load_modules(context, declaration_path.module_path.clone())
 		.map_err(|error| Diagnostic::new(Spanned::new(error, structure_path.span)))?;
 
-	let declarations_structure = context.declarations_structure.read();
-	let declaration = declarations_structure.get(&structure_path.node).ok_or_else(||
+	let declaration = context.declarations_structure.get(&structure_path.node).ok_or_else(||
 		Diagnostic::new(structure_path.clone().map(|path| ParserError::UndefinedStructure(path))))?;
 	let source = declaration.source.get(context);
 	let lexer = &mut Lexer::new(source.read_string()
@@ -36,9 +35,7 @@ pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>
 		_ => fields(lexer, None, Token::LineBreak),
 	}?;
 
-	let structure = Arc::new(Structure::new(fields));
-	context.node_structures.write().insert(structure_path.node.clone(), structure.clone());
-	Ok(structure)
+	Ok(Structure::new(fields))
 }
 
 fn fields(lexer: &mut Lexer, skip_token: Option<Token>, terminator: Token)

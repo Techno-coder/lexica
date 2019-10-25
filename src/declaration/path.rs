@@ -8,20 +8,28 @@ pub struct ModulePath {
 }
 
 impl ModulePath {
-	pub const fn new(parent: Option<Arc<ModulePath>>, identifier: Arc<str>) -> Self {
-		ModulePath { parent, identifier }
+	pub fn new(parent: Option<Arc<ModulePath>>, identifier: Arc<str>) -> Arc<Self> {
+		Arc::new(ModulePath { parent, identifier })
+	}
+
+	pub fn unresolved() -> Arc<Self> {
+		Self::new(None, "?".into())
+	}
+
+	pub fn is_unresolved(&self) -> bool {
+		self.identifier.as_ref() == "?"
 	}
 
 	pub fn intrinsic() -> Arc<Self> {
-		Arc::new(Self::new(None, "intrinsic".into()))
+		Self::new(None, "intrinsic".into())
 	}
 
 	pub fn root() -> Arc<Self> {
-		Arc::new(Self::new(None, "crate".into()))
+		Self::new(None, "crate".into())
 	}
 
-	pub fn append(self: Arc<ModulePath>, identifier: Arc<str>) -> Arc<Self> {
-		Arc::new(Self::new(Some(self), identifier))
+	pub fn push(self: Arc<ModulePath>, identifier: Arc<str>) -> Arc<Self> {
+		Self::new(Some(self), identifier)
 	}
 }
 

@@ -6,9 +6,12 @@ pub use function::{Function, FunctionContext, FunctionType, FunctionTypes, NodeF
 pub use structure::{Structure, NodeStructures};
 pub use variable::{Ascription, AscriptionPattern, BindingPattern, BindingVariable,
 	ExpressionPattern, Mutability, Pattern, Variable, VariablePattern};
+pub use node::NodeError;
 
 mod function;
 mod expression;
 mod variable;
 mod context;
 mod structure;
+mod resolution;
+mod node;

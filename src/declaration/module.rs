@@ -12,11 +12,11 @@ pub fn load_modules(context: &Context, module_path: Arc<ModulePath>) -> Result<(
 		load_modules(context, parent.clone())?;
 	}
 
-	let exists_declaration = context.module_contexts.read().contains_key(&module_path);
+	let exists_declaration = context.module_contexts.contains_key(&module_path);
 	match exists_declaration {
 		true => Ok(()),
 		false => {
-			let exists_pending = context.modules_pending.read().contains_key(&module_path);
+			let exists_pending = context.modules_pending.contains_key(&module_path);
 			match exists_pending {
 				false => Err(DeclarationError::UndefinedModule(module_path)),
 				true => {
@@ -30,7 +30,7 @@ pub fn load_modules(context: &Context, module_path: Arc<ModulePath>) -> Result<(
 
 /// Loads and parses a pending module. Panics if the module is not pending.
 fn module_pending(context: &Context, module_path: Arc<ModulePath>) -> Option<()> {
-	let module = context.modules_pending.write().remove(&module_path)
+	let module = context.modules_pending.remove(&module_path)
 		.expect(&format!("Pending module: {:?}, does not exist", module_path));
 	let mut sources = Vec::new();
 	let mut source_errors = Vec::new();
@@ -55,7 +55,7 @@ fn module_pending(context: &Context, module_path: Arc<ModulePath>) -> Option<()>
 		return context.emit(Err(diagnostic));
 	}
 
-	context.module_contexts.write().insert(module_path.clone(),
+	context.module_contexts.insert(module_path.clone(),
 		ModuleContext::default()).unwrap_none();
 	sources.into_iter().try_for_each(|(source_key, physical_path)|
 		super::SourceParse::parse(context, module_path.clone(), module.declaration_span,

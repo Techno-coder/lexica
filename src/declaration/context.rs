@@ -1,20 +1,21 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use chashmap::CHashMap;
+
+use crate::span::Spanned;
 
 use super::ModulePath;
 
-pub type ModuleContexts = RwLock<HashMap<Arc<ModulePath>, ModuleContext>>;
+pub type ModuleContexts = CHashMap<Arc<ModulePath>, ModuleContext>;
 
 #[derive(Debug, Default)]
 pub struct ModuleContext {
-	pub inclusions: Vec<Inclusion>,
+	pub inclusions: Vec<Spanned<Inclusion>>,
 }
 
 #[derive(Debug)]
 pub struct Inclusion {
-	pub module: Arc<ModulePath>,
+	pub module_path: Arc<ModulePath>,
 	pub terminal: InclusionTerminal,
 }
 

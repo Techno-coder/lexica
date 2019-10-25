@@ -44,6 +44,7 @@ pub enum CompileError {
 	Declaration(declaration::DeclarationError),
 	Inference(inference::InferenceError),
 	Parser(parser::ParserError),
+	Node(node::NodeError),
 }
 
 impl fmt::Display for CompileError {
@@ -53,6 +54,7 @@ impl fmt::Display for CompileError {
 			CompileError::Declaration(error) => write!(f, "{}", error),
 			CompileError::Inference(error) => write!(f, "{}", error),
 			CompileError::Parser(error) => write!(f, "{}", error),
+			CompileError::Node(error) => write!(f, "{}", error),
 		}
 	}
 }

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
@@ -7,13 +6,13 @@ use std::path::PathBuf;
 use std::str;
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use chashmap::CHashMap;
 
 use crate::context::Context;
 use crate::error::CompileError;
 
-pub type Sources = RwLock<HashMap<SourceKey, Arc<Source>>>;
-pub type SourceKeys = RwLock<HashMap<Arc<PathBuf>, SourceKey>>;
+pub type Sources = CHashMap<SourceKey, Arc<Source>>;
+pub type SourceKeys = CHashMap<Arc<PathBuf>, SourceKey>;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct SourceKey(usize);
@@ -22,8 +21,8 @@ impl SourceKey {
 	pub const INTERNAL: Self = SourceKey(usize::max_value());
 
 	pub fn get(&self, context: &Context) -> Arc<Source> {
-		context.sources.read().get(self).cloned()
-			.unwrap_or_else(|| panic!("Source key: {:?}, is not present in context", self))
+		context.sources.get(self).unwrap_or_else(||
+			panic!("Source key: {:?}, is not present in context", self)).clone()
 	}
 }
 
@@ -66,7 +65,7 @@ impl From<SourceError> for CompileError {
 }
 
 pub fn source_key(context: &Context, path: &Arc<PathBuf>) -> Result<SourceKey, SourceError> {
-	if let Some(key) = context.source_keys.read().get(path) {
+	if let Some(key) = context.source_keys.get(path) {
 		return Ok(*key);
 	}
 
@@ -74,12 +73,10 @@ pub fn source_key(context: &Context, path: &Arc<PathBuf>) -> Result<SourceKey, S
 	let mut file = File::open(path.deref()).map_err(|_| SourceError::MissingFile(path.clone()))?;
 	file.read_to_end(&mut data).map_err(|error| SourceError::ReadFailure(path.clone(), error))?;
 
-	let mut sources = context.sources.write();
-	let mut source_keys = context.source_keys.write();
-	let source_key = SourceKey(source_keys.len());
-	source_keys.insert(path.clone(), source_key);
+	let source_key = SourceKey(context.source_keys.len());
+	context.source_keys.insert(path.clone(), source_key);
 
 	let source = Arc::new(Source { path: path.clone(), data });
-	sources.insert(source_key, source);
+	context.sources.insert(source_key, source);
 	Ok(source_key)
 }

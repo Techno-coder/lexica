@@ -12,7 +12,7 @@ const MODULE_FILE: &str = "module.lx";
 
 impl<'a> SourceParse<'a> {
 	pub fn structure(&mut self, structure_path: Arc<StructurePath>, declaration: Declaration, placement_span: Span) {
-		let mut declarations = self.context.declarations_structure.write();
+		let declarations = &self.context.declarations_structure;
 		match declarations.get(&structure_path) {
 			None => declarations.insert(structure_path, declaration),
 			Some(declaration) => {
@@ -25,7 +25,7 @@ impl<'a> SourceParse<'a> {
 	}
 
 	pub fn function(&mut self, function_path: Arc<FunctionPath>, declaration: Declaration, placement_span: Span) {
-		let mut declarations = self.context.declarations_function.write();
+		let declarations = &self.context.declarations_function;
 		match declarations.get(&function_path) {
 			None => declarations.insert(function_path, declaration),
 			Some(declaration) => {
@@ -51,9 +51,8 @@ impl<'a> SourceParse<'a> {
 	fn nested(&mut self, identifier: Arc<str>) -> Option<()> {
 		self.require_block();
 		self.module_indents.push(self.current_indent);
-		self.current_module = self.current_module.clone().append(identifier);
-		self.context.module_contexts.write()
-			.insert(self.current_module.clone(), ModuleContext::default());
+		self.current_module = self.current_module.clone().push(identifier);
+		self.context.module_contexts.insert(self.current_module.clone(), ModuleContext::default());
 		Some(())
 	}
 
@@ -79,8 +78,8 @@ impl<'a> SourceParse<'a> {
 			declaration_span,
 		};
 
-		let module_path = self.current_module.clone().append(identifier);
-		self.context.modules_pending.write().insert(module_path, module);
+		let module_path = self.current_module.clone().push(identifier);
+		self.context.modules_pending.insert(module_path, module);
 		Some(())
 	}
 }

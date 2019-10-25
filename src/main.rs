@@ -28,7 +28,7 @@ fn main() {
 	};
 
 	let context = &Context::default();
-	context.modules_pending.write().insert(ModulePath::root(), module);
+	context.modules_pending.insert(ModulePath::root(), module);
 	let _ = context.emit(crate::inference::function(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
@@ -36,7 +36,7 @@ fn main() {
 		})), Span::INTERNAL)));
 	let _ = context.emit(crate::node::structure(context, &Spanned::new(Arc::new(
 		StructurePath(crate::declaration::DeclarationPath {
-			module_path: ModulePath::root().append("vector".into()).append("vector".into()),
+			module_path: ModulePath::root().push("vector".into()).push("vector".into()),
 			identifier: "Vector".into(),
 		})), Span::INTERNAL)));
 

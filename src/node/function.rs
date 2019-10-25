@@ -1,15 +1,14 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use chashmap::CHashMap;
 
 use crate::declaration::FunctionPath;
 use crate::span::Spanned;
 
 use super::{AscriptionPattern, BindingPattern, Expression, ExpressionKey};
 
-pub type FunctionTypes = RwLock<HashMap<Arc<FunctionPath>, Arc<FunctionType>>>;
-pub type NodeFunctions = RwLock<HashMap<Arc<FunctionPath>, Arc<Function>>>;
+pub type FunctionTypes = CHashMap<Arc<FunctionPath>, Arc<FunctionType>>;
+pub type NodeFunctions = CHashMap<Arc<FunctionPath>, Arc<Function>>;
 
 #[derive(Debug, Clone)]
 pub struct FunctionType {

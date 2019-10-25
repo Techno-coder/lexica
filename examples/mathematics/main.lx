@@ -1,6 +1,6 @@
 module vector
 
-use vector::vector::Vector
+use crate::vector::vector::*
 
 fn main():
 	fibonacci(35)

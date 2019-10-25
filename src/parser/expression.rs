@@ -112,7 +112,7 @@ pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> 
 	Ok(super::identifier(lexer)
 		.map_err(|diagnostic| diagnostic.note("In parsing an ascription"))?
 		.map(|identifier| Ascription(StructurePath(DeclarationPath {
-			module_path: ModulePath::intrinsic(),
+			module_path: ModulePath::unresolved(),
 			identifier,
 		}))))
 }

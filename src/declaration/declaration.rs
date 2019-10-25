@@ -1,9 +1,8 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use chashmap::CHashMap;
 
 use crate::error::CompileError;
 use crate::extension::LineOffset;
@@ -12,9 +11,9 @@ use crate::span::Span;
 
 use super::{FunctionPath, ModulePath, StructurePath};
 
-pub type ModulesPending = RwLock<HashMap<Arc<ModulePath>, ModulePending>>;
-pub type DeclarationsFunction = RwLock<HashMap<Arc<FunctionPath>, Declaration>>;
-pub type DeclarationsStructure = RwLock<HashMap<Arc<StructurePath>, Declaration>>;
+pub type ModulesPending = CHashMap<Arc<ModulePath>, ModulePending>;
+pub type DeclarationsFunction = CHashMap<Arc<FunctionPath>, Declaration>;
+pub type DeclarationsStructure = CHashMap<Arc<StructurePath>, Declaration>;
 
 #[derive(Debug)]
 pub enum DeclarationError {

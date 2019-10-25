@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use chashmap::CHashMap;
 
 use crate::declaration::StructurePath;
 use crate::node::AscriptionPattern;
 
-pub type NodeStructures = RwLock<HashMap<Arc<StructurePath>, Arc<Structure>>>;
+pub type NodeStructures = CHashMap<Arc<StructurePath>, Arc<Structure>>;
 
 #[derive(Debug, Clone)]
 pub struct Structure {
