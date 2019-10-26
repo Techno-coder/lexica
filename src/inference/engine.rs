@@ -81,7 +81,6 @@ impl TypeEngine {
 
 #[cfg(test)]
 mod tests {
-	use crate::declaration::DeclarationPath;
 	use crate::inference::intrinsic;
 
 	use super::*;

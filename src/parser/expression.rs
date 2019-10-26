@@ -108,13 +108,27 @@ pub fn binding_variable(lexer: &mut Lexer) -> Result<Spanned<BindingVariable>, D
 	Ok(variable.map(|variable| BindingVariable(variable, mutability)))
 }
 
+fn structure_path(lexer: &mut Lexer) -> Result<Spanned<StructurePath>, Diagnostic> {
+	let mut module_path = ModulePath::unresolved();
+	let mut identifier = super::identifier(lexer).map_err(|diagnostic|
+		diagnostic.note("In parsing a structure path"))?;
+	let initial_span = identifier.span;
+
+	while let Token::PathSeparator = lexer.peek().node {
+		lexer.next();
+		let identifier = std::mem::replace(&mut identifier, super::identifier(lexer)
+			.map_err(|diagnostic| diagnostic.note("In parsing a structure path"))?);
+		module_path = module_path.push(identifier.node);
+	}
+
+	let span = initial_span.merge(identifier.span);
+	let declaration_path = DeclarationPath { module_path, identifier: identifier.node };
+	Ok(Spanned::new(StructurePath(declaration_path), span))
+}
+
 pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> {
-	Ok(super::identifier(lexer)
-		.map_err(|diagnostic| diagnostic.note("In parsing an ascription"))?
-		.map(|identifier| Ascription(StructurePath(DeclarationPath {
-			module_path: ModulePath::unresolved(),
-			identifier,
-		}))))
+	Ok(structure_path(lexer).map(|structure| structure.map(|structure| Ascription(structure))))
+		.map_err(|diagnostic: Diagnostic| diagnostic.note("In parsing an ascription"))?
 }
 
 fn expect_terminator(lexer: &mut Lexer, expression: &Spanned<Expression>) -> Result<Span, Diagnostic> {

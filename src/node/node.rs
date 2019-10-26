@@ -1,21 +1,21 @@
 use std::fmt;
-use std::sync::Arc;
 
+use crate::declaration::DeclarationPath;
 use crate::error::CompileError;
 
 #[derive(Debug)]
 pub enum NodeError {
-	ResolutionConflict(Arc<str>),
-	UnresolvedResolution(Arc<str>),
+	ResolutionConflict(DeclarationPath),
+	UnresolvedResolution(DeclarationPath),
 }
 
 impl fmt::Display for NodeError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			NodeError::ResolutionConflict(identifier) =>
-				write!(f, "Structure: {}, has conflicting resolutions", identifier),
-			NodeError::UnresolvedResolution(identifier) =>
-				write!(f, "Structure: {}, has no matching resolutions", identifier),
+			NodeError::ResolutionConflict(structure) =>
+				write!(f, "Structure: {}, has conflicting resolutions", structure),
+			NodeError::UnresolvedResolution(structure) =>
+				write!(f, "Structure: {}, has no matching resolutions", structure),
 		}
 	}
 }
