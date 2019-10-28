@@ -31,12 +31,7 @@ pub fn resolve_function(context: &Context, module_context: &ModuleContext,
 
 fn resolve_ascriptions(context: &Context, module_context: &ModuleContext,
                        pattern: &mut Pattern<Spanned<Ascription>>) -> Result<(), Diagnostic> {
-	match pattern {
-		Pattern::Wildcard => Ok(()),
-		Pattern::Terminal(terminal) => resolve_ascription(context, module_context, terminal),
-		Pattern::Tuple(patterns) => patterns.iter_mut().try_for_each(|pattern|
-			resolve_ascriptions(context, module_context, pattern)),
-	}
+	pattern.apply(&mut |terminal| resolve_ascription(context, module_context, terminal))
 }
 
 fn resolve_ascription(context: &Context, module_context: &ModuleContext,

@@ -36,14 +36,16 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                 -> Result<Function, Diagnostic> {
-	let offset = function_type(context, function_path)?.function_byte_offset;
+	let function_type = crate::node::function_type(context, function_path)?;
 	let source_key = context.declarations_function.get(&function_path.node).unwrap().source;
 	let source = source_key.get(context);
+
+	let offset = function_type.function_byte_offset;
 	let lexer = &mut Lexer::new(source.read_string().unwrap(), offset, source_key);
 
 	let mut function_context = FunctionContext::new(function_path.node.clone());
 	let expression = super::expression(&mut function_context, lexer)?;
-	Ok(Function::new(function_context, expression))
+	Ok(Function::new(function_context, expression, function_type))
 }
 
 fn parameters(lexer: &mut Lexer) -> Result<Vec<Spanned<Parameter>>, Diagnostic> {

@@ -1,34 +1,12 @@
-use std::ops::Index;
-
 use crate::span::Spanned;
 
-use super::{AscriptionPattern, BindingPattern, ExpressionPattern, FunctionContext,
-	Variable, VariablePattern};
+use super::{AscriptionPattern, BindingPattern, ExpressionPattern, Variable, VariablePattern};
 
 pub type ConditionStart = ExpressionKey;
 pub type ConditionEnd = ExpressionKey;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct ExpressionKey(pub usize);
-
-impl FunctionContext {
-	pub fn register(&mut self, expression: Spanned<Expression>) -> ExpressionKey {
-		let expression_key = ExpressionKey(self.expressions.len());
-		self.expressions.push(expression);
-		expression_key
-	}
-}
-
-impl Index<&ExpressionKey> for FunctionContext {
-	type Output = Spanned<Expression>;
-
-	fn index(&self, index: &ExpressionKey) -> &Self::Output {
-		let &ExpressionKey(index) = index;
-		self.expressions.get(index).unwrap_or_else(||
-			panic!("Expression key: {}, is not present in function context: {}", index,
-				self.function_path))
-	}
-}
 
 #[derive(Debug, Clone)]
 pub enum Expression {

@@ -3,10 +3,10 @@ pub use expression::{Arithmetic, BinaryOperator, Expression, ExpressionKey,
 	MutationKind};
 pub use function::{Function, FunctionContext, FunctionType, FunctionTypes, NodeFunctions,
 	Parameter};
-pub use structure::{Structure, NodeStructures};
+pub use node::NodeError;
+pub use structure::{NodeStructures, Structure};
 pub use variable::{Ascription, AscriptionPattern, BindingPattern, BindingVariable,
 	ExpressionPattern, Mutability, Pattern, Variable, VariablePattern};
-pub use node::NodeError;
 
 mod function;
 mod expression;
@@ -14,4 +14,5 @@ mod variable;
 mod context;
 mod structure;
 mod resolution;
+mod shadow;
 mod node;

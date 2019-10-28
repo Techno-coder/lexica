@@ -36,3 +36,25 @@ pub enum Pattern<T> {
 	Terminal(T),
 	Tuple(Vec<Pattern<T>>),
 }
+
+impl<T> Pattern<T> {
+	pub fn apply<F, E>(&mut self, function: &mut F) -> Result<(), E>
+		where F: FnMut(&mut T) -> Result<(), E> {
+		match self {
+			Pattern::Wildcard => Ok(()),
+			Pattern::Terminal(terminal) => function(terminal),
+			Pattern::Tuple(patterns) => patterns.iter_mut()
+				.try_for_each(|pattern| pattern.apply(function)),
+		}
+	}
+
+	pub fn traverse<F, E>(&self, function: &mut F) -> Result<(), E>
+		where F: FnMut(&T) -> Result<(), E> {
+		match self {
+			Pattern::Wildcard => Ok(()),
+			Pattern::Terminal(terminal) => function(terminal),
+			Pattern::Tuple(patterns) => patterns.iter()
+				.try_for_each(|pattern| pattern.traverse(function)),
+		}
+	}
+}

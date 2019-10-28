@@ -15,6 +15,8 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 
 	let FunctionPath(declaration_path) = function_path.node.as_ref();
 	let mut function_type = crate::parser::function_type(context, function_path)?;
+	super::shadow::shadow_function_type(&mut function_type)?;
+
 	super::resolution::resolve_function_type(context, &context.module_contexts
 		.get(&declaration_path.module_path).unwrap(), &mut function_type)?;
 
@@ -22,7 +24,6 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 	context.function_types.insert(function_path.node.clone(), function_type.clone());
 	Ok(function_type)
 }
-
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                 -> Result<Arc<Function>, Diagnostic> {
@@ -32,6 +33,8 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 
 	let FunctionPath(declaration_path) = function_path.node.as_ref();
 	let mut function = crate::parser::function(context, function_path)?;
+	super::shadow::shadow_function(&mut function)?;
+
 	super::resolution::resolve_function(context, &context.module_contexts
 		.get(&declaration_path.module_path).unwrap(), &mut function.context)?;
 
