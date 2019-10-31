@@ -9,17 +9,20 @@ mod span;
 mod lexer;
 mod parser;
 mod node;
+mod basic;
 mod extension;
+mod evaluation;
 mod inference;
 
 fn main() {
+	println!("Hello, world!");
+
 	use std::sync::Arc;
 	use crate::context::Context;
 	use crate::declaration::*;
 	use crate::span::*;
 	use std::path::PathBuf;
 
-	println!("Hello, world!");
 	let path: Arc<PathBuf> = Arc::new("examples/mathematics/main.lx".to_owned().into());
 	let module = ModulePending {
 		expected_path: path.clone(),

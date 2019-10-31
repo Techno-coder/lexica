@@ -1,3 +1,4 @@
+use std::fmt;
 use std::sync::Arc;
 
 use crate::declaration::StructurePath;
@@ -15,6 +16,13 @@ pub struct Variable(pub Arc<str>, pub usize);
 impl Variable {
 	pub fn new(identifier: Arc<str>) -> Self {
 		Variable(identifier, usize::max_value())
+	}
+}
+
+impl fmt::Display for Variable {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let Variable(identifier, _) = self;
+		write!(f, "{}", identifier)
 	}
 }
 

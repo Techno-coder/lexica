@@ -104,7 +104,7 @@ pub fn shadow_function(function: &mut Function) -> Result<(), Diagnostic> {
 
 fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
           expression: &ExpressionKey) -> Result<(), Diagnostic> {
-	function.apply(expression, &mut |function, expression| {
+	function.apply(expression, |function, expression| {
 		match &mut expression.node {
 			Expression::Block(block) => {
 				context.new_frame();

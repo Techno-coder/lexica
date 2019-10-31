@@ -61,13 +61,13 @@ impl FunctionContext {
 		expression_key
 	}
 
-	pub fn apply<F, R, E>(&mut self, expression_key: &ExpressionKey, function: &mut F) -> Result<R, E>
-		where F: FnMut(&mut Self, &mut Spanned<Expression>) -> Result<R, E> {
+	pub fn apply<F, R>(&mut self, expression_key: &ExpressionKey, function: F) -> R
+		where F: FnOnce(&mut Self, &mut Spanned<Expression>) -> R {
 		let replacement = Spanned::new(Expression::Block(Vec::new()), Span::INTERNAL);
 		let mut expression = std::mem::replace(&mut self[expression_key], replacement);
-		let result = function(self, &mut expression);
+		let value = function(self, &mut expression);
 		self[expression_key] = expression;
-		result
+		value
 	}
 }
 

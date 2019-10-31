@@ -25,6 +25,15 @@ impl<'a> SourceSplit<'a> {
 		let span = Span::new(self.source_key, byte_start, byte_end);
 		Spanned::new(&self.string[byte_start..byte_end], span)
 	}
+
+	fn comment(&mut self) -> Option<()> {
+		loop {
+			let (_, character) = self.characters.next()?;
+			if character == '\n' {
+				break Some(());
+			}
+		}
+	}
 }
 
 impl<'a> Iterator for SourceSplit<'a> {
@@ -39,6 +48,9 @@ impl<'a> Iterator for SourceSplit<'a> {
 		}
 
 		if initial.is_whitespace() {
+			return self.next();
+		} else if let ('/', Some((_, '/'))) = (initial, self.characters.peek()) {
+			self.comment()?;
 			return self.next();
 		}
 
@@ -78,5 +90,11 @@ mod tests {
 		let lexemes: Vec<_> = SourceSplit::new(string, SourceKey::INTERNAL)
 			.map(|node| node.node).collect();
 		assert_eq!(&lexemes, &["root", "::", "first", "::", "second", "::", "third"]);
+	}
+
+	#[test]
+	fn test_comment() {
+		let string = "// comment\n";
+		assert!(SourceSplit::new(string, SourceKey::INTERNAL).next().is_none());
 	}
 }

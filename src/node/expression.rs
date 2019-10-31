@@ -46,6 +46,6 @@ pub enum BinaryOperator {
 #[derive(Debug, Clone)]
 pub enum MutationKind {
 	Arithmetic(Arithmetic),
-	//	Assignment,
+	Assign,
 	Swap,
 }
