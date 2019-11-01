@@ -56,8 +56,8 @@ impl<'a> Iterator for SourceSplit<'a> {
 
 		let mut byte_end: Option<usize> = None;
 		while let Some((index, character)) = self.characters.peek() {
-			let class_difference = initial.is_ascii_punctuation()
-				!= character.is_ascii_punctuation();
+			let class_difference = is_identifier(&initial)
+				!= is_identifier(character);
 			if SINGULARITIES.contains(character) ||
 				character.is_whitespace() || class_difference {
 				byte_end = Some(*index);
@@ -72,16 +72,20 @@ impl<'a> Iterator for SourceSplit<'a> {
 	}
 }
 
+fn is_identifier(character: &char) -> bool {
+	character == &'_' || !character.is_ascii_punctuation()
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
 
 	#[test]
 	fn test_declaration() {
-		let string = "\tfn identifier(argument: type):";
+		let string = "\tfn _identifier(argument: type):";
 		let lexemes: Vec<_> = SourceSplit::new(string, SourceKey::INTERNAL)
 			.map(|node| node.node).collect();
-		assert_eq!(&lexemes, &["\t", "fn", "identifier", "(", "argument", ":", "type", ")", ":"]);
+		assert_eq!(&lexemes, &["\t", "fn", "_identifier", "(", "argument", ":", "type", ")", ":"]);
 	}
 
 	#[test]

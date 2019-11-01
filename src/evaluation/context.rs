@@ -5,13 +5,13 @@ use crate::span::Spanned;
 use super::{EvaluationError, EvaluationFrame};
 
 #[derive(Debug)]
-pub struct Context {
+pub struct EvaluationContext {
 	frames: Vec<EvaluationFrame>,
 }
 
-impl Context {
+impl EvaluationContext {
 	pub fn new(frame: EvaluationFrame) -> Self {
-		Context { frames: vec![frame] }
+		EvaluationContext { frames: vec![frame] }
 	}
 
 	pub fn advance(&mut self) -> Result<(), Diagnostic> {
@@ -27,8 +27,8 @@ impl Context {
 		match &statement.node {
 			Statement::Binding(variable, compound) =>
 				super::binding::binding(&mut frame.context, variable, compound),
-			Statement::Mutation(mutation, variable, value) =>
-				super::mutation::mutation(&mut frame.context, mutation, variable, value),
+			Statement::Mutation(mutation, location, value) =>
+				super::mutation::mutation(&mut frame.context, mutation, location, value),
 		}.map_err(|error| Diagnostic::new(Spanned::new(error, statement.span)))
 	}
 

@@ -1,7 +1,14 @@
-pub use basic::BasicFunction;
-pub use node::{BasicNode, Branch, NodeTarget, Statement, Divergence, Discriminant};
-pub use value::{Compound, Instance, Object, Value};
+pub use basic::{BasicFunction, BasicFunctions, Component, Direction};
+pub use branch::{Branch, Discriminant, Divergence};
+use context::BasicContext;
+pub use function::basic_function;
+pub use node::{BasicNode, NodeTarget};
+pub use statement::{Compound, Instance, Item, Location, Projection, Statement, Value};
 
 mod basic;
-mod value;
+mod statement;
+mod context;
+mod function;
+mod pattern;
+mod branch;
 mod node;

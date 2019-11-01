@@ -21,7 +21,6 @@ pub enum Expression {
 //	Accessor(ExpressionKey, Arc<str>),
 //	AccessorCall(ExpressionKey, Arc<str>, Vec<ExpressionKey>),
 //	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>),
-//	Tuple(Vec<ExpressionKey>),
 
 	Pattern(ExpressionPattern),
 	Variable(Variable),

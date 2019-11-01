@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::basic::{BasicFunction, BasicNode, NodeTarget, Object, Statement, Value};
+use crate::basic::{BasicFunction, BasicNode, Item, Location, NodeTarget, Projection,
+	Statement, Value};
 use crate::node::Variable;
 use crate::span::Spanned;
 
@@ -13,16 +14,16 @@ pub struct EvaluationFrame {
 
 impl EvaluationFrame {
 	pub fn new(function: Arc<BasicFunction>) -> Self {
-		let mut context = FrameContext::new(function.entry);
+		let mut context = FrameContext::new(function.component.entry);
 		function.parameters.iter().for_each(|parameter|
-			context.insert(parameter.node.clone(), Object::Uninitialised));
+			context.insert(parameter.node.clone(), Item::Uninitialised));
 		EvaluationFrame { function, context }
 	}
 }
 
 #[derive(Debug)]
 pub struct FrameContext {
-	variables: HashMap<Variable, Object>,
+	variables: HashMap<Variable, Item>,
 	pub current_node: NodeTarget,
 	pub next_statement: usize,
 }
@@ -41,19 +42,43 @@ impl FrameContext {
 		&self.node(function).statements[self.next_statement]
 	}
 
-	pub fn insert(&mut self, variable: Variable, object: Object) {
+	pub fn insert(&mut self, variable: Variable, object: Item) {
 		self.variables.insert(variable, object);
 	}
 
-	pub fn value<'a>(&'a self, value: &'a Value) -> &'a Object {
+	pub fn value<'a>(&'a self, value: &'a Value) -> &'a Item {
 		match value {
-			Value::Object(object) => object,
-			Value::Variable(variable) => self.variables.get(variable).unwrap(),
+			Value::Item(object) => object,
+			Value::Location(location) => {
+				let variable = self.variables.get(&location.variable).unwrap();
+				location.projections.iter().fold(variable, |variable, projection| {
+					match projection {
+						Projection::Field(field) => match variable {
+							Item::Instance(instance) => instance.fields.get(field).unwrap(),
+							_ => panic!("Field projection: {}, on item that is not instance", field)
+						}
+					}
+				})
+			}
 		}
 	}
 
-	pub fn variable<F, R>(&mut self, variable: &Variable, function: F) -> R
-		where F: FnOnce(&mut Self, &mut Object) -> R {
+	pub fn location<F, R>(&mut self, location: &Location, function: F) -> R
+		where F: FnOnce(&mut Self, &mut Item) -> R {
+		self.variable(&location.variable, |frame, variable| {
+			function(frame, location.projections.iter().fold(variable, |variable, projection| {
+				match projection {
+					Projection::Field(field) => match variable {
+						Item::Instance(instance) => instance.fields.get_mut(field).unwrap(),
+						_ => panic!("Field projection: {}, on item that is not instance", field)
+					}
+				}
+			}))
+		})
+	}
+
+	fn variable<F, R>(&mut self, variable: &Variable, function: F) -> R
+		where F: FnOnce(&mut Self, &mut Item) -> R {
 		let (key, mut object) = self.variables.remove_entry(variable).unwrap();
 		let value = function(self, &mut object);
 		self.variables.insert(key, object);

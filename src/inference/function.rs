@@ -9,8 +9,8 @@ use crate::span::Spanned;
 use super::{Environment, InferenceType, intrinsic, pattern, TypeEngine};
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>) -> Result<(), Diagnostic> {
-	let function_type = crate::node::function_type(context, function_path)?;
 	let function = crate::node::function(context, function_path)?;
+	let function_type = &function.function_type;
 
 	let environment = &mut Environment::new();
 	let engine = &mut TypeEngine::default();

@@ -1,7 +1,6 @@
-use crate::node::{MutationKind, Variable};
-use crate::span::Spanned;
+use crate::span::{Span, Spanned};
 
-use super::{Compound, Object, Value};
+use super::{Direction, Branch, Statement};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct NodeTarget(pub usize);
@@ -11,42 +10,32 @@ pub struct BasicNode {
 	pub statements: Vec<Spanned<Statement>>,
 	pub reverse: Spanned<Branch>,
 	pub advance: Spanned<Branch>,
+	pub in_reverse: Vec<NodeTarget>,
+	pub in_advance: Vec<NodeTarget>,
 }
 
-#[derive(Debug)]
-pub enum Statement {
-	Binding(Variable, Compound),
-	Mutation(MutationKind, Variable, Value),
-}
+impl BasicNode {
+	pub fn new() -> Self {
+		BasicNode {
+			statements: Vec::new(),
+			reverse: Spanned::new(Branch::Unreachable, Span::INTERNAL),
+			advance: Spanned::new(Branch::Unreachable, Span::INTERNAL),
+			in_reverse: Vec::new(),
+			in_advance: Vec::new(),
+		}
+	}
 
-#[derive(Debug)]
-pub enum Branch {
-	Jump(NodeTarget),
-	Divergence(Divergence),
-	Return(Value),
-	Unreachable,
-}
+	pub fn branch(&mut self, direction: Direction) -> &mut Spanned<Branch> {
+		match direction {
+			Direction::Advance => &mut self.advance,
+			Direction::Reverse => &mut self.reverse,
+		}
+	}
 
-#[derive(Debug)]
-pub struct Divergence {
-	pub discriminant: Value,
-	pub branches: Vec<(Discriminant, NodeTarget)>,
-	pub default: NodeTarget,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Discriminant(pub u64);
-
-impl From<&Object> for Discriminant {
-	fn from(object: &Object) -> Self {
-		Discriminant(match object {
-			Object::Truth(truth) => match truth {
-				false => 0,
-				true => !0,
-			},
-			Object::Unsigned64(value) => *value,
-			Object::Instance(_) | Object::Uninitialised =>
-				panic!("Invalid discriminant object"),
-		})
+	pub fn in_edges(&mut self, direction: Direction) -> &mut Vec<NodeTarget> {
+		match direction {
+			Direction::Advance => &mut self.in_advance,
+			Direction::Reverse => &mut self.in_reverse,
+		}
 	}
 }

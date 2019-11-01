@@ -14,4 +14,6 @@ pub struct Context {
 	pub function_types: node::FunctionTypes,
 	pub node_functions: node::NodeFunctions,
 	pub node_structures: node::NodeStructures,
+
+	pub basic_functions: basic::BasicFunctions,
 }

@@ -1,5 +1,6 @@
+pub use context::EvaluationContext;
 pub use evaluation::EvaluationError;
-use frame::{EvaluationFrame, FrameContext};
+pub use frame::{EvaluationFrame, FrameContext};
 
 mod context;
 mod binding;
