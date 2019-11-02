@@ -9,16 +9,18 @@ pub struct EvaluationContext {
 	frames: Vec<EvaluationFrame>,
 }
 
+// TODO: Add reverse execution
 impl EvaluationContext {
 	pub fn new(frame: EvaluationFrame) -> Self {
 		EvaluationContext { frames: vec![frame] }
 	}
 
 	pub fn advance(&mut self) -> Result<(), Diagnostic> {
-		self.advance_execute()?;
-		let frame = self.frame();
-		frame.context.next_statement += 1;
-		self.advance_branch()
+		if !self.advance_branch()? {
+			self.advance_execute()?;
+			self.frame().context.next_statement += 1;
+		}
+		Ok(())
 	}
 
 	fn advance_execute(&mut self) -> Result<(), Diagnostic> {
@@ -32,7 +34,9 @@ impl EvaluationContext {
 		}.map_err(|error| Diagnostic::new(Spanned::new(error, statement.span)))
 	}
 
-	fn advance_branch(&mut self) -> Result<(), Diagnostic> {
+	/// Evaluates the node branch if the advance endpoint is reached.
+	/// Returns true if a node change was performed.
+	fn advance_branch(&mut self) -> Result<bool, Diagnostic> {
 		let frame = self.frame();
 		let node = frame.context.node(&frame.function);
 		if frame.context.next_statement == node.statements.len() {
@@ -40,7 +44,7 @@ impl EvaluationContext {
 			match &node.advance.node {
 				Branch::Jump(target) => frame.context.current_node = *target,
 				Branch::Divergence(divergence) => {
-					let discriminant = frame.context.value(&divergence.discriminant).into();
+					let discriminant = frame.context.value(&divergence.discriminant).clone().into();
 					let target = divergence.branches.iter().find(|(value, _)| value == &discriminant)
 						.map(|(_, target)| *target).unwrap_or(divergence.default);
 					frame.context.current_node = target;
@@ -55,8 +59,9 @@ impl EvaluationContext {
 					return Err(Diagnostic::new(Spanned::new(error, node.advance.span)));
 				}
 			}
+			return Ok(true);
 		}
-		Ok(())
+		Ok(false)
 	}
 
 	fn frame(&mut self) -> &mut EvaluationFrame {

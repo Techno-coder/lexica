@@ -39,7 +39,10 @@ impl FrameContext {
 	}
 
 	pub fn statement<'a>(&self, function: &'a Arc<BasicFunction>) -> &'a Spanned<Statement> {
-		&self.node(function).statements[self.next_statement]
+		let node = &self.node(function);
+		node.statements.get(self.next_statement).unwrap_or_else(||
+			panic!("Statement index: {}, is invalid in node: {}, of length: {}",
+				self.next_statement, self.current_node, node.statements.len()))
 	}
 
 	pub fn insert(&mut self, variable: Variable, object: Item) {

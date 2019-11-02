@@ -1,4 +1,4 @@
-pub use basic::{BasicFunction, BasicFunctions, Component, Direction};
+pub use basic::{BasicFunction, BasicFunctions, Component, Direction, Reversibility};
 pub use branch::{Branch, Discriminant, Divergence};
 use context::BasicContext;
 pub use function::basic_function;
@@ -7,6 +7,7 @@ pub use statement::{Compound, Instance, Item, Location, Projection, Statement, V
 
 mod basic;
 mod statement;
+mod conditional;
 mod context;
 mod function;
 mod pattern;

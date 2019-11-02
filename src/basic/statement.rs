@@ -10,6 +10,17 @@ pub enum Statement {
 	Mutation(MutationKind, Location, Value),
 }
 
+impl fmt::Display for Statement {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Statement::Binding(variable, compound) =>
+				write!(f, "let {} = {}", variable, compound),
+			Statement::Mutation(mutation, location, value) =>
+				write!(f, "{} {} {}", location, mutation, value),
+		}
+	}
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Location {
 	pub variable: Variable,
@@ -53,10 +64,30 @@ pub enum Compound {
 	Binary(BinaryOperator, Value, Value),
 }
 
+impl fmt::Display for Compound {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Compound::Value(value) =>
+				write!(f, "{}", value),
+			Compound::Binary(operator, left, right) =>
+				write!(f, "{} {} {}", left, operator, right),
+		}
+	}
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
 	Location(Location),
 	Item(Item),
+}
+
+impl fmt::Display for Value {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Value::Location(location) => write!(f, "{}", location),
+			Value::Item(item) => write!(f, "{}", item),
+		}
+	}
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,7 +100,27 @@ pub enum Item {
 	Unit,
 }
 
+impl fmt::Display for Item {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Item::Truth(truth) => write!(f, "{}", truth),
+			Item::Signed64(integer) => write!(f, "{}", integer),
+			Item::Unsigned64(integer) => write!(f, "{}", integer),
+			Item::Instance(instance) => write!(f, "{}", instance),
+			Item::Uninitialised => write!(f, "<!>"),
+			Item::Unit => write!(f, "()"),
+		}
+	}
+}
+
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Instance {
 	pub fields: HashMap<Arc<str>, Item>,
+}
+
+impl fmt::Display for Instance {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		self.fields.iter().try_for_each(|(field, item)|
+			writeln!(f, "{}: {},", field, item))
+	}
 }

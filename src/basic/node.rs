@@ -1,9 +1,18 @@
+use std::fmt;
+
 use crate::span::{Span, Spanned};
 
-use super::{Direction, Branch, Statement};
+use super::{Branch, Direction, Statement};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct NodeTarget(pub usize);
+
+impl fmt::Display for NodeTarget {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let NodeTarget(target) = self;
+		write!(f, "{}", target)
+	}
+}
 
 #[derive(Debug)]
 pub struct BasicNode {
@@ -37,5 +46,20 @@ impl BasicNode {
 			Direction::Advance => &mut self.in_advance,
 			Direction::Reverse => &mut self.in_reverse,
 		}
+	}
+
+	pub fn invert(&mut self) {
+		std::mem::swap(&mut self.advance, &mut self.reverse);
+		std::mem::swap(&mut self.in_advance, &mut self.in_reverse);
+		self.statements.reverse();
+	}
+}
+
+impl fmt::Display for BasicNode {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		writeln!(f, "-{}", self.reverse.node)?;
+		self.statements.iter().try_for_each(|statement|
+			writeln!(f, "{}", statement.node))?;
+		write!(f, "+{}", self.advance.node)
 	}
 }

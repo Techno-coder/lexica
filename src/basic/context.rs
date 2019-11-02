@@ -1,28 +1,57 @@
 use std::collections::HashMap;
+use std::fmt::{self, Write};
 use std::ops::{Index, IndexMut};
 
+use crate::extension::{Indent, Traverse};
 use crate::node::Variable;
 use crate::span::{Span, Spanned};
 
-use super::{BasicNode, Branch, Component, Direction, NodeTarget, Statement};
+use super::{BasicNode, Branch, Component, Direction, Divergence, NodeTarget,
+	Reversibility, Statement};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct BasicContext {
 	next_temporary: usize,
+	next_component: usize,
+	reversibility: Reversibility,
 	nodes: HashMap<NodeTarget, BasicNode>,
 }
 
 impl BasicContext {
+	pub fn new(reversibility: Reversibility) -> Self {
+		BasicContext {
+			next_temporary: 0,
+			next_component: 0,
+			reversibility,
+			nodes: HashMap::new(),
+		}
+	}
+
+	pub fn is_reversible(&self) -> bool {
+		self.reversibility == Reversibility::Reversible
+	}
+
 	pub fn temporary(&mut self) -> Variable {
 		self.next_temporary += 1;
-		Variable(".".into(), self.next_temporary - 1)
+		Variable::new_temporary(self.next_temporary - 1)
 	}
 
 	/// Creates an empty component.
 	pub fn component(&mut self) -> Component {
-		let target = NodeTarget(self.nodes.len());
+		self.next_component += 1;
+		let target = NodeTarget(self.next_component);
 		self.nodes.insert(target, BasicNode::new());
-		Component { entry: target, exit: target }
+		Component::new(target, target)
+	}
+
+	/// Reverses a component and the contained nodes and branches.
+	pub fn invert(&mut self, component: Component) -> Component {
+		Traverse::traverse(component.entry, &mut |traverse, node| {
+			self[&node].invert();
+			traverse.extend(self[&node].reverse.node.targets().cloned());
+			traverse.extend(self[&node].reverse.node.targets().cloned());
+		});
+		component
 	}
 
 	/// Pushes a statement on the endpoint of the component.
@@ -33,7 +62,7 @@ impl BasicContext {
 	}
 
 	/// Joins the base component with the target.
-	/// Coalesces the base exit block with the target entry block.
+	/// Coalesces the base exit node with the target entry node.
 	pub fn join(&mut self, mut base: Component, target: Component, span: Span) -> Component {
 		let (base_node, target_node) = (&self[&base.exit], &self[&target.entry]);
 		if base_node.in_reverse.is_empty() && target_node.in_advance.is_empty() {
@@ -51,28 +80,38 @@ impl BasicContext {
 				base.exit = target.exit;
 			}
 		} else {
-			self.link(Direction::Advance, &base.exit, &target.entry, span);
-			self.link(Direction::Reverse, &target.entry, &base.exit, span);
+			self.link(Direction::Advance, &base, &target, span);
+			self.link(Direction::Reverse, &target, &base, span);
 			base.exit = target.exit;
 		}
 		base
 	}
 
-	pub fn flatten(self) -> Vec<BasicNode> {
+	/// Links the base component endpoint to the target component with a jump.
+	pub fn link(&mut self, direction: Direction, base: &Component, target: &Component, span: Span) {
+		let (exit, entry) = (base.endpoint(direction), target.endpoint(!direction));
+		assert_eq!(self[&exit].branch(direction).node, Branch::Unreachable);
+		*self[&exit].branch(direction) = Spanned::new(Branch::Jump(entry), span);
+		self[&entry].in_edges(direction).push(exit);
+	}
+
+	pub fn divergence(&mut self, direction: Direction, base: &Component, divergence: Divergence, span: Span) {
+		let exit = base.endpoint(direction);
+		divergence.targets().for_each(|target| self[target].in_edges(direction).push(exit));
+		*self[&exit].branch(direction) = Spanned::new(Branch::Divergence(divergence), span);
+	}
+
+	pub fn flatten(self, mut component: Component) -> (Vec<BasicNode>, Component) {
 		let targets: HashMap<_, _> = self.nodes.iter().enumerate()
-			.map(|(index, (target, _))| (NodeTarget(index), *target)).collect();
-		self.nodes.into_iter().map(|(_, mut node)| {
+			.map(|(index, (target, _))| (*target, NodeTarget(index))).collect();
+		component.entry = targets[&component.entry];
+		component.exit = targets[&component.exit];
+
+		(self.nodes.into_iter().map(|(_, mut node)| {
 			node.reverse.node.retarget(&targets);
 			node.advance.node.retarget(&targets);
 			node
-		}).collect()
-	}
-
-	/// Links the base node to the target node with a jump.
-	fn link(&mut self, direction: Direction, base: &NodeTarget, target: &NodeTarget, span: Span) {
-		assert_eq!(self[base].branch(direction).node, Branch::Unreachable);
-		*self[base].branch(direction) = Spanned::new(Branch::Jump(target.clone()), span);
-		self[target].in_edges(direction).push(base.clone());
+		}).collect(), component)
 	}
 }
 
@@ -89,5 +128,15 @@ impl IndexMut<&NodeTarget> for BasicContext {
 	fn index_mut(&mut self, index: &NodeTarget) -> &mut Self::Output {
 		self.nodes.get_mut(index).unwrap_or_else(||
 			panic!("Node target: {:?}, does not exist in context", index))
+	}
+}
+
+impl fmt::Display for BasicContext {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		self.nodes.iter().try_for_each(|(target, node)| {
+			writeln!(f, "{}:", target)?;
+			let indent = &mut Indent::new(f);
+			writeln!(indent, "{}", node)
+		})
 	}
 }

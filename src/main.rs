@@ -50,19 +50,28 @@ fn main() {
 	let _basic = context.emit(crate::basic::basic_function(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
-			identifier: "math_expression".into(),
-		})), Span::INTERNAL)));
-	println!("{:#?}", _basic);
+			identifier: "fibonacci".into(),
+		})), Span::INTERNAL), Reversibility::Entropic)).unwrap();
+	println!("{}", _basic);
 
-	let basic = _basic.unwrap();
-	let mut frame = EvaluationFrame::new(basic);
-	frame.context.insert(Variable("a".into(), 0), Item::Unsigned64(2));
-	frame.context.insert(Variable("b".into(), 0), Item::Unsigned64(3));
-	frame.context.insert(Variable("c".into(), 0), Item::Unsigned64(5));
+	let mut frame = EvaluationFrame::new(_basic);
+	frame.context.insert(Variable("n".into(), 0), Item::Unsigned64(35));
 	let mut evaluation = EvaluationContext::new(frame);
-	loop {
-		println!("{:#?}", evaluation.advance());
-	}
+	loop { println!("{:?}", evaluation.advance()); }
+
+//	let _basic = context.emit(crate::basic::basic_function(context, &Spanned::new(Arc::new(
+//		FunctionPath(crate::declaration::DeclarationPath {
+//			module_path: ModulePath::root(),
+//			identifier: "math_expression".into(),
+//		})), Span::INTERNAL), Reversibility::Entropic)).unwrap();
+//	println!("{}", _basic);
+
+//	let mut frame = EvaluationFrame::new(_basic);
+//	frame.context.insert(Variable("a".into(), 0), Item::Unsigned64(2));
+//	frame.context.insert(Variable("b".into(), 0), Item::Unsigned64(3));
+//	frame.context.insert(Variable("c".into(), 0), Item::Unsigned64(5));
+//	let mut evaluation = EvaluationContext::new(frame);
+//	loop { println!("{:#?}", evaluation.advance()); }
 
 	for error in context.errors.read().iter() {
 		crate::error::display(context, error);

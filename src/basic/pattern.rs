@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::node::{BindingPattern, BindingVariable, ExpressionPattern, FunctionContext,
-	MutationKind, Pattern};
+	MutationKind, Pattern, VariablePattern};
 use crate::span::{Span, Spanned};
 
 use super::{BasicContext, Component, Compound, Instance, Item, Location, Projection,
@@ -22,6 +22,27 @@ pub fn binding(context: &mut BasicContext, mut component: Component, value: &Val
 				let field: Arc<str> = index.to_string().into();
 				let location = location.clone().push(Projection::Field(field));
 				component = binding(context, component, value, pattern, location);
+			}
+			component
+		}
+	}
+}
+
+pub fn explicit_drop(context: &mut BasicContext, mut component: Component, value: &Value,
+                     pattern: &VariablePattern, location: Location) -> Component {
+	match &pattern {
+		Pattern::Wildcard => panic!("Wildcard explicit drop is invalid"),
+		Pattern::Terminal(terminal) => {
+			let value = Value::Location(location);
+			let location = Location::new(terminal.node.clone());
+			let statement = Statement::Mutation(MutationKind::Assign, location, value);
+			context.push(component, Spanned::new(statement, terminal.span))
+		}
+		Pattern::Tuple(patterns) => {
+			for (index, pattern) in patterns.iter().enumerate() {
+				let field: Arc<str> = index.to_string().into();
+				let location = location.clone().push(Projection::Field(field));
+				component = explicit_drop(context, component, value, pattern, location);
 			}
 			component
 		}
