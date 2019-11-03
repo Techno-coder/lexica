@@ -67,15 +67,16 @@ pub fn shadow_function_type(function_type: &mut FunctionType) -> Result<(), Diag
 	for parameter in &mut function_type.parameters {
 		let Parameter(pattern, _) = &mut parameter.node;
 		pattern.apply(&mut |terminal| {
-			let BindingVariable(Variable(identifier, generation), _) = &mut terminal.node;
+			let BindingVariable(variable, _) = &mut terminal.node;
+			let Variable(identifier, _) = variable;
 			match variables.contains(identifier) {
 				true => {
 					let error = NodeError::DuplicateParameter(identifier.clone());
 					Err(Diagnostic::new(Spanned::new(error, terminal.span)))
 				}
 				false => {
-					*generation = 0;
 					variables.insert(identifier.clone());
+					*variable = Variable::new_parameter(identifier.clone());
 					Ok(())
 				}
 			}

@@ -1,6 +1,6 @@
-pub use context::EvaluationContext;
-pub use evaluation::EvaluationError;
-pub use frame::{EvaluationFrame, FrameContext};
+use context::{EvaluationContext, DropStack};
+pub use evaluation::{EvaluationError, evaluate};
+use frame::{EvaluationFrame, FrameContext};
 
 mod context;
 mod binding;

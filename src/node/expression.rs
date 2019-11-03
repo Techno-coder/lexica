@@ -72,7 +72,7 @@ pub enum MutationKind {
 impl fmt::Display for MutationKind {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			MutationKind::Arithmetic(arithmetic) => write!(f, "{}", arithmetic),
+			MutationKind::Arithmetic(arithmetic) => write!(f, "{}=", arithmetic),
 			MutationKind::Assign => write!(f, "="),
 			MutationKind::Swap => write!(f, "<=>"),
 		}

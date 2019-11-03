@@ -4,7 +4,8 @@ use crate::context::Context;
 use crate::declaration::{self, FunctionPath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{Function, FunctionContext, FunctionType, Parameter};
+use crate::node::{Ascription, AscriptionPattern, Function, FunctionContext, FunctionType,
+	Parameter, Pattern};
 use crate::span::Spanned;
 
 use super::ParserError;
@@ -27,9 +28,8 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 
 	let parameters = parameters(lexer).map_err(|diagnostic|
 		diagnostic.note("In parsing function parameters"))?;
-	super::expect(lexer, Token::ReturnSeparator)?;
-	let return_type = super::pattern(lexer, &mut super::ascription)
-		.map_err(|diagnostic| diagnostic.note("In parsing function return type"))?;
+	let return_type = return_type(lexer)?;
+
 	let function_offset = super::expect(lexer, Token::Separator)?.byte_end;
 	Ok(FunctionType::new(parameters, return_type, function_offset))
 }
@@ -66,4 +66,19 @@ fn parameters(lexer: &mut Lexer) -> Result<Vec<Spanned<Parameter>>, Diagnostic> 
 
 	super::expect(lexer, Token::ParenthesisClose)?;
 	Ok(parameters)
+}
+
+fn return_type(lexer: &mut Lexer) -> Result<Spanned<AscriptionPattern>, Diagnostic> {
+	let token = lexer.peek();
+	match token.node {
+		Token::ReturnSeparator => {
+			lexer.next();
+			super::pattern(lexer, &mut super::ascription).map_err(|diagnostic|
+				diagnostic.note("In parsing function return type"))
+		}
+		_ => {
+			let ascription = Ascription(crate::intrinsic::Intrinsic::Unit.structure());
+			Ok(Spanned::new(Pattern::Terminal(Spanned::new(ascription, token.span)), token.span))
+		}
+	}
 }

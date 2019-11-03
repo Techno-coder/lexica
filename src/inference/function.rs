@@ -3,10 +3,11 @@ use std::sync::Arc;
 use crate::context::Context;
 use crate::declaration::FunctionPath;
 use crate::error::Diagnostic;
+use crate::intrinsic::Intrinsic;
 use crate::node::*;
 use crate::span::Spanned;
 
-use super::{Environment, InferenceType, intrinsic, pattern, TypeEngine};
+use super::{Environment, InferenceType, pattern, TypeEngine};
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>) -> Result<(), Diagnostic> {
 	let function = crate::node::function(context, function_path)?;
@@ -55,34 +56,34 @@ pub fn expression(context: &FunctionContext, environment: &mut Environment, engi
 			let expression = expression(context, environment, engine, *expression_key)?;
 			engine.unify(binding_type, expression).map_err(|error|
 				Diagnostic::new(Spanned::new(error, span)))?;
-			intrinsic::unit()
+			Intrinsic::Unit.inference()
 		}
 		Expression::TerminationLoop(start_condition, end_condition, expression_key) => {
 			if let Some(start_condition) = start_condition {
 				let condition_type = expression(context, environment, engine, *start_condition)?;
-				engine.unify(condition_type, intrinsic::truth()).map_err(|error|
+				engine.unify(condition_type, Intrinsic::Truth.inference()).map_err(|error|
 					Diagnostic::new(Spanned::new(error, context[start_condition].span)))?;
 			}
 
 			let condition_type = expression(context, environment, engine, *end_condition)?;
-			engine.unify(condition_type, intrinsic::truth()).map_err(|error|
+			engine.unify(condition_type, Intrinsic::Truth.inference()).map_err(|error|
 				Diagnostic::new(Spanned::new(error, context[end_condition].span)))?;
 			expression(context, environment, engine, *expression_key)?;
-			intrinsic::unit()
+			Intrinsic::Unit.inference()
 		}
 		Expression::Mutation(_, mutable, expression_key) => {
 			let mutable = expression(context, environment, engine, *mutable)?;
 			let expression = expression(context, environment, engine, *expression_key)?;
 			engine.unify(mutable, expression).map_err(|error|
 				Diagnostic::new(Spanned::new(error, span)))?;
-			intrinsic::unit()
+			Intrinsic::Unit.inference()
 		}
 		Expression::ExplicitDrop(variable, expression_key) => {
 			let variable_type = pattern::variable_type(environment, engine, variable);
 			let expression = expression(context, environment, engine, *expression_key)?;
 			engine.unify(variable_type, expression).map_err(|error|
 				Diagnostic::new(Spanned::new(error, span)))?;
-			intrinsic::unit()
+			Intrinsic::Unit.inference()
 		}
 		Expression::Binary(operator, left, right) => {
 			let left = expression(context, environment, engine, *left)?;
@@ -90,7 +91,7 @@ pub fn expression(context: &FunctionContext, environment: &mut Environment, engi
 			engine.unify(left.clone(), right).map_err(|error|
 				Diagnostic::new(Spanned::new(error, span)))?;
 			match operator.node {
-				BinaryOperator::Equality => intrinsic::truth(),
+				BinaryOperator::Equality => Intrinsic::Truth.inference(),
 				BinaryOperator::Arithmetic(_) => left,
 			}
 		}
@@ -98,6 +99,6 @@ pub fn expression(context: &FunctionContext, environment: &mut Environment, engi
 		Expression::Variable(variable) => Arc::new(InferenceType::Variable(environment[variable])),
 		Expression::Unsigned(_) => engine.new_variable_type(),
 		Expression::Signed(_) => engine.new_variable_type(),
-		Expression::Truth(_) => intrinsic::truth(),
+		Expression::Truth(_) => Intrinsic::Truth.inference(),
 	})
 }

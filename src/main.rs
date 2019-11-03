@@ -14,6 +14,7 @@ mod basic;
 mod extension;
 mod evaluation;
 mod inference;
+mod intrinsic;
 
 fn main() {
 	println!("Hello, world!");
@@ -21,10 +22,9 @@ fn main() {
 	use std::sync::Arc;
 	use crate::context::Context;
 	use crate::declaration::*;
-	use crate::evaluation::*;
-	use crate::node::*;
 	use crate::span::*;
 	use crate::basic::*;
+	use std::collections::HashMap;
 	use std::path::PathBuf;
 
 	let path: Arc<PathBuf> = Arc::new("examples/mathematics/main.lx".to_owned().into());
@@ -47,31 +47,15 @@ fn main() {
 			identifier: "Vector".into(),
 		})), Span::INTERNAL)));
 
-	let _basic = context.emit(crate::basic::basic_function(context, &Spanned::new(Arc::new(
+	let mut parameters = HashMap::new();
+	parameters.insert("n".into(), Item::Unsigned64(35));
+
+	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
 			identifier: "fibonacci".into(),
-		})), Span::INTERNAL), Reversibility::Entropic)).unwrap();
-	println!("{}", _basic);
-
-	let mut frame = EvaluationFrame::new(_basic);
-	frame.context.insert(Variable("n".into(), 0), Item::Unsigned64(35));
-	let mut evaluation = EvaluationContext::new(frame);
-	loop { println!("{:?}", evaluation.advance()); }
-
-//	let _basic = context.emit(crate::basic::basic_function(context, &Spanned::new(Arc::new(
-//		FunctionPath(crate::declaration::DeclarationPath {
-//			module_path: ModulePath::root(),
-//			identifier: "math_expression".into(),
-//		})), Span::INTERNAL), Reversibility::Entropic)).unwrap();
-//	println!("{}", _basic);
-
-//	let mut frame = EvaluationFrame::new(_basic);
-//	frame.context.insert(Variable("a".into(), 0), Item::Unsigned64(2));
-//	frame.context.insert(Variable("b".into(), 0), Item::Unsigned64(3));
-//	frame.context.insert(Variable("c".into(), 0), Item::Unsigned64(5));
-//	let mut evaluation = EvaluationContext::new(frame);
-//	loop { println!("{:#?}", evaluation.advance()); }
+		})), Span::INTERNAL), parameters));
+	result.map(|result| println!("{}", result));
 
 	for error in context.errors.read().iter() {
 		crate::error::display(context, error);

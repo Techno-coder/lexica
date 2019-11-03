@@ -81,7 +81,7 @@ impl TypeEngine {
 
 #[cfg(test)]
 mod tests {
-	use crate::inference::intrinsic;
+	use crate::intrinsic::Intrinsic::*;
 
 	use super::*;
 
@@ -89,31 +89,31 @@ mod tests {
 	fn test_unification() {
 		let mut engine = TypeEngine::default();
 		let variables = vec![engine.new_variable_type(), engine.new_variable_type()];
-		let inference_tuple = Arc::new(InferenceType::Instance(intrinsic::tuple(), variables));
+		let inference_tuple = Arc::new(InferenceType::Instance(Tuple.structure(), variables));
 
-		let variables = vec![engine.new_variable_type(), intrinsic::truth()];
+		let variables = vec![engine.new_variable_type(), Truth.inference()];
 		assert!(engine.unify(inference_tuple.clone(),
-			Arc::new(InferenceType::Instance(intrinsic::tuple(), variables))).is_ok());
-		let variables = vec![intrinsic::unit(), engine.new_variable_type()];
+			Arc::new(InferenceType::Instance(Tuple.structure(), variables))).is_ok());
+		let variables = vec![Unit.inference(), engine.new_variable_type()];
 		assert!(engine.unify(inference_tuple.clone(),
-			Arc::new(InferenceType::Instance(intrinsic::tuple(), variables))).is_ok());
+			Arc::new(InferenceType::Instance(Tuple.structure(), variables))).is_ok());
 
-		let variables = vec![intrinsic::unit(), intrinsic::truth()];
+		let variables = vec![Unit.inference(), Truth.inference()];
 		assert_eq!(engine.construct(inference_tuple).as_ref(),
-			&InferenceType::Instance(intrinsic::tuple(), variables));
+			&InferenceType::Instance(Tuple.structure(), variables));
 	}
 
 	#[test]
 	fn test_unification_error() {
 		let mut engine = TypeEngine::default();
-		assert!(engine.unify(intrinsic::truth(), intrinsic::unit()).is_err());
+		assert!(engine.unify(Truth.inference(), Unit.inference()).is_err());
 	}
 
 	#[test]
 	fn test_occurs() {
 		let mut engine = TypeEngine::default();
 		let variable = engine.new_variable_type();
-		let other = Arc::new(InferenceType::Instance(intrinsic::tuple(), vec![variable.clone()]));
+		let other = Arc::new(InferenceType::Instance(Tuple.structure(), vec![variable.clone()]));
 		assert!(engine.unify(variable, other).is_err());
 	}
 }

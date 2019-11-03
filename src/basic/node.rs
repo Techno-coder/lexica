@@ -3,6 +3,7 @@ use std::fmt;
 use crate::span::{Span, Spanned};
 
 use super::{Branch, Direction, Statement};
+use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct NodeTarget(pub usize);
@@ -34,13 +35,6 @@ impl BasicNode {
 		}
 	}
 
-	pub fn branch(&mut self, direction: Direction) -> &mut Spanned<Branch> {
-		match direction {
-			Direction::Advance => &mut self.advance,
-			Direction::Reverse => &mut self.reverse,
-		}
-	}
-
 	pub fn in_edges(&mut self, direction: Direction) -> &mut Vec<NodeTarget> {
 		match direction {
 			Direction::Advance => &mut self.in_advance,
@@ -52,6 +46,26 @@ impl BasicNode {
 		std::mem::swap(&mut self.advance, &mut self.reverse);
 		std::mem::swap(&mut self.in_advance, &mut self.in_reverse);
 		self.statements.reverse();
+	}
+}
+
+impl Index<Direction> for BasicNode {
+	type Output = Spanned<Branch>;
+
+	fn index(&self, index: Direction) -> &Self::Output {
+		match index {
+			Direction::Advance => &self.advance,
+			Direction::Reverse => &self.reverse,
+		}
+	}
+}
+
+impl IndexMut<Direction> for BasicNode {
+	fn index_mut(&mut self, index: Direction) -> &mut Self::Output {
+		match index {
+			Direction::Advance => &mut self.advance,
+			Direction::Reverse => &mut self.reverse,
+		}
 	}
 }
 

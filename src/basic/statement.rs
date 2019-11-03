@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use std::fmt;
+use std::fmt::{self, Write};
 use std::sync::Arc;
 
+use crate::extension::Indent;
 use crate::node::{BinaryOperator, MutationKind, Variable};
 
 #[derive(Debug)]
@@ -120,7 +121,16 @@ pub struct Instance {
 
 impl fmt::Display for Instance {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		self.fields.iter().try_for_each(|(field, item)|
-			writeln!(f, "{}: {},", field, item))
+		writeln!(f)?;
+		let indent = &mut Indent::new(f);
+		for (index, (field, item)) in self.fields.iter().enumerate() {
+			match item {
+				Item::Instance(_) => write!(indent, "{}: {}", field, item),
+				_ => write!(indent, "{}: {},", field, item),
+			}?;
+
+			if index < self.fields.len() - 1 { writeln!(indent)?; }
+		}
+		Ok(())
 	}
 }

@@ -90,15 +90,15 @@ impl BasicContext {
 	/// Links the base component endpoint to the target component with a jump.
 	pub fn link(&mut self, direction: Direction, base: &Component, target: &Component, span: Span) {
 		let (exit, entry) = (base.endpoint(direction), target.endpoint(!direction));
-		assert_eq!(self[&exit].branch(direction).node, Branch::Unreachable);
-		*self[&exit].branch(direction) = Spanned::new(Branch::Jump(entry), span);
+		assert_eq!(self[&exit][direction].node, Branch::Unreachable);
+		self[&exit][direction] = Spanned::new(Branch::Jump(entry), span);
 		self[&entry].in_edges(direction).push(exit);
 	}
 
 	pub fn divergence(&mut self, direction: Direction, base: &Component, divergence: Divergence, span: Span) {
 		let exit = base.endpoint(direction);
 		divergence.targets().for_each(|target| self[target].in_edges(direction).push(exit));
-		*self[&exit].branch(direction) = Spanned::new(Branch::Divergence(divergence), span);
+		self[&exit][direction] = Spanned::new(Branch::Divergence(divergence), span);
 	}
 
 	pub fn flatten(self, mut component: Component) -> (Vec<BasicNode>, Component) {

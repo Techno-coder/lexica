@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use crate::declaration::StructurePath;
 use crate::error::CompileError;
+use crate::intrinsic::Intrinsic;
 use crate::node::Variable;
 
 pub type Environment = HashMap<Variable, TypeVariable>;
@@ -77,5 +78,11 @@ impl fmt::Display for InferenceType {
 			}
 			InferenceType::Variable(variable) => write!(f, "{}", variable),
 		}
+	}
+}
+
+impl Intrinsic {
+	pub fn inference(&self) -> Arc<InferenceType> {
+		Arc::new(InferenceType::Instance(self.structure(), Vec::new()))
 	}
 }

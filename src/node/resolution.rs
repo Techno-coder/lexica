@@ -3,11 +3,10 @@ use std::sync::Arc;
 use crate::context::Context;
 use crate::declaration::{InclusionTerminal, ModuleContext, ModulePath, StructurePath};
 use crate::error::Diagnostic;
+use crate::intrinsic::Intrinsic;
 use crate::span::Spanned;
 
 use super::{Ascription, Expression, FunctionContext, FunctionType, NodeError, Parameter, Pattern};
-
-const INTRINSICS: &[&str] = &["u8", "u16", "u32", "u64", "i8", "i16", "i32,", "i64", "truth"];
 
 pub fn resolve_function_type(context: &Context, module_context: &ModuleContext,
                              function_type: &mut FunctionType) -> Result<(), Diagnostic> {
@@ -37,10 +36,10 @@ fn resolve_ascriptions(context: &Context, module_context: &ModuleContext,
 fn resolve_ascription(context: &Context, module_context: &ModuleContext,
                       ascription: &mut Spanned<Ascription>) -> Result<(), Diagnostic> {
 	let Ascription(StructurePath(declaration_path)) = &mut ascription.node;
-	assert!(declaration_path.module_path.any_unresolved());
+	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
 
-	let is_intrinsic = INTRINSICS.contains(&declaration_path.identifier.as_ref());
-	if declaration_path.module_path.is_unresolved() && is_intrinsic {
+	let intrinsic = Intrinsic::parse(&declaration_path.identifier.as_ref());
+	if declaration_path.module_path.is_unresolved() && intrinsic.is_some() {
 		declaration_path.module_path = ModulePath::intrinsic();
 		return Ok(());
 	}

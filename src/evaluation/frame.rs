@@ -53,7 +53,8 @@ impl FrameContext {
 		match value {
 			Value::Item(object) => object,
 			Value::Location(location) => {
-				let variable = self.variables.get(&location.variable).unwrap();
+				let variable = self.variables.get(&location.variable).unwrap_or_else(||
+					panic!("Variable: {}, does not exist in frame", location.variable));
 				location.projections.iter().fold(variable, |variable, projection| {
 					match projection {
 						Projection::Field(field) => match variable {

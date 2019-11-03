@@ -18,20 +18,14 @@ pub fn basic_function(context: &Context, function_path: &Spanned<Arc<FunctionPat
 
 	let mut parameters = Vec::new();
 	let function = crate::node::function(context, function_path)?;
+	let span = function.context[&function.expression].span;
 	function.function_type.parameters.iter().map(|parameter| &parameter.node)
 		.for_each(|Parameter(pattern, _)| pattern.traverse(&mut |terminal| -> Result<_, !> {
 			Ok(parameters.push(terminal.clone().map(|BindingVariable(variable, _)| variable)))
 		}).unwrap());
 
 	let mut basic_context = BasicContext::new(reversibility);
-	let _component = parameters.iter().fold(basic_context.component(),
-		|component, parameter| basic_context.push(component, parameter.clone().map(|parameter|
-			Statement::Binding(parameter, Compound::Value(Value::Item(Item::Uninitialised))))));
-	let (value, other) = basic(&function.context, &mut basic_context, &function.expression);
-
-	let span = function.context[&function.expression].span;
-	let component = other; // TODO: Replace binding statements with local variable table
-//	let component = basic_context.join(component, other, span);
+	let (value, component) = basic(&function.context, &mut basic_context, &function.expression);
 	basic_context[&component.exit].advance = Spanned::new(Branch::Return(value), span);
 
 	let (nodes, component) = basic_context.flatten(component);
@@ -120,7 +114,7 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 			};
 
 			let (entry, exit) = (context.component(), context.component());
-			context.link(Direction::Advance, &entry, &component, span);
+			context.link(Direction::Advance, &entry, &exit, span);
 			context.link(Direction::Advance, &component, &exit, span);
 			context.link(Direction::Reverse, &exit, &component, span);
 			context.link(Direction::Reverse, &component, &entry, span);
@@ -138,7 +132,7 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 		}
 		Expression::Pattern(expression) => super::pattern::pattern(function, context, expression, span),
 		Expression::Variable(variable) => (Value::Location(Location::new(variable.clone())), context.component()),
-		// TODO: Resolve integers based on inference type
+		// TODO: Resolve integers based on inference type. Pending on trait inference.
 		Expression::Unsigned(integer) => (Value::Item(Item::Unsigned64(*integer)), context.component()),
 		Expression::Signed(integer) => (Value::Item(Item::Signed64(*integer)), context.component()),
 		Expression::Truth(truth) => (Value::Item(Item::Truth(*truth)), context.component()),

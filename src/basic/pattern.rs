@@ -72,14 +72,13 @@ pub fn pattern(function: &FunctionContext, context: &mut BasicContext,
 				statements.push(Spanned::new(statement, span));
 			}
 
-			let location = Location::new(variable.clone());
-			let value = Value::Item(Item::Instance(instance));
-			let statement = Statement::Mutation(MutationKind::Assign, location.clone(), value);
+			let compound = Compound::Value(Value::Item(Item::Instance(instance)));
+			let statement = Statement::Binding(variable.clone(), compound);
 			component = context.push(component, Spanned::new(statement, span));
 
 			let component = statements.into_iter().fold(component,
 				|component, statement| context.push(component, statement));
-			(Value::Location(location), component)
+			(Value::Location(Location::new(variable)), component)
 		}
 	}
 }

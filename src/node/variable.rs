@@ -20,6 +20,10 @@ impl Variable {
 		Variable(identifier, usize::max_value())
 	}
 
+	pub fn new_parameter(identifier: Arc<str>) -> Self {
+		Variable(identifier, 0)
+	}
+
 	pub fn new_temporary(generation: usize) -> Self {
 		Variable(Self::TEMPORARY.into(), generation)
 	}
