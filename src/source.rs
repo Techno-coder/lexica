@@ -3,7 +3,6 @@ use std::fs::File;
 use std::io::Read;
 use std::ops::Deref;
 use std::path::PathBuf;
-use std::str;
 use std::sync::Arc;
 
 use chashmap::CHashMap;
@@ -14,7 +13,7 @@ use crate::error::CompileError;
 pub type Sources = CHashMap<SourceKey, Arc<Source>>;
 pub type SourceKeys = CHashMap<Arc<PathBuf>, SourceKey>;
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub struct SourceKey(usize);
 
 impl SourceKey {
@@ -26,7 +25,18 @@ impl SourceKey {
 	}
 }
 
-#[derive(Debug)]
+impl fmt::Debug for SourceKey {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self == &Self::INTERNAL {
+			true => write!(f, "SourceKey(INTERNAL)"),
+			false => {
+				let SourceKey(index) = self;
+				write!(f, "SourceKey({})", index)
+			}
+		}
+	}
+}
+
 pub struct Source {
 	pub path: Arc<PathBuf>,
 	pub data: Vec<u8>,
@@ -34,7 +44,14 @@ pub struct Source {
 
 impl Source {
 	pub fn read_string(&self) -> Result<&str, SourceError> {
-		str::from_utf8(&self.data).map_err(|error| SourceError::InvalidString(self.path.clone(), error))
+		std::str::from_utf8(&self.data).map_err(|error|
+			SourceError::InvalidString(self.path.clone(), error))
+	}
+}
+
+impl fmt::Debug for Source {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "Source({})", self.path.display())
 	}
 }
 

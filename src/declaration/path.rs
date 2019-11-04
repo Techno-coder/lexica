@@ -1,7 +1,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct ModulePath {
 	pub parent: Option<Arc<ModulePath>>,
 	pub identifier: Arc<str>,
@@ -79,7 +79,13 @@ impl fmt::Display for ModulePath {
 	}
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+impl fmt::Debug for ModulePath {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "{}", self)
+	}
+}
+
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct DeclarationPath {
 	pub module_path: Arc<ModulePath>,
 	pub identifier: Arc<str>,
@@ -98,7 +104,13 @@ impl fmt::Display for DeclarationPath {
 	}
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+impl fmt::Debug for DeclarationPath {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "{}", self)
+	}
+}
+
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct FunctionPath(pub DeclarationPath);
 
 impl fmt::Display for FunctionPath {
@@ -108,13 +120,25 @@ impl fmt::Display for FunctionPath {
 	}
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+impl fmt::Debug for FunctionPath {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "FunctionPath({})", self)
+	}
+}
+
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct StructurePath(pub DeclarationPath);
 
 impl fmt::Display for StructurePath {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let StructurePath(path) = self;
 		write!(f, "{}", path)
+	}
+}
+
+impl fmt::Debug for StructurePath {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "StructurePath({})", self)
 	}
 }
 

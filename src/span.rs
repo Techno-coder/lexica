@@ -1,7 +1,9 @@
+use std::fmt;
+
 use crate::context::Context;
 use crate::source::SourceKey;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct Span {
 	pub source: SourceKey,
 	pub byte_start: usize,
@@ -54,6 +56,12 @@ impl Span {
 				(format!("{}:{}:{}", source.path.display(), line_index, character_offset), false)
 			}
 		}
+	}
+}
+
+impl fmt::Debug for Span {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "Span({:?}, {}, {})", self.source, self.byte_start, self.byte_end)
 	}
 }
 

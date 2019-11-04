@@ -10,7 +10,7 @@ pub type BindingPattern = Pattern<Spanned<BindingVariable>>;
 pub type AscriptionPattern = Pattern<Spanned<Ascription>>;
 pub type ExpressionPattern = Pattern<ExpressionKey>;
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub struct Variable(pub Arc<str>, pub usize);
 
 impl Variable {
@@ -39,8 +39,25 @@ impl fmt::Display for Variable {
 	}
 }
 
-#[derive(Debug, Clone)]
+impl fmt::Debug for Variable {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let Variable(identifier, generation) = self;
+		match identifier.as_ref() == Self::TEMPORARY {
+			true => write!(f, "Variable(TEMPORARY, {})", generation),
+			false => write!(f, "Variable({}, {})", identifier, generation)
+		}
+	}
+}
+
+#[derive(Clone)]
 pub struct BindingVariable(pub Variable, pub Mutability);
+
+impl fmt::Debug for BindingVariable {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let BindingVariable(Variable(identifier, generation), mutability) = self;
+		write!(f, "BindingVariable({}, {}, {:?})", identifier, generation, mutability)
+	}
+}
 
 #[derive(Debug, Copy, Clone)]
 pub enum Mutability {
@@ -48,8 +65,15 @@ pub enum Mutability {
 	Mutable,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Ascription(pub StructurePath);
+
+impl fmt::Debug for Ascription {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let Ascription(structure_path) = self;
+		write!(f, "Ascription({})", structure_path)
+	}
+}
 
 #[derive(Debug, Clone)]
 pub enum Pattern<T> {

@@ -1,3 +1,4 @@
+use std::fmt;
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::ops::Deref;
@@ -5,7 +6,7 @@ use std::ops::Deref;
 pub type LineOffsets = BTreeMap<LineOffset, usize>;
 
 /// Represents an index to the start of a line.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct LineOffset(pub usize);
 
 impl Borrow<usize> for LineOffset {
@@ -20,6 +21,12 @@ impl Deref for LineOffset {
 	fn deref(&self) -> &Self::Target {
 		let LineOffset(byte_offset) = self;
 		byte_offset
+	}
+}
+
+impl fmt::Debug for LineOffset {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "LineOffset({})", self.deref())
 	}
 }
 

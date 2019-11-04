@@ -1,4 +1,5 @@
 use std::fmt;
+
 use crate::span::Spanned;
 
 use super::{AscriptionPattern, BindingPattern, ExpressionPattern, Variable, VariablePattern};
@@ -6,8 +7,15 @@ use super::{AscriptionPattern, BindingPattern, ExpressionPattern, Variable, Vari
 pub type ConditionStart = ExpressionKey;
 pub type ConditionEnd = ExpressionKey;
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub struct ExpressionKey(pub usize);
+
+impl fmt::Debug for ExpressionKey {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let ExpressionKey(index) = self;
+		write!(f, "ExpressionKey({})", index)
+	}
+}
 
 #[derive(Debug, Clone)]
 pub enum Expression {

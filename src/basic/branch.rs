@@ -5,7 +5,7 @@ use crate::extension::Indent;
 
 use super::{Item, NodeTarget, Value};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Branch {
 	Jump(NodeTarget),
 	Divergence(Divergence),
@@ -39,6 +39,17 @@ impl fmt::Display for Branch {
 			Branch::Divergence(divergence) => write!(f, "{}", divergence),
 			Branch::Return(value) => write!(f, "return {}", value),
 			Branch::Unreachable => write!(f, "<!>"),
+		}
+	}
+}
+
+impl fmt::Debug for Branch {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Branch::Jump(target) => write!(f, "Jump({:?})", target),
+			Branch::Divergence(divergence) => write!(f, "Divergence({:#?})", divergence),
+			Branch::Return(value) => write!(f, "Return({:?})", value),
+			Branch::Unreachable => write!(f, "Unreachable"),
 		}
 	}
 }
@@ -79,7 +90,7 @@ impl fmt::Display for Divergence {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Discriminant(pub u64);
 
 impl From<Item> for Discriminant {
@@ -102,5 +113,11 @@ impl fmt::Display for Discriminant {
 			false => write!(f, "{:#x}", discriminant),
 			true => write!(f, "true"),
 		}
+	}
+}
+
+impl fmt::Debug for Discriminant {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "Discriminant({})", self)
 	}
 }

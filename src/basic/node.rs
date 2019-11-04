@@ -1,17 +1,24 @@
 use std::fmt;
+use std::ops::{Index, IndexMut};
 
 use crate::span::{Span, Spanned};
 
 use super::{Branch, Direction, Statement};
-use std::ops::{Index, IndexMut};
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub struct NodeTarget(pub usize);
 
 impl fmt::Display for NodeTarget {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let NodeTarget(target) = self;
 		write!(f, "{}", target)
+	}
+}
+
+impl fmt::Debug for NodeTarget {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let NodeTarget(target) = self;
+		write!(f, "NodeTarget({})", target)
 	}
 }
 
