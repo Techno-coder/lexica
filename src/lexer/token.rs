@@ -25,6 +25,8 @@ pub enum Token {
 	Drop,
 	If,
 	Assign,
+	LessThan,
+	GreaterThan,
 	Equality,
 	Implies,
 	Swap,

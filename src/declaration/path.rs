@@ -8,16 +8,18 @@ pub struct ModulePath {
 }
 
 impl ModulePath {
+	const UNRESOLVED: &'static str = "<?>";
+
 	pub fn new(parent: Option<Arc<ModulePath>>, identifier: Arc<str>) -> Arc<Self> {
 		Arc::new(ModulePath { parent, identifier })
 	}
 
 	pub fn unresolved() -> Arc<Self> {
-		Self::new(None, "?".into())
+		Self::new(None, Self::UNRESOLVED.into())
 	}
 
 	pub fn is_unresolved(&self) -> bool {
-		self.identifier.as_ref() == "?"
+		self.identifier.as_ref() == Self::UNRESOLVED
 	}
 
 	pub fn any_unresolved(&self) -> bool {

@@ -24,18 +24,22 @@ pub enum Expression {
 	TerminationLoop(Option<ConditionStart>, ConditionEnd, ExpressionKey),
 	Mutation(Spanned<MutationKind>, ExpressionKey, ExpressionKey),
 	ExplicitDrop(VariablePattern, ExpressionKey),
-
+	Unary(Spanned<UnaryOperator>, ExpressionKey),
 	Binary(Spanned<BinaryOperator>, ExpressionKey, ExpressionKey),
-	//	Conditional(Vec<(ConditionStart, Option<ConditionEnd>, ExpressionKey)>),
+	Conditional(Vec<(ConditionStart, Option<ConditionEnd>, ExpressionKey)>),
 //	Field(ExpressionKey, Arc<str>),
 //	MethodCall(ExpressionKey, Arc<str>, Vec<ExpressionKey>),
 //	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>),
-
 	Pattern(ExpressionPattern),
 	Variable(Variable),
 	Unsigned(u64),
 	Signed(i64),
 	Truth(bool),
+}
+
+#[derive(Debug, Clone)]
+pub enum UnaryOperator {
+	Negate,
 }
 
 #[derive(Debug, Clone)]
@@ -58,6 +62,8 @@ impl fmt::Display for Arithmetic {
 #[derive(Debug, Clone)]
 pub enum BinaryOperator {
 	Arithmetic(Arithmetic),
+	GreaterThan,
+	LessThan,
 	Equality,
 }
 
@@ -65,6 +71,8 @@ impl fmt::Display for BinaryOperator {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			BinaryOperator::Arithmetic(arithmetic) => write!(f, "{}", arithmetic),
+			BinaryOperator::GreaterThan => write!(f, ">"),
+			BinaryOperator::LessThan => write!(f, "<"),
 			BinaryOperator::Equality => write!(f, "=="),
 		}
 	}

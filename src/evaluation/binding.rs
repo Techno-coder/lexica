@@ -17,6 +17,8 @@ fn object(frame: &mut FrameContext, compound: &Compound) -> Result<Item, Evaluat
 			let (left, right) = (frame.value(left), frame.value(right));
 			match (left, right) {
 				(Item::Unsigned64(left), Item::Unsigned64(right)) => match operator {
+					BinaryOperator::GreaterThan => Item::Truth(left > right),
+					BinaryOperator::LessThan => Item::Truth(left < right),
 					BinaryOperator::Equality => Item::Truth(left == right),
 					BinaryOperator::Arithmetic(operator) => Item::Unsigned64(match operator {
 						Arithmetic::Add => left.wrapping_add(*right),
@@ -27,8 +29,7 @@ fn object(frame: &mut FrameContext, compound: &Compound) -> Result<Item, Evaluat
 				}
 				(Item::Truth(left), Item::Truth(right)) => match operator {
 					BinaryOperator::Equality => Item::Truth(left == right),
-					BinaryOperator::Arithmetic(_) =>
-						panic!("Cannot perform binary arithmetic on truth values"),
+					_ => panic!("Cannot perform operation: {:?}, on truth values", operator),
 				}
 				_ => panic!("Cannot perform binary operation on invalid values")
 			}

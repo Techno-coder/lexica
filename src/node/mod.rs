@@ -1,6 +1,6 @@
 pub use context::{function, function_type, structure};
 pub use expression::{Arithmetic, BinaryOperator, Expression, ExpressionKey,
-	MutationKind};
+	MutationKind, ConditionStart, ConditionEnd, UnaryOperator};
 pub use function::{Function, FunctionContext, FunctionType, FunctionTypes, NodeFunctions,
 	Parameter};
 pub use node::NodeError;

@@ -125,6 +125,7 @@ fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
 					shadow(function, context, start_condition)).transpose()?;
 				shadow(function, context, expression)
 			}
+			Expression::Conditional(_) => unimplemented!(),
 			Expression::Mutation(_, mutable, expression) => {
 				shadow(function, context, mutable)?;
 				shadow(function, context, expression)
@@ -138,6 +139,7 @@ fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
 				})?;
 				shadow(function, context, expression)
 			}
+			Expression::Unary(_, _) => unimplemented!(),
 			Expression::Binary(_, left, right) => {
 				shadow(function, context, left)?;
 				shadow(function, context, right)

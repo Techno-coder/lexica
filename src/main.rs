@@ -57,6 +57,13 @@ fn main() {
 		})), Span::INTERNAL), parameters));
 	result.map(|result| println!("{}", result));
 
+	let _function = context.emit(crate::parser::function(context, &Spanned::new(Arc::new(
+		FunctionPath(crate::declaration::DeclarationPath {
+			module_path: ModulePath::root(),
+			identifier: "absolute_value".into(),
+		})), Span::INTERNAL)));
+	println!("{:#?}", _function);
+
 	for error in context.errors.read().iter() {
 		crate::error::display(context, error);
 	}

@@ -71,6 +71,7 @@ pub fn expression(context: &FunctionContext, environment: &mut Environment, engi
 			expression(context, environment, engine, *expression_key)?;
 			Intrinsic::Unit.inference()
 		}
+		Expression::Conditional(_) => unimplemented!(),
 		Expression::Mutation(_, mutable, expression_key) => {
 			let mutable = expression(context, environment, engine, *mutable)?;
 			let expression = expression(context, environment, engine, *expression_key)?;
@@ -85,14 +86,15 @@ pub fn expression(context: &FunctionContext, environment: &mut Environment, engi
 				Diagnostic::new(Spanned::new(error, span)))?;
 			Intrinsic::Unit.inference()
 		}
+		Expression::Unary(_, _) => unimplemented!(),
 		Expression::Binary(operator, left, right) => {
 			let left = expression(context, environment, engine, *left)?;
 			let right = expression(context, environment, engine, *right)?;
 			engine.unify(left.clone(), right).map_err(|error|
 				Diagnostic::new(Spanned::new(error, span)))?;
 			match operator.node {
-				BinaryOperator::Equality => Intrinsic::Truth.inference(),
 				BinaryOperator::Arithmetic(_) => left,
+				_ => Intrinsic::Truth.inference(),
 			}
 		}
 		Expression::Pattern(pattern) => pattern::expression_pattern(context, environment, engine, pattern)?,

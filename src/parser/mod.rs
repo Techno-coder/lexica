@@ -8,6 +8,7 @@ use value::root_value;
 
 mod function;
 mod parser;
+mod conditional;
 mod expression;
 mod structure;
 mod value;

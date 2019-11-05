@@ -6,17 +6,17 @@ use crate::node::{Arithmetic, Ascription, BindingVariable, Expression, Expressio
 use crate::parser::ParserError;
 use crate::span::{Span, Spanned};
 
-use super::parser::expect;
-
 pub fn expression(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {
 	let token = lexer.peek();
 	match &token.node {
-		Token::Let => binding(context, lexer).map_err(|diagnostic|
-			diagnostic.note("In parsing a binding")),
-		Token::Loop => termination_loop(context, lexer).map_err(|diagnostic|
-			diagnostic.note("In parsing a termination loop")),
-		Token::Drop => explicit_drop(context, lexer).map_err(|diagnostic|
-			diagnostic.note("In parsing an explicit drop")),
+		Token::Let => binding(context, lexer)
+			.map_err(|diagnostic| diagnostic.note("In parsing a binding")),
+		Token::Loop => super::conditional::termination_loop(context, lexer)
+			.map_err(|diagnostic| diagnostic.note("In parsing a termination loop")),
+		Token::If => super::conditional::conditional(context, lexer)
+			.map_err(|diagnostic| diagnostic.note("In parsing a conditional")),
+		Token::Drop => explicit_drop(context, lexer)
+			.map_err(|diagnostic| diagnostic.note("In parsing an explicit drop")),
 		_ => expression_terminator(context, lexer),
 	}
 }
@@ -35,24 +35,6 @@ fn binding(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Expressio
 	let value = super::root_value(context, lexer)?;
 	let span = initial_span.merge(expect_terminator(lexer, &context[&value])?);
 	let expression = Expression::Binding(pattern, binding_ascription, value);
-	Ok(context.register(Spanned::new(expression, span)))
-}
-
-fn termination_loop(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {
-	let initial_span = super::expect(lexer, Token::Loop)?;
-	let condition_start = match lexer.peek().node {
-		Token::Implies => None,
-		_ => Some(super::root_value(context, lexer).map_err(|diagnostic|
-			diagnostic.note("In parsing loop start condition"))?),
-	};
-
-	expect(lexer, Token::Implies)?;
-	let condition_end = super::root_value(context, lexer).map_err(|diagnostic|
-		diagnostic.note("In parsing loop end condition"))?;
-	let span = initial_span.merge(expect(lexer, Token::Separator)?);
-	let expression = super::root_value(context, lexer)?;
-
-	let expression = Expression::TerminationLoop(condition_start, condition_end, expression);
 	Ok(context.register(Spanned::new(expression, span)))
 }
 
@@ -76,6 +58,7 @@ fn expression_terminator(context: &mut FunctionContext, lexer: &mut Lexer) -> Re
 	let token = lexer.next();
 	let mutation_kind = Spanned::new(match token.node {
 		Token::Swap => MutationKind::Swap,
+		Token::Assign => MutationKind::Assign,
 		Token::AddAssign => MutationKind::Arithmetic(Arithmetic::Add),
 		Token::MinusAssign => MutationKind::Arithmetic(Arithmetic::Minus),
 		Token::MultiplyAssign => MutationKind::Arithmetic(Arithmetic::Multiply),

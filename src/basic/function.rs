@@ -72,10 +72,12 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 		Expression::TerminationLoop(condition_start, condition_end, expression) =>
 			super::conditional::termination(function, context,
 				condition_start, condition_end, expression, span),
+		Expression::Conditional(_) => unimplemented!(),
 		Expression::Mutation(mutation, mutable, expression) => {
 			let (value, component) = basic(function, context, expression);
 			let (variable, other) = basic(function, context, mutable);
 			let component = context.join(component, other, span);
+			// TODO: Implicitly drop location on assignment
 
 			match variable {
 				Value::Location(location) => {
@@ -120,6 +122,7 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 			context.link(Direction::Reverse, &component, &entry, span);
 			(Value::Item(Item::Unit), Component::new(entry.entry, exit.exit))
 		}
+		Expression::Unary(_, _) => unimplemented!(),
 		Expression::Binary(operator, left, right) => {
 			let (left_value, left) = basic(function, context, left);
 			let (right_value, right) = basic(function, context, right);

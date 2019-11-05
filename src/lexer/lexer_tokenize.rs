@@ -49,6 +49,8 @@ impl<'a> Iterator for LexerTokenize<'a> {
 				"-=" => Token::MinusAssign,
 				"*=" => Token::MultiplyAssign,
 				"=" => Token::Assign,
+				"<" => Token::LessThan,
+				">" => Token::GreaterThan,
 				"==" => Token::Equality,
 				"=>" => Token::Implies,
 				"<=>" => Token::Swap,

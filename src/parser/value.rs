@@ -1,6 +1,7 @@
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{Arithmetic, BinaryOperator, Expression, ExpressionKey, FunctionContext, Variable};
+use crate::node::{Arithmetic, BinaryOperator, Expression, ExpressionKey, FunctionContext,
+	UnaryOperator, Variable};
 use crate::span::Spanned;
 
 use super::ParserError;
@@ -26,32 +27,26 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
 	let right = value(context, lexer, precedence)?;
 	let span = context[&left].span.merge(context[&right].span);
 
-	match binder.node {
-		Token::Add => {
-			let operator = Spanned::new(BinaryOperator::Arithmetic(Arithmetic::Add), binder.span);
-			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
-		}
-		Token::Minus => {
-			let operator = Spanned::new(BinaryOperator::Arithmetic(Arithmetic::Minus), binder.span);
-			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
-		}
-		Token::Asterisk => {
-			let operator = Spanned::new(BinaryOperator::Arithmetic(Arithmetic::Multiply), binder.span);
-			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
-		}
-		Token::Equality => {
-			let operator = Spanned::new(BinaryOperator::Equality, binder.span);
-			Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
-		}
+	let operator = match binder.node {
+		Token::GreaterThan => BinaryOperator::GreaterThan,
+		Token::LessThan => BinaryOperator::LessThan,
+		Token::Equality => BinaryOperator::Equality,
+		Token::Add => BinaryOperator::Arithmetic(Arithmetic::Add),
+		Token::Minus => BinaryOperator::Arithmetic(Arithmetic::Minus),
+		Token::Asterisk => BinaryOperator::Arithmetic(Arithmetic::Multiply),
 		_ => panic!("Invalid value binder: {:?}", binder.node),
-	}
+	};
+
+	let operator = Spanned::new(operator, binder.span);
+	Ok(context.register(Spanned::new(Expression::Binary(operator, left, right), span)))
 }
 
 fn token_precedence(token: &Token) -> usize {
 	match token {
 		Token::Equality => 1,
-		Token::Add | Token::Minus => 2,
-		Token::Asterisk => 3,
+		Token::LessThan | Token::GreaterThan => 2,
+		Token::Add | Token::Minus => 3,
+		Token::Asterisk => 4,
 		_ => 0,
 	}
 }
@@ -63,6 +58,12 @@ fn terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Expressi
 		Token::ParenthesisOpen => {
 			let pattern = super::pattern(lexer, &mut |lexer| root_value(context, lexer))?;
 			Ok(context.register(pattern.map(|pattern| Expression::Pattern(pattern))))
+		}
+		Token::Minus => {
+			let operator = Spanned::new(UnaryOperator::Negate, lexer.next().span);
+			let expression = root_value(context, lexer)?;
+			let span = operator.span.merge(context[&expression].span);
+			Ok(context.register(Spanned::new(Expression::Unary(operator, expression), span)))
 		}
 		_ => consume_terminal(context, lexer),
 	}

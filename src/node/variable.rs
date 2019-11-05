@@ -15,9 +15,10 @@ pub struct Variable(pub Arc<str>, pub usize);
 
 impl Variable {
 	const TEMPORARY: &'static str = "'";
+	const UNRESOLVED: usize = usize::max_value();
 
 	pub fn new(identifier: Arc<str>) -> Self {
-		Variable(identifier, usize::max_value())
+		Variable(identifier, Self::UNRESOLVED)
 	}
 
 	pub fn new_parameter(identifier: Arc<str>) -> Self {
@@ -43,8 +44,13 @@ impl fmt::Debug for Variable {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let Variable(identifier, generation) = self;
 		match identifier.as_ref() == Self::TEMPORARY {
-			true => write!(f, "Variable(TEMPORARY, {})", generation),
-			false => write!(f, "Variable({}, {})", identifier, generation)
+			true => write!(f, "Variable(TEMPORARY, "),
+			false => write!(f, "Variable({}, ", identifier),
+		}?;
+
+		match generation {
+			&Self::UNRESOLVED => write!(f, "<?>)"),
+			_ => write!(f, "{})", generation)
 		}
 	}
 }
