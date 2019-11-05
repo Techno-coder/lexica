@@ -1,15 +1,11 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 
-use crate::declaration::StructurePath;
+use crate::declaration::{ModulePath, StructurePath};
 use crate::error::CompileError;
 use crate::intrinsic::Intrinsic;
-use crate::node::Variable;
 
-pub type Environment = HashMap<Variable, TypeVariable>;
-
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum InferenceError {
 	Unification(Arc<InferenceType>, Arc<InferenceType>),
 	Recursive(InferenceType),
@@ -77,6 +73,20 @@ impl fmt::Display for InferenceType {
 				Ok(())
 			}
 			InferenceType::Variable(variable) => write!(f, "{}", variable),
+		}
+	}
+}
+
+#[derive(Debug, PartialEq)]
+pub struct TypeResolution(pub StructurePath, pub Vec<TypeResolution>);
+
+impl TypeResolution {
+	pub fn intrinsic(&self) -> Option<Intrinsic> {
+		let TypeResolution(StructurePath(declaration_path), parameters) = self;
+		let is_intrinsic = declaration_path.module_path == ModulePath::intrinsic();
+		match is_intrinsic && parameters.is_empty() {
+			true => Intrinsic::parse(&declaration_path.identifier),
+			false => None,
 		}
 	}
 }

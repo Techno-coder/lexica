@@ -56,10 +56,8 @@ impl<'a> Iterator for LexerTokenize<'a> {
 				"<=>" => Token::Swap,
 				"->" => Token::ReturnSeparator,
 				other => {
-					if let Ok(integer) = other.parse::<u64>() {
-						Token::Unsigned(integer)
-					} else if let Ok(integer) = other.parse::<i64>() {
-						Token::Signed(integer)
+					if let Ok(integer) = other.parse::<i128>() {
+						Token::Integer(integer)
 					} else if let Ok(truth) = other.parse::<bool>() {
 						Token::Truth(truth)
 					} else {

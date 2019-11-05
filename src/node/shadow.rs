@@ -154,7 +154,7 @@ fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
 			Expression::Pattern(pattern) => pattern.apply(&mut |terminal|
 				shadow(function, context, terminal)),
 			Expression::Variable(variable) => context.resolve_variable(variable, expression.span),
-			Expression::Unsigned(_) | Expression::Signed(_) | Expression::Truth(_) => Ok(()),
+			Expression::Integer(_) | Expression::Truth(_) => Ok(()),
 		}
 	})
 }

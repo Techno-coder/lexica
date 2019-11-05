@@ -1,3 +1,4 @@
+use crate::inference::TypeContext;
 use crate::node::{Arithmetic, BinaryOperator, ConditionEnd, ConditionStart,
 	ExpressionKey, FunctionContext, MutationKind};
 use crate::span::{Span, Spanned};
@@ -5,14 +6,14 @@ use crate::span::{Span, Spanned};
 use super::*;
 use super::function::basic;
 
-pub fn termination(function: &FunctionContext, context: &mut BasicContext,
+pub fn termination(function: &FunctionContext, context: &mut BasicContext, type_context: &TypeContext,
                    condition_start: &Option<ConditionStart>, condition_end: &ConditionEnd,
                    expression: &ExpressionKey, span: Span) -> (Value, Component) {
 	let (mut entry, exit) = (context.component(), context.component());
-	let (condition_end, end_component) = basic(function, context, condition_end);
-	let (_, mut component) = basic(function, context, expression);
+	let (condition_end, end_component) = basic(function, context, type_context, condition_end);
+	let (_, mut component) = basic(function, context, type_context, expression);
 	let mut condition_start = condition_start.as_ref().map(|condition_start|
-		basic(function, context, condition_start));
+		basic(function, context, type_context, condition_start));
 
 	if condition_start.is_none() && context.is_reversible() {
 		let variable = context.temporary();
@@ -61,7 +62,7 @@ fn comparison(context: &mut BasicContext, location: Location, span: Span, value:
 	(location, context.push(component, statement))
 }
 
-pub fn conditional(function: &FunctionContext, context: &mut BasicContext,
+pub fn conditional(function: &FunctionContext, context: &mut BasicContext, type_context: &TypeContext,
                    branches: &[crate::node::Branch], span: Span) -> (Value, Component) {
 	let (mut entry, exit) = (context.component(), context.component());
 	let mut last_condition_start: Option<Component> = None;
@@ -82,14 +83,14 @@ pub fn conditional(function: &FunctionContext, context: &mut BasicContext,
 	for (index, (condition_start, condition_end, expression)) in branches.iter().enumerate() {
 		let expression_span = function[expression].span;
 		let condition_start_span = function[condition_start].span;
-		let (start_condition, start_component) = basic(function, context, condition_start);
-		let (value, mut component) = basic(function, context, expression);
+		let (start_condition, start_component) = basic(function, context, type_context, condition_start);
+		let (value, mut component) = basic(function, context, type_context, expression);
 
 		let (end_condition, end_component) = match context.is_reversible() {
 			true => match all_reversible {
 				true => {
 					let condition_end = condition_end.as_ref().unwrap();
-					let (end_condition, end_component) = basic(function, context, condition_end);
+					let (end_condition, end_component) = basic(function, context, type_context, condition_end);
 					(Some(end_condition), Some((end_component, function[condition_end].span)))
 				}
 				false => {

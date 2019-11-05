@@ -72,10 +72,8 @@ fn terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Expressi
 fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {
 	let token = lexer.next();
 	match token.node {
-		Token::Unsigned(unsigned) => Ok(context
-			.register(Spanned::new(Expression::Unsigned(unsigned), token.span))),
-		Token::Signed(signed) => Ok(context
-			.register(Spanned::new(Expression::Signed(signed), token.span))),
+		Token::Integer(integer) => Ok(context
+			.register(Spanned::new(Expression::Integer(integer), token.span))),
 		Token::Truth(truth) => Ok(context
 			.register(Spanned::new(Expression::Truth(truth), token.span))),
 		Token::Identifier(identifier) => {

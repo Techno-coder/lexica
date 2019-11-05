@@ -3,6 +3,8 @@ use std::sync::Arc;
 use crate::context::Context;
 use crate::declaration::FunctionPath;
 use crate::error::Diagnostic;
+use crate::inference::TypeContext;
+use crate::intrinsic::Intrinsic;
 use crate::node::{BindingVariable, Expression, ExpressionKey, FunctionContext, MutationKind,
 	Parameter, Pattern};
 use crate::span::Spanned;
@@ -25,7 +27,9 @@ pub fn basic_function(context: &Context, function_path: &Spanned<Arc<FunctionPat
 		}).unwrap());
 
 	let mut basic_context = BasicContext::new(reversibility);
-	let (value, component) = basic(&function.context, &mut basic_context, &function.expression);
+	let type_context = crate::inference::function(context, function_path)?;
+	let (value, component) = basic(&function.context, &mut basic_context,
+		&type_context, &function.expression);
 	basic_context[&component.exit].advance = Spanned::new(Branch::Return(value), span);
 
 	let (nodes, component) = basic_context.flatten(component);
@@ -35,21 +39,21 @@ pub fn basic_function(context: &Context, function_path: &Spanned<Arc<FunctionPat
 }
 
 pub fn basic(function: &FunctionContext, context: &mut BasicContext,
-             expression: &ExpressionKey) -> (Value, Component) {
-	let expression = &function[expression];
+             type_context: &TypeContext, expression_key: &ExpressionKey) -> (Value, Component) {
+	let expression = &function[expression_key];
 	let span = expression.span;
 	match &expression.node {
 		Expression::Block(block) => {
 			let (mut value, mut component) = (None, context.component());
 			for expression in block {
-				let (other_value, other) = basic(function, context, expression);
+				let (other_value, other) = basic(function, context, type_context, expression);
 				component = context.join(component, other, span);
 				value = Some(other_value);
 			}
 			(value.unwrap(), component)
 		}
 		Expression::Binding(binding, _, expression) => {
-			let (value, mut component) = basic(function, context, expression);
+			let (value, mut component) = basic(function, context, type_context, expression);
 			match &binding.node {
 				Pattern::Wildcard => panic!("Wildcard binding is invalid"),
 				Pattern::Terminal(variable) => {
@@ -70,13 +74,13 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 			(Value::Item(Item::Unit), component)
 		}
 		Expression::TerminationLoop(condition_start, condition_end, expression) =>
-			super::conditional::termination(function, context,
+			super::conditional::termination(function, context, type_context,
 				condition_start, condition_end, expression, span),
 		Expression::Conditional(branches) =>
-			super::conditional::conditional(function, context, branches, span),
+			super::conditional::conditional(function, context, type_context, branches, span),
 		Expression::Mutation(mutation, mutable, expression) => {
-			let (value, component) = basic(function, context, expression);
-			let (variable, other) = basic(function, context, mutable);
+			let (value, component) = basic(function, context, type_context, expression);
+			let (variable, other) = basic(function, context, type_context, mutable);
 			let component = context.join(component, other, span);
 			// TODO: Implicitly drop location on assignment
 
@@ -91,7 +95,7 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 		Expression::ExplicitDrop(_, _) if !context.is_reversible() =>
 			(Value::Item(Item::Unit), context.component()),
 		Expression::ExplicitDrop(variable, expression) => {
-			let (value, component) = basic(function, context, expression);
+			let (value, component) = basic(function, context, type_context, expression);
 			let component = context.invert(component);
 			let component = match &variable {
 				Pattern::Wildcard => panic!("Wildcard explicit drop is invalid"),
@@ -125,14 +129,14 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 		}
 		Expression::Unary(operator, expression) => {
 			let variable = context.temporary();
-			let (value, component) = basic(function, context, expression);
+			let (value, component) = basic(function, context, type_context, expression);
 			let compound = Compound::Unary(operator.node.clone(), value);
 			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
 			(Value::Location(Location::new(variable)), context.push(component, statement))
 		}
 		Expression::Binary(operator, left, right) => {
-			let (left_value, left) = basic(function, context, left);
-			let (right_value, right) = basic(function, context, right);
+			let (left_value, left) = basic(function, context, type_context, left);
+			let (right_value, right) = basic(function, context, type_context, right);
 			let component = context.join(left, right, span);
 
 			let variable = context.temporary();
@@ -140,11 +144,24 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
 			(Value::Location(Location::new(variable)), context.push(component, statement))
 		}
-		Expression::Pattern(expression) => super::pattern::pattern(function, context, expression, span),
-		Expression::Variable(variable) => (Value::Location(Location::new(variable.clone())), context.component()),
-		// TODO: Resolve integers based on inference type. Pending on trait inference.
-		Expression::Unsigned(integer) => (Value::Item(Item::Unsigned64(*integer)), context.component()),
-		Expression::Signed(integer) => (Value::Item(Item::Signed64(*integer)), context.component()),
-		Expression::Truth(truth) => (Value::Item(Item::Truth(*truth)), context.component()),
+		Expression::Pattern(expression) =>
+			super::pattern::pattern(function, context, type_context, expression, span),
+		Expression::Variable(variable) =>
+			(Value::Location(Location::new(variable.clone())), context.component()),
+		Expression::Integer(integer) => {
+			(Value::Item(match type_context[expression_key].intrinsic().unwrap() {
+				Intrinsic::Signed8 => Item::Signed8(*integer as i8),
+				Intrinsic::Signed16 => Item::Signed16(*integer as i16),
+				Intrinsic::Signed32 => Item::Signed32(*integer as i32),
+				Intrinsic::Signed64 => Item::Signed64(*integer as i64),
+				Intrinsic::Unsigned8 => Item::Unsigned8(*integer as u8),
+				Intrinsic::Unsigned16 => Item::Unsigned16(*integer as u16),
+				Intrinsic::Unsigned32 => Item::Unsigned32(*integer as u32),
+				Intrinsic::Unsigned64 => Item::Unsigned64(*integer as u64),
+				other => panic!("Intrinsic type: {:?}, is not of integer", other)
+			}), context.component())
+		}
+		Expression::Truth(truth) =>
+			(Value::Item(Item::Truth(*truth)), context.component()),
 	}
 }

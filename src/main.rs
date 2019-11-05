@@ -47,9 +47,8 @@ fn main() {
 			identifier: "Vector".into(),
 		})), Span::INTERNAL)));
 
-	// TODO: Pending integer inference
 	let mut parameters = HashMap::new();
-	parameters.insert("x".into(), Item::Signed64(-10));
+	parameters.insert("x".into(), Item::Signed32(-10));
 	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),

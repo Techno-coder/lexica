@@ -11,8 +11,8 @@ pub fn bind_pattern(environment: &mut Environment, engine: &mut TypeEngine, bind
 	match binding {
 		Pattern::Wildcard => (),
 		Pattern::Terminal(terminal) => {
-			let BindingVariable(terminal, _) = &terminal.node;
-			assert!(environment.insert(terminal.clone(), engine.new_variable()).is_none());
+			let BindingVariable(variable, _) = &terminal.node;
+			environment.variable(variable.clone(), engine.new_variable(), terminal.span);
 		}
 		Pattern::Tuple(patterns) => patterns.iter()
 			.for_each(|pattern| bind_pattern(environment, engine, pattern)),
@@ -25,7 +25,7 @@ pub fn binding_type(environment: &Environment, engine: &mut TypeEngine,
 		Pattern::Wildcard => engine.new_variable_type(),
 		Pattern::Terminal(terminal) => {
 			let BindingVariable(terminal, _) = &terminal.node;
-			Arc::new(InferenceType::Variable(environment[&terminal]))
+			Arc::new(InferenceType::Variable(environment[terminal]))
 		}
 		Pattern::Tuple(patterns) => {
 			let binding_types = patterns.iter().map(|pattern|

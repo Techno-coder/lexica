@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::inference::TypeContext;
 use crate::node::{BindingPattern, BindingVariable, ExpressionPattern, FunctionContext,
 	MutationKind, Pattern, VariablePattern};
 use crate::span::{Span, Spanned};
@@ -49,11 +50,12 @@ pub fn explicit_drop(context: &mut BasicContext, mut component: Component, value
 	}
 }
 
-pub fn pattern(function: &FunctionContext, context: &mut BasicContext,
+pub fn pattern(function: &FunctionContext, context: &mut BasicContext, type_context: &TypeContext,
                expression: &ExpressionPattern, span: Span) -> (Value, Component) {
 	match expression {
 		Pattern::Wildcard => panic!("Wildcard expression is not a value"),
-		Pattern::Terminal(expression) => super::function::basic(function, context, expression),
+		Pattern::Terminal(expression) => super::function::basic(function,
+			context, type_context, expression),
 		Pattern::Tuple(patterns) => {
 			let variable = context.temporary();
 			let mut instance = Instance::default();
@@ -62,7 +64,7 @@ pub fn pattern(function: &FunctionContext, context: &mut BasicContext,
 			let mut statements = Vec::new();
 			for (index, expression) in patterns.iter().enumerate() {
 				let field: Arc<str> = index.to_string().into();
-				let (value, other) = pattern(function, context, expression, span);
+				let (value, other) = pattern(function, context, type_context, expression, span);
 				instance.fields.insert(field.clone(), Item::Uninitialised);
 				component = context.join(component, other, span);
 

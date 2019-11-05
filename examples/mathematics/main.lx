@@ -26,6 +26,6 @@ fn fibonacci_recursive(n: u64) -> u64:
 			let right = fibonacci_recursive(n - 1)
 			left + right
 
-fn absolute_value(x: i64) -> i64:
+fn absolute_value(x: i32) -> i32:
 	if x < 0: x = -x
 	x

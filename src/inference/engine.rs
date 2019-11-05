@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use super::{InferenceError, InferenceType, TypeVariable};
+use super::{InferenceError, InferenceType, TypeResolution, TypeVariable};
 
 #[derive(Debug, Default)]
 pub struct TypeEngine {
@@ -19,15 +19,19 @@ impl TypeEngine {
 		TypeVariable(self.next_variable - 1)
 	}
 
-	pub fn construct(&mut self, inference_type: Arc<InferenceType>) -> Arc<InferenceType> {
+	pub fn construct(&mut self, inference_type: Arc<InferenceType>)
+	                 -> Result<TypeResolution, InferenceError> {
 		match inference_type.as_ref() {
 			InferenceType::Variable(_) => {
-				let root = self.find(inference_type);
-				self.construct(root)
+				let inference_type = self.find(inference_type.clone());
+				match *inference_type {
+					InferenceType::Instance(_, _) => self.construct(inference_type),
+					InferenceType::Variable(variable) => Err(InferenceError::Unresolved(variable)),
+				}
 			}
 			InferenceType::Instance(structure, variables) => {
 				let variables = variables.iter().map(|variable| self.construct(variable.clone()));
-				Arc::new(InferenceType::Instance(structure.clone(), variables.collect()))
+				Ok(TypeResolution(structure.clone(), variables.collect::<Result<_, _>>()?))
 			}
 		}
 	}
@@ -98,9 +102,10 @@ mod tests {
 		assert!(engine.unify(inference_tuple.clone(),
 			Arc::new(InferenceType::Instance(Tuple.structure(), variables))).is_ok());
 
-		let variables = vec![Unit.inference(), Truth.inference()];
-		assert_eq!(engine.construct(inference_tuple).as_ref(),
-			&InferenceType::Instance(Tuple.structure(), variables));
+		let variables = vec![TypeResolution(Unit.structure(), Vec::new()),
+			TypeResolution(Truth.structure(), Vec::new())];
+		assert_eq!(engine.construct(inference_tuple),
+			Ok(TypeResolution(Tuple.structure(), variables)));
 	}
 
 	#[test]

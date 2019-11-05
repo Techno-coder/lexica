@@ -33,8 +33,7 @@ pub enum Expression {
 //	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>),
 	Pattern(ExpressionPattern),
 	Variable(Variable),
-	Unsigned(u64),
-	Signed(i64),
+	Integer(i128),
 	Truth(bool),
 }
 

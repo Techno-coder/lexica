@@ -1,12 +1,19 @@
-use std::fmt::{self, Write};
 use std::collections::HashMap;
+use std::fmt::{self, Write};
 use std::sync::Arc;
+
 use crate::extension::Indent;
 
 #[derive(Clone, PartialEq)]
 pub enum Item {
 	Truth(bool),
+	Signed8(i8),
+	Signed16(i16),
+	Signed32(i32),
 	Signed64(i64),
+	Unsigned8(u8),
+	Unsigned16(u16),
+	Unsigned32(u32),
 	Unsigned64(u64),
 	Instance(Instance),
 	Uninitialised,
@@ -17,7 +24,13 @@ impl fmt::Display for Item {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Item::Truth(truth) => write!(f, "{}", truth),
+			Item::Signed8(integer) => write!(f, "{}", integer),
+			Item::Signed16(integer) => write!(f, "{}", integer),
+			Item::Signed32(integer) => write!(f, "{}", integer),
 			Item::Signed64(integer) => write!(f, "{}", integer),
+			Item::Unsigned8(integer) => write!(f, "{}", integer),
+			Item::Unsigned16(integer) => write!(f, "{}", integer),
+			Item::Unsigned32(integer) => write!(f, "{}", integer),
 			Item::Unsigned64(integer) => write!(f, "{}", integer),
 			Item::Instance(instance) => write!(f, "{}", instance),
 			Item::Uninitialised => write!(f, "<!>"),
@@ -30,7 +43,13 @@ impl fmt::Debug for Item {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Item::Truth(truth) => write!(f, "Truth({})", truth),
+			Item::Signed8(integer) => write!(f, "Signed8({})", integer),
+			Item::Signed16(integer) => write!(f, "Signed16({})", integer),
+			Item::Signed32(integer) => write!(f, "Signed32({})", integer),
 			Item::Signed64(integer) => write!(f, "Signed64({})", integer),
+			Item::Unsigned8(integer) => write!(f, "Unsigned8({})", integer),
+			Item::Unsigned16(integer) => write!(f, "Unsigned16({})", integer),
+			Item::Unsigned32(integer) => write!(f, "Unsigned32({})", integer),
 			Item::Unsigned64(integer) => write!(f, "Unsigned64({})", integer),
 			Item::Instance(instance) => write!(f, "Instance({})", instance),
 			Item::Uninitialised => write!(f, "Uninitialised"),
