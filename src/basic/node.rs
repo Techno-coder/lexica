@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::ops::{Index, IndexMut};
 
@@ -8,17 +9,22 @@ use super::{Branch, Direction, Statement};
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub struct NodeTarget(pub usize);
 
+impl NodeTarget {
+	pub const UNRESOLVED: Self = NodeTarget(usize::max_value());
+}
+
 impl fmt::Display for NodeTarget {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let NodeTarget(target) = self;
-		write!(f, "{}", target)
+		match self {
+			&Self::UNRESOLVED => write!(f, "<?>"),
+			NodeTarget(target) => write!(f, "{}", target),
+		}
 	}
 }
 
 impl fmt::Debug for NodeTarget {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let NodeTarget(target) = self;
-		write!(f, "NodeTarget({})", target)
+		write!(f, "NodeTarget({})", self)
 	}
 }
 
@@ -53,6 +59,14 @@ impl BasicNode {
 		std::mem::swap(&mut self.advance, &mut self.reverse);
 		std::mem::swap(&mut self.in_advance, &mut self.in_reverse);
 		self.statements.reverse();
+	}
+
+	pub fn retarget(&mut self, targets: &HashMap<NodeTarget, NodeTarget>) {
+		self.reverse.node.retarget(targets);
+		self.advance.node.retarget(targets);
+		Iterator::chain(self.in_reverse.iter_mut(), self.in_advance.iter_mut())
+			.filter_map(|current| targets.get(current).map(|target| (current, target)))
+			.for_each(|(current, target)| *current = *target);
 	}
 }
 

@@ -14,9 +14,7 @@ pub struct EvaluationFrame {
 
 impl EvaluationFrame {
 	pub fn new(function: Arc<BasicFunction>) -> Self {
-		let mut context = FrameContext::new(function.component.entry);
-		function.parameters.iter().for_each(|parameter|
-			context.insert(parameter.node.clone(), Item::Uninitialised));
+		let context = FrameContext::new(function.component.entry);
 		EvaluationFrame { function, context }
 	}
 }
@@ -46,7 +44,9 @@ impl FrameContext {
 	}
 
 	pub fn insert(&mut self, variable: Variable, object: Item) {
-		self.variables.insert(variable, object);
+		if self.variables.insert(variable.clone(), object).is_some() {
+			panic!("Variable: {}, is already bound in frame", variable);
+		}
 	}
 
 	pub fn value<'a>(&'a self, value: &'a Value) -> &'a Item {

@@ -1,7 +1,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use crate::node::{BinaryOperator, MutationKind, Variable};
+use crate::node::{BinaryOperator, MutationKind, UnaryOperator, Variable};
 
 use super::Item;
 
@@ -79,6 +79,7 @@ impl fmt::Display for Projection {
 #[derive(Debug)]
 pub enum Compound {
 	Value(Value),
+	Unary(UnaryOperator, Value),
 	Binary(BinaryOperator, Value, Value),
 }
 
@@ -87,6 +88,8 @@ impl fmt::Display for Compound {
 		match self {
 			Compound::Value(value) =>
 				write!(f, "{}", value),
+			Compound::Unary(operator, value) =>
+				write!(f, "{}{}", operator, value),
 			Compound::Binary(operator, left, right) =>
 				write!(f, "{} {} {}", left, operator, right),
 		}

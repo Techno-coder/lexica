@@ -6,6 +6,7 @@ use super::{AscriptionPattern, BindingPattern, ExpressionPattern, Variable, Vari
 
 pub type ConditionStart = ExpressionKey;
 pub type ConditionEnd = ExpressionKey;
+pub type Branch = (ConditionStart, Option<ConditionEnd>, ExpressionKey);
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub struct ExpressionKey(pub usize);
@@ -26,7 +27,7 @@ pub enum Expression {
 	ExplicitDrop(VariablePattern, ExpressionKey),
 	Unary(Spanned<UnaryOperator>, ExpressionKey),
 	Binary(Spanned<BinaryOperator>, ExpressionKey, ExpressionKey),
-	Conditional(Vec<(ConditionStart, Option<ConditionEnd>, ExpressionKey)>),
+	Conditional(Vec<Branch>),
 //	Field(ExpressionKey, Arc<str>),
 //	MethodCall(ExpressionKey, Arc<str>, Vec<ExpressionKey>),
 //	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>),
@@ -40,6 +41,14 @@ pub enum Expression {
 #[derive(Debug, Clone)]
 pub enum UnaryOperator {
 	Negate,
+}
+
+impl fmt::Display for UnaryOperator {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			UnaryOperator::Negate => write!(f, "-"),
+		}
+	}
 }
 
 #[derive(Debug, Clone)]

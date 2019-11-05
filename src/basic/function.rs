@@ -72,7 +72,8 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 		Expression::TerminationLoop(condition_start, condition_end, expression) =>
 			super::conditional::termination(function, context,
 				condition_start, condition_end, expression, span),
-		Expression::Conditional(_) => unimplemented!(),
+		Expression::Conditional(branches) =>
+			super::conditional::conditional(function, context, branches, span),
 		Expression::Mutation(mutation, mutable, expression) => {
 			let (value, component) = basic(function, context, expression);
 			let (variable, other) = basic(function, context, mutable);
@@ -122,7 +123,13 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 			context.link(Direction::Reverse, &component, &entry, span);
 			(Value::Item(Item::Unit), Component::new(entry.entry, exit.exit))
 		}
-		Expression::Unary(_, _) => unimplemented!(),
+		Expression::Unary(operator, expression) => {
+			let variable = context.temporary();
+			let (value, component) = basic(function, context, expression);
+			let compound = Compound::Unary(operator.node.clone(), value);
+			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
+			(Value::Location(Location::new(variable)), context.push(component, statement))
+		}
 		Expression::Binary(operator, left, right) => {
 			let (left_value, left) = basic(function, context, left);
 			let (right_value, right) = basic(function, context, right);

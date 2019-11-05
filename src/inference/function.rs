@@ -58,20 +58,36 @@ pub fn expression(context: &FunctionContext, environment: &mut Environment, engi
 				Diagnostic::new(Spanned::new(error, span)))?;
 			Intrinsic::Unit.inference()
 		}
-		Expression::TerminationLoop(start_condition, end_condition, expression_key) => {
-			if let Some(start_condition) = start_condition {
-				let condition_type = expression(context, environment, engine, *start_condition)?;
+		Expression::TerminationLoop(condition_start, condition_end, expression_key) => {
+			if let Some(condition_start) = condition_start {
+				let condition_type = expression(context, environment, engine, *condition_start)?;
 				engine.unify(condition_type, Intrinsic::Truth.inference()).map_err(|error|
-					Diagnostic::new(Spanned::new(error, context[start_condition].span)))?;
+					Diagnostic::new(Spanned::new(error, context[condition_start].span)))?;
 			}
 
-			let condition_type = expression(context, environment, engine, *end_condition)?;
+			let condition_type = expression(context, environment, engine, *condition_end)?;
 			engine.unify(condition_type, Intrinsic::Truth.inference()).map_err(|error|
-				Diagnostic::new(Spanned::new(error, context[end_condition].span)))?;
+				Diagnostic::new(Spanned::new(error, context[condition_end].span)))?;
 			expression(context, environment, engine, *expression_key)?;
 			Intrinsic::Unit.inference()
 		}
-		Expression::Conditional(_) => unimplemented!(),
+		Expression::Conditional(branches) => branches.iter()
+			.try_fold(engine.new_variable_type(), |inference_type, branch| {
+				let (condition_start, condition_end, expression_key) = branch;
+				if let Some(condition_end) = condition_end {
+					let condition_type = expression(context, environment, engine, *condition_end)?;
+					engine.unify(condition_type, Intrinsic::Truth.inference()).map_err(|error|
+						Diagnostic::new(Spanned::new(error, context[condition_end].span)))?;
+				}
+
+				let condition_type = expression(context, environment, engine, *condition_start)?;
+				engine.unify(condition_type, Intrinsic::Truth.inference()).map_err(|error|
+					Diagnostic::new(Spanned::new(error, context[condition_start].span)))?;
+				let expression_type = expression(context, environment, engine, *expression_key)?;
+				engine.unify(inference_type.clone(), expression_type).map_err(|error|
+					Diagnostic::new(Spanned::new(error, span)))?;
+				Ok(inference_type)
+			})?,
 		Expression::Mutation(_, mutable, expression_key) => {
 			let mutable = expression(context, environment, engine, *mutable)?;
 			let expression = expression(context, environment, engine, *expression_key)?;
@@ -86,7 +102,8 @@ pub fn expression(context: &FunctionContext, environment: &mut Environment, engi
 				Diagnostic::new(Spanned::new(error, span)))?;
 			Intrinsic::Unit.inference()
 		}
-		Expression::Unary(_, _) => unimplemented!(),
+		Expression::Unary(_, expression_key) =>
+			expression(context, environment, engine, *expression_key)?,
 		Expression::Binary(operator, left, right) => {
 			let left = expression(context, environment, engine, *left)?;
 			let right = expression(context, environment, engine, *right)?;
@@ -97,8 +114,10 @@ pub fn expression(context: &FunctionContext, environment: &mut Environment, engi
 				_ => Intrinsic::Truth.inference(),
 			}
 		}
-		Expression::Pattern(pattern) => pattern::expression_pattern(context, environment, engine, pattern)?,
-		Expression::Variable(variable) => Arc::new(InferenceType::Variable(environment[variable])),
+		Expression::Pattern(pattern) =>
+			pattern::expression_pattern(context, environment, engine, pattern)?,
+		Expression::Variable(variable) =>
+			Arc::new(InferenceType::Variable(environment[variable])),
 		Expression::Unsigned(_) => engine.new_variable_type(),
 		Expression::Signed(_) => engine.new_variable_type(),
 		Expression::Truth(_) => Intrinsic::Truth.inference(),

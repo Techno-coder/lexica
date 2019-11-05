@@ -119,13 +119,19 @@ fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
 				pattern.node.apply(&mut |terminal|
 					Ok(context.register_variable(&mut terminal.node)))
 			}
-			Expression::TerminationLoop(start_condition, end_condition, expression) => {
-				shadow(function, context, end_condition)?;
-				start_condition.as_mut().map(|start_condition|
-					shadow(function, context, start_condition)).transpose()?;
+			Expression::TerminationLoop(condition_start, condition_end, expression) => {
+				shadow(function, context, condition_end)?;
+				condition_start.as_mut().map(|condition_start|
+					shadow(function, context, condition_start)).transpose()?;
 				shadow(function, context, expression)
 			}
-			Expression::Conditional(_) => unimplemented!(),
+			Expression::Conditional(branches) => branches.iter_mut()
+				.try_for_each(|(condition_start, condition_end, expression)| {
+					shadow(function, context, condition_start)?;
+					condition_end.as_mut().map(|condition_end|
+						shadow(function, context, condition_end)).transpose()?;
+					shadow(function, context, expression)
+				}),
 			Expression::Mutation(_, mutable, expression) => {
 				shadow(function, context, mutable)?;
 				shadow(function, context, expression)
@@ -139,7 +145,8 @@ fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
 				})?;
 				shadow(function, context, expression)
 			}
-			Expression::Unary(_, _) => unimplemented!(),
+			Expression::Unary(_, expression) =>
+				shadow(function, context, expression),
 			Expression::Binary(_, left, right) => {
 				shadow(function, context, left)?;
 				shadow(function, context, right)

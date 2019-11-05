@@ -71,7 +71,7 @@ impl BasicContext {
 
 			let mut target_node = self.nodes.remove(&target.entry).unwrap();
 			target_node.in_reverse.into_iter().for_each(|target|
-				self[&target].reverse.node.retarget(&targets));
+				self[&target].retarget(&targets));
 
 			let base_node = &mut self[&base.exit];
 			base_node.statements.append(&mut target_node.statements);
@@ -97,21 +97,32 @@ impl BasicContext {
 
 	pub fn divergence(&mut self, direction: Direction, base: &Component, divergence: Divergence, span: Span) {
 		let exit = base.endpoint(direction);
-		divergence.targets().for_each(|target| self[target].in_edges(direction).push(exit));
+		divergence.targets().filter(|&target| target != &NodeTarget::UNRESOLVED)
+			.for_each(|target| self[target].in_edges(direction).push(exit));
 		self[&exit][direction] = Spanned::new(Branch::Divergence(divergence), span);
 	}
 
-	pub fn flatten(self, mut component: Component) -> (Vec<BasicNode>, Component) {
+	/// Replaces unresolved targets in a node with the specified node target.
+	pub fn resolve(&mut self, node: &NodeTarget, target: NodeTarget) {
+		let mut resolution = |direction| self[node][direction].node.targets()
+			.filter(|&target| target == &NodeTarget::UNRESOLVED).last().cloned()
+			.map(|_| self[&target].in_edges(direction).push(node.clone()));
+		resolution(Direction::Advance);
+		resolution(Direction::Reverse);
+
+		let mut targets = HashMap::new();
+		targets.insert(NodeTarget::UNRESOLVED, target);
+		self[node].retarget(&targets);
+	}
+
+	pub fn flatten(mut self, mut component: Component) -> (Vec<BasicNode>, Component) {
 		let targets: HashMap<_, _> = self.nodes.iter().enumerate()
 			.map(|(index, (target, _))| (*target, NodeTarget(index))).collect();
 		component.entry = targets[&component.entry];
 		component.exit = targets[&component.exit];
 
-		(self.nodes.into_iter().map(|(_, mut node)| {
-			node.reverse.node.retarget(&targets);
-			node.advance.node.retarget(&targets);
-			node
-		}).collect(), component)
+		self.nodes.iter_mut().for_each(|(_, node)| node.retarget(&targets));
+		(self.nodes.into_iter().map(|(_, node)| node).collect(), component)
 	}
 }
 

@@ -47,22 +47,15 @@ fn main() {
 			identifier: "Vector".into(),
 		})), Span::INTERNAL)));
 
+	// TODO: Pending integer inference
 	let mut parameters = HashMap::new();
-	parameters.insert("n".into(), Item::Unsigned64(35));
-
+	parameters.insert("x".into(), Item::Signed64(-10));
 	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
-			identifier: "fibonacci".into(),
+			identifier: "absolute_value".into(),
 		})), Span::INTERNAL), parameters));
 	result.map(|result| println!("{}", result));
-
-	let _function = context.emit(crate::parser::function(context, &Spanned::new(Arc::new(
-		FunctionPath(crate::declaration::DeclarationPath {
-			module_path: ModulePath::root(),
-			identifier: "absolute_value".into(),
-		})), Span::INTERNAL)));
-	println!("{:#?}", _function);
 
 	for error in context.errors.read().iter() {
 		crate::error::display(context, error);

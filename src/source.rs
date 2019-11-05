@@ -27,12 +27,9 @@ impl SourceKey {
 
 impl fmt::Debug for SourceKey {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self == &Self::INTERNAL {
-			true => write!(f, "SourceKey(INTERNAL)"),
-			false => {
-				let SourceKey(index) = self;
-				write!(f, "SourceKey({})", index)
-			}
+		match self {
+			&Self::INTERNAL => write!(f, "SourceKey(INTERNAL)"),
+			SourceKey(index) => write!(f, "SourceKey({})", index),
 		}
 	}
 }
