@@ -25,7 +25,9 @@ macro_rules! binary_operator {
         if let (Item::$identifier(left), Item::$identifier(right)) = ($left, $right) {
 		   return Ok(match $operator {
 				BinaryOperator::GreaterThan => Item::Truth(left > right),
+				BinaryOperator::GreaterEqual => Item::Truth(left >= right),
 				BinaryOperator::LessThan => Item::Truth(left < right),
+				BinaryOperator::LessEqual => Item::Truth(left <= right),
 				BinaryOperator::Equality => Item::Truth(left == right),
 				BinaryOperator::Arithmetic(operator) => Item::$identifier(match operator {
 					Arithmetic::Add => left.wrapping_add(*right),
@@ -68,5 +70,6 @@ fn object(frame: &mut FrameContext, compound: &Compound) -> Result<Item, Evaluat
 				_ => panic!("Cannot perform binary operation on values: {:?}, and: {:?}", left, right)
 			}
 		}
+		Compound::FunctionCall(_, _) => unreachable!(),
 	})
 }

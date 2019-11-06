@@ -4,7 +4,6 @@ use crate::context::Context;
 use crate::declaration::FunctionPath;
 use crate::error::Diagnostic;
 use crate::inference::TypeContext;
-use crate::intrinsic::Intrinsic;
 use crate::node::{BindingVariable, Expression, ExpressionKey, FunctionContext, MutationKind,
 	Parameter, Pattern};
 use crate::span::Spanned;
@@ -127,6 +126,21 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 			context.link(Direction::Reverse, &component, &entry, span);
 			(Value::Item(Item::Unit), Component::new(entry.entry, exit.exit))
 		}
+		Expression::FunctionCall(function_path, expressions, _) => {
+			let mut values = Vec::new();
+			let mut component = context.component();
+			for expression in expressions {
+				let (value, other) = basic(function, context, type_context, expression);
+				component = context.join(component, other, function[expression].span);
+				values.push(value);
+			}
+
+			let variable = context.temporary();
+			let compound = Compound::FunctionCall(function_path.clone()
+				.map(|function_path| Arc::new(function_path)), values);
+			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
+			(Value::Location(Location::new(variable)), context.push(component, statement))
+		}
 		Expression::Unary(operator, expression) => {
 			let variable = context.temporary();
 			let (value, component) = basic(function, context, type_context, expression);
@@ -149,19 +163,13 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 		Expression::Variable(variable) =>
 			(Value::Location(Location::new(variable.clone())), context.component()),
 		Expression::Integer(integer) => {
-			(Value::Item(match type_context[expression_key].intrinsic().unwrap() {
-				Intrinsic::Signed8 => Item::Signed8(*integer as i8),
-				Intrinsic::Signed16 => Item::Signed16(*integer as i16),
-				Intrinsic::Signed32 => Item::Signed32(*integer as i32),
-				Intrinsic::Signed64 => Item::Signed64(*integer as i64),
-				Intrinsic::Unsigned8 => Item::Unsigned8(*integer as u8),
-				Intrinsic::Unsigned16 => Item::Unsigned16(*integer as u16),
-				Intrinsic::Unsigned32 => Item::Unsigned32(*integer as u32),
-				Intrinsic::Unsigned64 => Item::Unsigned64(*integer as u64),
-				other => panic!("Intrinsic type: {:?}, is not of integer", other)
-			}), context.component())
+			let resolution = &type_context[expression_key];
+			(Value::Item(resolution.intrinsic()
+				.and_then(|intrinsic| Item::integer(intrinsic, *integer))
+				.unwrap_or_else(|| panic!("Type: {:?}, is not of intrinsic integer", resolution))),
+				context.component())
 		}
-		Expression::Truth(truth) =>
-			(Value::Item(Item::Truth(*truth)), context.component()),
+		Expression::Truth(truth) => (Value::Item(Item::Truth(*truth)), context.component()),
+		Expression::Item(item) => (Value::Item(item.clone()), context.component()),
 	}
 }

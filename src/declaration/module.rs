@@ -56,7 +56,7 @@ fn module_pending(context: &Context, module_path: Arc<ModulePath>) -> Option<()>
 	}
 
 	context.module_contexts.insert(module_path.clone(),
-		ModuleContext::default()).unwrap_none();
+		ModuleContext::new(module_path.clone(), module.declaration_span)).unwrap_none();
 	sources.into_iter().try_for_each(|(source_key, physical_path)|
 		super::SourceParse::parse(context, module_path.clone(), module.declaration_span,
 			physical_path, source_key))

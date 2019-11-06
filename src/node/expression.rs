@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::basic::Item;
+use crate::declaration::FunctionPath;
 use crate::span::Spanned;
 
 use super::{AscriptionPattern, BindingPattern, ExpressionPattern, Variable, VariablePattern};
@@ -30,11 +32,18 @@ pub enum Expression {
 	Conditional(Vec<Branch>),
 //	Field(ExpressionKey, Arc<str>),
 //	MethodCall(ExpressionKey, Arc<str>, Vec<ExpressionKey>),
-//	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>),
+	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>, Execution),
 	Pattern(ExpressionPattern),
 	Variable(Variable),
 	Integer(i128),
 	Truth(bool),
+	Item(Item),
+}
+
+#[derive(Debug, Clone)]
+pub enum Execution {
+	Compile,
+	Runtime,
 }
 
 #[derive(Debug, Clone)]
@@ -71,7 +80,9 @@ impl fmt::Display for Arithmetic {
 pub enum BinaryOperator {
 	Arithmetic(Arithmetic),
 	GreaterThan,
+	GreaterEqual,
 	LessThan,
+	LessEqual,
 	Equality,
 }
 
@@ -80,7 +91,9 @@ impl fmt::Display for BinaryOperator {
 		match self {
 			BinaryOperator::Arithmetic(arithmetic) => write!(f, "{}", arithmetic),
 			BinaryOperator::GreaterThan => write!(f, ">"),
+			BinaryOperator::GreaterEqual => write!(f, ">="),
 			BinaryOperator::LessThan => write!(f, "<"),
+			BinaryOperator::LessEqual => write!(f, "<="),
 			BinaryOperator::Equality => write!(f, "=="),
 		}
 	}

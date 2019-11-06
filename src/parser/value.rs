@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
+use crate::declaration::{DeclarationPath, FunctionPath, ModulePath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{Arithmetic, BinaryOperator, Expression, ExpressionKey, FunctionContext,
-	UnaryOperator, Variable};
-use crate::span::Spanned;
+use crate::node::{Arithmetic, BinaryOperator, Execution, Expression,
+	ExpressionKey, FunctionContext, UnaryOperator, Variable};
+use crate::span::{Span, Spanned};
 
 use super::ParserError;
 
@@ -29,7 +32,9 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
 
 	let operator = match binder.node {
 		Token::GreaterThan => BinaryOperator::GreaterThan,
+		Token::GreaterEqual => BinaryOperator::GreaterEqual,
 		Token::LessThan => BinaryOperator::LessThan,
+		Token::LessEqual => BinaryOperator::LessEqual,
 		Token::Equality => BinaryOperator::Equality,
 		Token::Add => BinaryOperator::Arithmetic(Arithmetic::Add),
 		Token::Minus => BinaryOperator::Arithmetic(Arithmetic::Minus),
@@ -45,6 +50,7 @@ fn token_precedence(token: &Token) -> usize {
 	match token {
 		Token::Equality => 1,
 		Token::LessThan | Token::GreaterThan => 2,
+		Token::LessEqual | Token::GreaterEqual => 2,
 		Token::Add | Token::Minus => 3,
 		Token::Asterisk => 4,
 		_ => 0,
@@ -58,6 +64,11 @@ fn terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Expressi
 		Token::ParenthesisOpen => {
 			let pattern = super::pattern(lexer, &mut |lexer| root_value(context, lexer))?;
 			Ok(context.register(pattern.map(|pattern| Expression::Pattern(pattern))))
+		}
+		Token::Compile => {
+			lexer.next();
+			let identifier = super::identifier(lexer)?;
+			function_call(context, lexer, Execution::Compile, identifier.node, identifier.span)
 		}
 		Token::Minus => {
 			let operator = Spanned::new(UnaryOperator::Negate, lexer.next().span);
@@ -76,15 +87,41 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 			.register(Spanned::new(Expression::Integer(integer), token.span))),
 		Token::Truth(truth) => Ok(context
 			.register(Spanned::new(Expression::Truth(truth), token.span))),
-		Token::Identifier(identifier) => {
-			let expression = Expression::Variable(Variable::new(identifier));
-			Ok(context.register(Spanned::new(expression, token.span)))
-		}
+		Token::Identifier(identifier) => match lexer.peek().node {
+			Token::ParenthesisOpen => function_call(context, lexer,
+				Execution::Runtime, identifier, token.span),
+			_ => {
+				let expression = Expression::Variable(Variable::new(identifier));
+				Ok(context.register(Spanned::new(expression, token.span)))
+			}
+		},
 		other => {
 			let error = ParserError::ExpectedExpression(other.clone());
 			Err(Diagnostic::new(Spanned::new(error, token.span)))
 		}
 	}
+}
+
+fn function_call(context: &mut FunctionContext, lexer: &mut Lexer, execution: Execution,
+                 identifier: Arc<str>, initial_span: Span) -> Result<ExpressionKey, Diagnostic> {
+	let mut arguments = Vec::new();
+	super::expect(lexer, Token::ParenthesisOpen)?;
+	while lexer.peek().node != Token::ParenthesisClose {
+		arguments.push(root_value(context, lexer).map_err(|diagnostic|
+			diagnostic.note("In parsing a function call argument"))?);
+		match lexer.peek().node {
+			Token::ListSeparator => lexer.next(),
+			_ => break,
+		};
+	}
+
+	let module_path = ModulePath::unresolved();
+	let function_path = FunctionPath(DeclarationPath { module_path, identifier });
+	let function_path = Spanned::new(function_path, initial_span);
+
+	let span = initial_span.merge(super::expect(lexer, Token::ParenthesisClose)?);
+	let function_call = Expression::FunctionCall(function_path, arguments, execution);
+	Ok(context.register(Spanned::new(function_call, span)))
 }
 
 fn block(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {

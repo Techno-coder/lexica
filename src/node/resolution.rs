@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use crate::context::Context;
-use crate::declaration::{InclusionTerminal, ModuleContext, ModulePath, StructurePath};
+use crate::declaration::{DeclarationPath, FunctionPath, InclusionTerminal, ModuleContext, ModulePath, StructurePath};
 use crate::error::Diagnostic;
 use crate::intrinsic::Intrinsic;
-use crate::span::Spanned;
+use crate::span::{Span, Spanned};
 
 use super::{Ascription, Expression, FunctionContext, FunctionType, NodeError, Parameter, Pattern};
 
@@ -21,8 +21,12 @@ pub fn resolve_function_type(context: &Context, module_context: &ModuleContext,
 pub fn resolve_function(context: &Context, module_context: &ModuleContext,
                         function: &mut FunctionContext) -> Result<(), Diagnostic> {
 	for expression in function.expressions.iter_mut() {
-		if let Expression::Binding(_, Some(ascriptions), _) = &mut expression.node {
-			resolve_ascriptions(context, module_context, ascriptions)?;
+		match &mut expression.node {
+			Expression::Binding(_, Some(ascriptions), _) =>
+				resolve_ascriptions(context, module_context, ascriptions)?,
+			Expression::FunctionCall(function_path, _, _) =>
+				resolve_function_call(context, module_context, function_path)?,
+			_ => (),
 		}
 	}
 	Ok(())
@@ -44,54 +48,69 @@ fn resolve_ascription(context: &Context, module_context: &ModuleContext,
 		return Ok(());
 	}
 
+	let structures = &context.declarations_structure;
+	resolve_declaration(context, module_context, declaration_path, ascription.span,
+		&mut |candidate| structures.contains_key(&StructurePath(candidate)))
+}
+
+fn resolve_function_call(context: &Context, module_context: &ModuleContext,
+                         function_path: &mut Spanned<FunctionPath>) -> Result<(), Diagnostic> {
+	let FunctionPath(declaration_path) = &mut function_path.node;
+	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
+
+	let functions = &context.declarations_function;
+	resolve_declaration(context, module_context, declaration_path, function_path.span,
+		&mut |candidate| functions.contains_key(&FunctionPath(candidate)))
+}
+
+fn resolve_declaration<F>(context: &Context, module_context: &ModuleContext,
+                          declaration_path: &mut DeclarationPath, span: Span, condition: &mut F)
+                          -> Result<(), Diagnostic> where F: FnMut(DeclarationPath) -> bool {
 	if declaration_path.module_path.head().map(|head| head.is_root()).unwrap_or(false) {
 		declaration_path.module_path = declaration_path.module_path.clone().tail();
 	}
 
-	let declaration_path = declaration_path.clone();
+	let comparison_path = declaration_path.clone();
 	for inclusion in &module_context.inclusions {
 		match &inclusion.node.terminal {
 			InclusionTerminal::Identifier(identifier) => {
-				if &declaration_path.head() == identifier {
-					resolve(ascription, inclusion.node.module_path.clone())?;
+				if &comparison_path.head() == identifier {
+					resolve(declaration_path, inclusion.node.module_path.clone(), span)?;
 				}
 			}
 			InclusionTerminal::Wildcard => {
-				let mut candidate = declaration_path.clone();
+				let mut candidate = comparison_path.clone();
 				candidate.module_path = inclusion.node.module_path.clone()
 					.append(&candidate.module_path);
 				if crate::declaration::load_modules(context, candidate.module_path.clone()).is_ok() {
-					let structures = &context.declarations_structure;
-					if structures.contains_key(&StructurePath(candidate.clone())) {
-						resolve(ascription, candidate.module_path)?;
+					if condition(candidate.clone()) {
+						resolve(declaration_path, candidate.module_path, span)?;
 					}
 				}
 			}
 		}
 	}
 
-	let Ascription(StructurePath(declaration_path)) = &mut ascription.node;
 	match declaration_path.module_path.any_unresolved() {
 		false => Ok(()),
 		true => {
 			let error = NodeError::UnresolvedResolution(declaration_path.clone());
 			let note = format!("Add an include with 'use module::{}'", declaration_path.head());
-			Err(Diagnostic::new(Spanned::new(error, ascription.span)).note(note))
+			Err(Diagnostic::new(Spanned::new(error, span)).note(note))
 		}
 	}
 }
 
-fn resolve(ascription: &mut Spanned<Ascription>, candidate: Arc<ModulePath>) -> Result<(), Diagnostic> {
-	let Ascription(StructurePath(declaration_path)) = &mut ascription.node;
+fn resolve(declaration_path: &mut DeclarationPath, candidate: Arc<ModulePath>,
+           span: Span) -> Result<(), Diagnostic> {
 	match declaration_path.module_path.any_unresolved() {
 		true => {
 			let module = candidate.append(&declaration_path.module_path);
-			declaration_path.module_path = module;
-			Ok(())
+			Ok(declaration_path.module_path = module)
 		}
 		false => {
 			let error = NodeError::ResolutionConflict(declaration_path.clone());
-			return Err(Diagnostic::new(Spanned::new(error, ascription.span)));
+			return Err(Diagnostic::new(Spanned::new(error, span)));
 		}
 	}
 }

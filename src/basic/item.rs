@@ -3,6 +3,7 @@ use std::fmt::{self, Write};
 use std::sync::Arc;
 
 use crate::extension::Indent;
+use crate::intrinsic::Intrinsic;
 
 #[derive(Clone, PartialEq)]
 pub enum Item {
@@ -18,6 +19,22 @@ pub enum Item {
 	Instance(Instance),
 	Uninitialised,
 	Unit,
+}
+
+impl Item {
+	pub fn integer(intrinsic: Intrinsic, integer: i128) -> Option<Self> {
+		Some(match intrinsic {
+			Intrinsic::Signed8 => Item::Signed8(integer as i8),
+			Intrinsic::Signed16 => Item::Signed16(integer as i16),
+			Intrinsic::Signed32 => Item::Signed32(integer as i32),
+			Intrinsic::Signed64 => Item::Signed64(integer as i64),
+			Intrinsic::Unsigned8 => Item::Unsigned8(integer as u8),
+			Intrinsic::Unsigned16 => Item::Unsigned16(integer as u16),
+			Intrinsic::Unsigned32 => Item::Unsigned32(integer as u32),
+			Intrinsic::Unsigned64 => Item::Unsigned64(integer as u64),
+			_ => return None,
+		})
+	}
 }
 
 impl fmt::Display for Item {

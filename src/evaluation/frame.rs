@@ -45,7 +45,8 @@ impl FrameContext {
 
 	pub fn insert(&mut self, variable: Variable, object: Item) {
 		if self.variables.insert(variable.clone(), object).is_some() {
-			panic!("Variable: {}, is already bound in frame", variable);
+			// TODO: Add implicit drop on scope close
+//			panic!("Variable: {}, is already bound in frame", variable);
 		}
 	}
 

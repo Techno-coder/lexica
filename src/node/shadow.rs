@@ -145,6 +145,8 @@ fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
 				})?;
 				shadow(function, context, expression)
 			}
+			Expression::FunctionCall(_, expressions, _) => expressions.iter()
+				.try_for_each(|expression| shadow(function, context, expression)),
 			Expression::Unary(_, expression) =>
 				shadow(function, context, expression),
 			Expression::Binary(_, left, right) => {
@@ -154,7 +156,7 @@ fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
 			Expression::Pattern(pattern) => pattern.apply(&mut |terminal|
 				shadow(function, context, terminal)),
 			Expression::Variable(variable) => context.resolve_variable(variable, expression.span),
-			Expression::Integer(_) | Expression::Truth(_) => Ok(()),
+			Expression::Integer(_) | Expression::Truth(_) | Expression::Item(_) => Ok(()),
 		}
 	})
 }

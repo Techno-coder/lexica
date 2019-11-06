@@ -65,6 +65,9 @@ impl BasicContext {
 	/// Coalesces the base exit node with the target entry node.
 	pub fn join(&mut self, mut base: Component, target: Component, span: Span) -> Component {
 		let (base_node, target_node) = (&self[&base.exit], &self[&target.entry]);
+		assert_eq!(target_node.reverse.node, Branch::Unreachable);
+		assert_eq!(base_node.advance.node, Branch::Unreachable);
+
 		if base_node.in_reverse.is_empty() && target_node.in_advance.is_empty() {
 			let mut targets = HashMap::new();
 			targets.insert(target.entry, base.exit);

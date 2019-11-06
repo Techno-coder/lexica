@@ -1,7 +1,9 @@
 use std::fmt;
 use std::sync::Arc;
 
+use crate::declaration::FunctionPath;
 use crate::node::{BinaryOperator, MutationKind, UnaryOperator, Variable};
+use crate::span::Spanned;
 
 use super::Item;
 
@@ -81,6 +83,7 @@ pub enum Compound {
 	Value(Value),
 	Unary(UnaryOperator, Value),
 	Binary(BinaryOperator, Value, Value),
+	FunctionCall(Spanned<Arc<FunctionPath>>, Vec<Value>),
 }
 
 impl fmt::Display for Compound {
@@ -92,6 +95,11 @@ impl fmt::Display for Compound {
 				write!(f, "{}{}", operator, value),
 			Compound::Binary(operator, left, right) =>
 				write!(f, "{} {} {}", left, operator, right),
+			Compound::FunctionCall(function, values) => {
+				write!(f, "{}", function.node)?;
+				values.iter().try_for_each(|value|
+					write!(f, " {}", value))
+			}
 		}
 	}
 }

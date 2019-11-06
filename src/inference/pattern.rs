@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::context::Context;
 use crate::error::Diagnostic;
 use crate::intrinsic::Intrinsic;
 use crate::node::{Ascription, AscriptionPattern, BindingPattern, BindingVariable,
@@ -64,14 +65,16 @@ pub fn ascription_type(environment: &Environment, engine: &mut TypeEngine,
 	}
 }
 
-pub fn expression_pattern(context: &FunctionContext, environment: &mut Environment, engine: &mut TypeEngine,
-                          pattern: &ExpressionPattern) -> Result<Arc<InferenceType>, Diagnostic> {
+pub fn expression_pattern(context: &Context, function: &FunctionContext, environment: &mut Environment,
+                          engine: &mut TypeEngine, pattern: &ExpressionPattern)
+                          -> Result<Arc<InferenceType>, Diagnostic> {
 	match pattern {
 		Pattern::Wildcard => Ok(engine.new_variable_type()),
-		Pattern::Terminal(terminal) => super::function::expression(context, environment, engine, *terminal),
+		Pattern::Terminal(terminal) =>
+			super::function::expression(context, function, environment, engine, terminal),
 		Pattern::Tuple(patterns) => {
 			let expression_types: Result<Vec<_>, _> = patterns.iter().map(|pattern|
-				expression_pattern(context, environment, engine, pattern)).collect();
+				expression_pattern(context, function, environment, engine, pattern)).collect();
 			Ok(Arc::new(InferenceType::Instance(Intrinsic::Tuple.structure(), expression_types?)))
 		}
 	}

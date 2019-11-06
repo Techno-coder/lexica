@@ -48,11 +48,11 @@ fn main() {
 		})), Span::INTERNAL)));
 
 	let mut parameters = HashMap::new();
-	parameters.insert("x".into(), Item::Signed32(-10));
+	parameters.insert("n".into(), Item::Unsigned64(16));
 	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
-			identifier: "absolute_value".into(),
+			identifier: "fibonacci_recursive".into(),
 		})), Span::INTERNAL), parameters));
 	result.map(|result| println!("{}", result));
 

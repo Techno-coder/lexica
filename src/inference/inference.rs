@@ -10,6 +10,7 @@ pub enum InferenceError {
 	Unification(Arc<InferenceType>, Arc<InferenceType>),
 	Recursive(InferenceType),
 	Unresolved(TypeVariable),
+	FunctionArity(usize, usize),
 }
 
 impl fmt::Display for InferenceError {
@@ -21,6 +22,8 @@ impl fmt::Display for InferenceError {
 				write!(f, "Inference type: {}, is recursively defined", variable),
 			InferenceError::Unresolved(variable) =>
 				write!(f, "Inference type: {}, has not been resolved", variable),
+			InferenceError::FunctionArity(expression, function) =>
+				write!(f, "Expression arity: {}, is not equal to function: {}", expression, function),
 		}
 	}
 }

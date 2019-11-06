@@ -35,15 +35,15 @@ impl From<EvaluationError> for CompileError {
 }
 
 pub fn evaluate(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
-                parameters: HashMap<Arc<str>, Item>) -> Result<Item, Diagnostic> {
+                arguments: HashMap<Arc<str>, Item>) -> Result<Item, Diagnostic> {
 	let function = crate::basic::basic_function(context,
 		function_path, Reversibility::Entropic)?;
 
 	let mut frame = EvaluationFrame::new(function);
-	parameters.into_iter().for_each(|(variable, item)|
+	arguments.into_iter().for_each(|(variable, item)|
 		frame.context.insert(Variable::new_parameter(variable), item));
-	let context = &mut EvaluationContext::new(frame);
 
+	let context = &mut EvaluationContext::new(context, Reversibility::Entropic, frame);
 	loop {
 		if let Some(item) = context.advance()? {
 			return Ok(item);

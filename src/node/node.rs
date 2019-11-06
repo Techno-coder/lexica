@@ -22,10 +22,10 @@ impl fmt::Display for NodeError {
 				write!(f, "Variable: {}, is not defined", variable),
 			NodeError::DuplicateParameter(parameter) =>
 				write!(f, "Parameter: {}, is already defined", parameter),
-			NodeError::ResolutionConflict(structure) =>
-				write!(f, "Structure: {}, has conflicting resolutions", structure),
-			NodeError::UnresolvedResolution(structure) =>
-				write!(f, "Structure: {}, has no matching resolutions", structure),
+			NodeError::ResolutionConflict(item) =>
+				write!(f, "Item: {}, has conflicting resolutions", item),
+			NodeError::UnresolvedResolution(item) =>
+				write!(f, "Item: {}, has no matching resolutions", item),
 		}
 	}
 }

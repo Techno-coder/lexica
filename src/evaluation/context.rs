@@ -1,19 +1,24 @@
-use crate::basic::{Branch, Direction, Item, Statement};
+use crate::basic::{Branch, Compound, Direction, Item, Reversibility, Statement};
+use crate::context::Context;
 use crate::error::Diagnostic;
 use crate::span::Spanned;
 
 use super::{EvaluationError, EvaluationFrame};
 
 #[derive(Debug)]
-pub struct EvaluationContext {
+pub struct EvaluationContext<'a> {
+	context: &'a Context,
+	reversibility: Reversibility,
 	frames: Vec<EvaluationFrame>,
 	stack: DropStack,
 }
 
 // TODO: Add reverse execution
-impl EvaluationContext {
-	pub fn new(frame: EvaluationFrame) -> Self {
+impl<'a> EvaluationContext<'a> {
+	pub fn new(context: &'a Context, reversibility: Reversibility, frame: EvaluationFrame) -> Self {
 		EvaluationContext {
+			context,
+			reversibility,
 			frames: vec![frame],
 			stack: DropStack::default(),
 		}
@@ -24,26 +29,54 @@ impl EvaluationContext {
 		let node = frame.context.node(&frame.function);
 		if frame.context.next_statement == node.statements.len() {
 			frame.context.next_statement = 0;
-			self.branch(Direction::Advance)
+			match self.branch(Direction::Advance)? {
+				Some(item) => match self.frames.last_mut() {
+					Some(frame) => match &frame.context.statement(&frame.function).node {
+						Statement::Binding(variable, Compound::FunctionCall(_, _)) => {
+							frame.context.insert(variable.clone(), item);
+							frame.context.next_statement += 1;
+							Ok(None)
+						}
+						_ => panic!("Cannot return into statement that is not function call"),
+					},
+					None => Ok(Some(item))
+				}
+				None => Ok(None),
+			}
 		} else {
-			self.execute(Direction::Advance)?;
-			self.frame().context.next_statement += 1;
+			if !self.execute(Direction::Advance)? {
+				self.frame().context.next_statement += 1;
+			}
 			Ok(None)
 		}
 	}
 
-	fn execute(&mut self, direction: Direction) -> Result<(), Diagnostic> {
+	/// Executes the current statement. Returns true if a function call was invoked.
+	fn execute(&mut self, direction: Direction) -> Result<bool, Diagnostic> {
 		let frame = self.frames.last_mut()
 			.expect("Evaluation frame stack is empty");
 		let context = &mut frame.context;
 		let statement = context.statement(&frame.function);
+		let span = statement.span;
 
 		match &statement.node {
+			Statement::Binding(_, Compound::FunctionCall(function_path, arguments)) => {
+				let function = crate::basic::basic_function(&self.context,
+					function_path, self.reversibility)?;
+
+				let mut frame = EvaluationFrame::new(function.clone());
+				let arguments = arguments.iter().map(|argument| context.value(argument));
+				Iterator::zip(function.parameters.iter(), arguments).for_each(|(parameter, argument)|
+					frame.context.insert(parameter.node.clone(), argument.clone()));
+
+				self.frames.push(frame);
+				return Ok(true);
+			}
 			Statement::Binding(variable, compound) =>
 				super::binding::binding(context, variable, compound),
 			Statement::Mutation(mutation, location, value) => super::mutation::mutation(context,
 				&mut self.stack, mutation, location, value, direction),
-		}.map_err(|error| Diagnostic::new(Spanned::new(error, statement.span)))
+		}.map_err(|error| Diagnostic::new(Spanned::new(error, span))).map(|_| false)
 	}
 
 	/// Evaluates the current node branch. Returns an item on a return branch.

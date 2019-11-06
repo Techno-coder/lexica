@@ -109,8 +109,8 @@ pub fn conditional(function: &FunctionContext, context: &mut BasicContext, type_
 		};
 
 		if value != Value::Item(Item::Unit) {
-			let location = temporary.get_or_insert_with(|| Location::new(context.temporary()));
-			let statement = Statement::Mutation(MutationKind::Assign, location.clone(), value);
+			let location = temporary.get_or_insert_with(|| context.temporary()).clone();
+			let statement = Statement::Mutation(MutationKind::Assign, Location::new(location), value);
 			component = context.push(component, Spanned::new(statement, expression_span));
 		}
 
@@ -160,6 +160,12 @@ pub fn conditional(function: &FunctionContext, context: &mut BasicContext, type_
 		assert!(context.is_reversible());
 	}
 
-	let temporary = temporary.map(|temporary| Value::Location(temporary));
+	if let Some(temporary) = &temporary {
+		let compound = Compound::Value(Value::Item(Item::Uninitialised));
+		let statement = Statement::Binding(temporary.clone(), compound);
+		context[&entry.exit].statements.push(Spanned::new(statement, span));
+	}
+
+	let temporary = temporary.map(|temporary| Value::Location(Location::new(temporary)));
 	(temporary.unwrap_or(Value::Item(Item::Unit)), Component::new(entry.entry, exit.exit))
 }

@@ -39,7 +39,7 @@ impl<'a> SourceParse<'a> {
 
 	pub fn module(&mut self, identifier: Arc<str>, declaration_span: Span, placement_span: Span) -> Option<()> {
 		match self.lexer.next().node {
-			Token::Separator => self.nested(identifier),
+			Token::Separator => self.nested(identifier, placement_span),
 			Token::LineBreak => self.external(identifier, declaration_span, placement_span),
 			_ => {
 				let error = Spanned::new(DeclarationError::ExpectedConstructTerminator, placement_span);
@@ -48,11 +48,12 @@ impl<'a> SourceParse<'a> {
 		}
 	}
 
-	fn nested(&mut self, identifier: Arc<str>) -> Option<()> {
+	fn nested(&mut self, identifier: Arc<str>, placement_span: Span) -> Option<()> {
 		self.require_block();
 		self.module_indents.push(self.current_indent);
 		self.current_module = self.current_module.clone().push(identifier);
-		self.context.module_contexts.insert(self.current_module.clone(), ModuleContext::default());
+		let module_context = ModuleContext::new(self.current_module.clone(), placement_span);
+		self.context.module_contexts.insert(self.current_module.clone(), module_context);
 		Some(())
 	}
 
