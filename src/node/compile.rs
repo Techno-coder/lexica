@@ -1,0 +1,111 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use crate::basic::{Instance, Item};
+use crate::context::Context;
+use crate::declaration::{ModulePath, StructurePath};
+use crate::error::Diagnostic;
+use crate::intrinsic::Intrinsic;
+use crate::node::{Ascription, Pattern};
+use crate::span::{Span, Spanned};
+
+use super::*;
+
+pub fn compile_root(context: &Context, function: &mut Function) -> Result<(), Diagnostic> {
+	for index in 0..function.context.expressions.len() {
+		let expression_key = &ExpressionKey(index);
+		let expression = &function.context[expression_key].node;
+		if let Expression::FunctionCall(_, _, Execution::Compile) = expression {
+			let item = compile(context, &mut function.context, expression_key, None)?;
+			function.context.apply(expression_key, |_, expression|
+				expression.node = Expression::Item(item));
+		}
+	}
+	Ok(())
+}
+
+fn compile(context: &Context, function: &mut FunctionContext, expression: &ExpressionKey,
+           ascription: Option<&AscriptionPattern>) -> Result<Item, Diagnostic> {
+	function.apply(expression, |function, expression| {
+		let span = expression.span;
+		match &mut expression.node {
+			Expression::Item(item) => Ok(item.clone()),
+			Expression::Truth(truth) => Ok(Item::Truth(*truth)),
+			Expression::FunctionCall(function_path, expressions, Execution::Compile) => {
+				let function_path = function_path.clone().map(Arc::new);
+				let function_type = super::function_type(context, &function_path)?;
+
+				let mut arguments = HashMap::new();
+				Iterator::zip(function_type.parameters.iter(), expressions.iter())
+					.try_for_each(|(parameter, expression)| {
+						let Parameter(binding, ascription) = &parameter.node;
+						let item = compile(context, function, expression, Some(ascription))?;
+						function_arguments(&mut arguments, binding, item, span)
+					})?;
+
+				crate::evaluation::evaluate(context, &function_path, arguments)
+			}
+			Expression::Integer(integer) => match ascription {
+				Some(Pattern::Terminal(terminal)) => {
+					let Ascription(StructurePath(declaration_path)) = &terminal.node;
+					let is_intrinsic = declaration_path.module_path == ModulePath::intrinsic();
+					let intrinsic = Intrinsic::parse(&declaration_path.identifier)
+						.and_then(|intrinsic| Item::integer(intrinsic, *integer));
+					match (is_intrinsic, intrinsic) {
+						(true, Some(item)) => Ok(item),
+						_ => Err(Diagnostic::new(Spanned::new(NodeError::ArgumentType, span))),
+					}
+				}
+				_ => Err(Diagnostic::new(Spanned::new(NodeError::RuntimeExpression, span))),
+			},
+			Expression::Pattern(expression) => pattern(context, function, expression, ascription),
+			_ => Err(Diagnostic::new(Spanned::new(NodeError::RuntimeExpression, span))),
+		}
+	})
+}
+
+fn function_arguments(arguments: &mut HashMap<Arc<str>, Item>, pattern: &BindingPattern,
+                      mut item: Item, span: Span) -> Result<(), Diagnostic> {
+	match pattern {
+		Pattern::Wildcard => panic!("Wildcard binding is invalid"),
+		Pattern::Terminal(terminal) => {
+			let BindingVariable(Variable(identifier, _), _) = &terminal.node;
+			arguments.insert(identifier.clone(), item);
+			Ok(())
+		}
+		Pattern::Tuple(patterns) => {
+			for (index, pattern) in patterns.iter().enumerate() {
+				if let Item::Instance(instance) = &mut item {
+					if let Some(item) = instance.fields.remove(index.to_string().as_str()) {
+						function_arguments(arguments, pattern, item, span)?;
+						continue;
+					}
+				}
+				return Err(Diagnostic::new(Spanned::new(NodeError::BindingExpression, span)));
+			}
+			Ok(())
+		}
+	}
+}
+
+fn pattern(context: &Context, function: &mut FunctionContext, expression: &ExpressionPattern,
+           ascription: Option<&AscriptionPattern>) -> Result<Item, Diagnostic> {
+	match expression {
+		Pattern::Wildcard => panic!("Wildcard expression is invalid"),
+		Pattern::Terminal(terminal) => compile(context, function, terminal, ascription),
+		Pattern::Tuple(patterns) => {
+			let mut instance = Instance::default();
+			for (index, expression) in patterns.iter().enumerate() {
+				let field: Arc<str> = index.to_string().into();
+				let ascription = ascription.and_then(|ascription| match ascription {
+					Pattern::Tuple(patterns) => patterns.get(index),
+					_ => None,
+				});
+
+				let item = pattern(context, function, expression, ascription)?;
+				instance.fields.insert(field, item);
+			}
+			Ok(Item::Instance(instance))
+		}
+	}
+}

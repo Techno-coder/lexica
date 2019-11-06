@@ -14,5 +14,6 @@ mod variable;
 mod context;
 mod structure;
 mod resolution;
+mod compile;
 mod shadow;
 mod node;

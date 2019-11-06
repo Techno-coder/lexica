@@ -23,7 +23,6 @@ fn main() {
 	use crate::context::Context;
 	use crate::declaration::*;
 	use crate::span::*;
-	use crate::basic::*;
 	use std::collections::HashMap;
 	use std::path::PathBuf;
 
@@ -47,12 +46,18 @@ fn main() {
 			identifier: "Vector".into(),
 		})), Span::INTERNAL)));
 
-	let mut parameters = HashMap::new();
-	parameters.insert("n".into(), Item::Unsigned64(16));
+	let result = context.emit(crate::basic::basic_function(context, &Spanned::new(Arc::new(
+		FunctionPath(crate::declaration::DeclarationPath {
+			module_path: ModulePath::root(),
+			identifier: "main".into(),
+		})), Span::INTERNAL), crate::basic::Reversibility::Entropic));
+	result.map(|result| println!("{}", result));
+
+	let parameters = HashMap::new();
 	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
-			identifier: "fibonacci_recursive".into(),
+			identifier: "main".into(),
 		})), Span::INTERNAL), parameters));
 	result.map(|result| println!("{}", result));
 

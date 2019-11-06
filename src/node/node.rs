@@ -11,6 +11,9 @@ pub enum NodeError {
 	DuplicateParameter(Arc<str>),
 	ResolutionConflict(DeclarationPath),
 	UnresolvedResolution(DeclarationPath),
+	RuntimeExpression,
+	BindingExpression,
+	ArgumentType,
 }
 
 impl fmt::Display for NodeError {
@@ -26,6 +29,12 @@ impl fmt::Display for NodeError {
 				write!(f, "Item: {}, has conflicting resolutions", item),
 			NodeError::UnresolvedResolution(item) =>
 				write!(f, "Item: {}, has no matching resolutions", item),
+			NodeError::RuntimeExpression =>
+				write!(f, "Expression is not available at compile time"),
+			NodeError::BindingExpression =>
+				write!(f, "Binding pattern does not match expression"),
+			NodeError::ArgumentType =>
+				write!(f, "Argument type does not match function parameter"),
 		}
 	}
 }

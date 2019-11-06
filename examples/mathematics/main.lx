@@ -2,6 +2,9 @@ module vector
 
 use crate::vector::vector::*
 
+fn main() -> u64:
+	#fibonacci(35)
+
 fn fibonacci(n: u64) -> u64:
 	let ~first = 1
 	let ~second = 1
@@ -25,6 +28,17 @@ fn fibonacci_recursive(n: u64) -> u64:
 			let left = fibonacci_recursive(n - 2)
 			let right = fibonacci_recursive(n - 1)
 			left + right
+
+fn summation(n: u64) -> u64:
+	let ~counter = 1
+	let ~summation = 0
+	loop => counter == n + 1:
+		summation += counter
+		counter += 1
+	summation
+
+fn collapse((a, b): (u64, u64)) -> u64:
+	a + b
 
 fn absolute_value(x: i32) -> i32:
 	if x < 0: x = -x

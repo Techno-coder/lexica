@@ -37,6 +37,7 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 
 	super::resolution::resolve_function(context, &context.module_contexts
 		.get(&declaration_path.module_path).unwrap(), &mut function.context)?;
+	super::compile::compile_root(context, &mut function)?;
 
 	let function = Arc::new(function);
 	context.node_functions.insert(function_path.node.clone(), function.clone());
