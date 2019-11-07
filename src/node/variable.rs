@@ -106,13 +106,12 @@ impl<T> Pattern<T> {
 		}
 	}
 
-	pub fn traverse<F, E>(&self, function: &mut F) -> Result<(), E>
-		where F: FnMut(&T) -> Result<(), E> {
+	pub fn traverse<F>(&self, function: &mut F) where F: FnMut(&T) {
 		match self {
-			Pattern::Wildcard => Ok(()),
+			Pattern::Wildcard => (),
 			Pattern::Terminal(terminal) => function(terminal),
 			Pattern::Tuple(patterns) => patterns.iter()
-				.try_for_each(|pattern| pattern.traverse(function)),
+				.for_each(|pattern| pattern.traverse(function)),
 		}
 	}
 }

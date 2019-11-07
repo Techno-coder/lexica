@@ -6,8 +6,10 @@ use crate::extension::{Indent, Traverse};
 use crate::node::Variable;
 use crate::span::{Span, Spanned};
 
-use super::{BasicNode, Branch, Component, Direction, Divergence, NodeTarget,
-	Reversibility, Statement};
+use super::{BasicNode, Branch, Component, Direction, Divergence, Location,
+	NodeTarget, Reversibility, Statement, Value};
+
+type Frame = HashMap<Variable, Span>;
 
 #[derive(Debug)]
 pub struct BasicContext {
@@ -15,6 +17,7 @@ pub struct BasicContext {
 	next_component: usize,
 	reversibility: Reversibility,
 	nodes: HashMap<NodeTarget, BasicNode>,
+	frames: Vec<Frame>,
 }
 
 impl BasicContext {
@@ -24,6 +27,7 @@ impl BasicContext {
 			next_component: 0,
 			reversibility,
 			nodes: HashMap::new(),
+			frames: vec![Frame::new()],
 		}
 	}
 
@@ -56,6 +60,10 @@ impl BasicContext {
 
 	/// Pushes a statement on the endpoint of the component.
 	pub fn push(&mut self, component: Component, statement: Spanned<Statement>) -> Component {
+		if let Statement::Binding(variable, _) = &statement.node {
+			self.frame().insert(variable.clone(), statement.span);
+		}
+
 		let (other, span) = (self.component(), statement.span);
 		self[&other.exit].statements.push(statement);
 		self.join(component, other, span)
@@ -127,6 +135,39 @@ impl BasicContext {
 		self.nodes.iter_mut().for_each(|(_, node)| node.retarget(&targets));
 		(self.nodes.into_iter().map(|(_, node)| node).collect(), component)
 	}
+
+	pub fn consume_value(&mut self, value: &Value) {
+		if let Value::Location(location) = value {
+			self.consume_variable(&location.variable);
+		}
+	}
+
+	pub fn consume_variable(&mut self, variable: &Variable) {
+		self.frames.iter_mut().rev()
+			.find(|frame| frame.contains_key(variable))
+			.map(|frame| frame.remove(variable));
+	}
+
+	pub fn push_frame(&mut self) {
+		self.frames.push(Frame::new());
+	}
+
+	pub fn pop_frame(&mut self) -> Component {
+		let frame = self.frames.pop().expect("Context frame stack is empty");
+		frame.into_iter().fold(self.component(), |component, (variable, span)| {
+			match self.is_reversible() {
+				false => component,
+				true => {
+					let statement = Statement::ImplicitDrop(Location::new(variable));
+					self.push(component, Spanned::new(statement, span))
+				}
+			}
+		})
+	}
+
+	fn frame(&mut self) -> &mut Frame {
+		self.frames.last_mut().expect("Context frame stack is empty")
+	}
 }
 
 impl Index<&NodeTarget> for BasicContext {
@@ -148,7 +189,11 @@ impl IndexMut<&NodeTarget> for BasicContext {
 impl fmt::Display for BasicContext {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.nodes.iter().try_for_each(|(target, node)| {
-			writeln!(f, "{}:", target)?;
+			match node.direction {
+				Direction::Advance => writeln!(f, "{}:", target),
+				Direction::Reverse => writeln!(f, "!{}:", target),
+			}?;
+
 			let indent = &mut Indent::new(f);
 			writeln!(indent, "{}", node)
 		})

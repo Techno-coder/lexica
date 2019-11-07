@@ -1,6 +1,7 @@
 use crate::basic::{Branch, Compound, Direction, Item, Reversibility, Statement};
 use crate::context::Context;
 use crate::error::Diagnostic;
+use crate::node::Variable;
 use crate::span::Spanned;
 
 use super::{EvaluationError, EvaluationFrame};
@@ -63,12 +64,10 @@ impl<'a> EvaluationContext<'a> {
 			Statement::Binding(_, Compound::FunctionCall(function_path, arguments)) => {
 				let function = crate::basic::basic_function(&self.context,
 					function_path, self.reversibility)?;
-
 				let mut frame = EvaluationFrame::new(function.clone());
-				let arguments = arguments.iter().map(|argument| context.value(argument));
-				Iterator::zip(function.parameters.iter(), arguments).for_each(|(parameter, argument)|
-					frame.context.insert(parameter.node.clone(), argument.clone()));
-
+				arguments.iter().map(|argument| context.value(argument))
+					.enumerate().for_each(|(index, argument)| frame.context
+					.insert(Variable::new_temporary(index), argument.clone()));
 				self.frames.push(frame);
 				return Ok(true);
 			}
@@ -76,6 +75,14 @@ impl<'a> EvaluationContext<'a> {
 				super::binding::binding(context, variable, compound),
 			Statement::Mutation(mutation, location, value) => super::mutation::mutation(context,
 				&mut self.stack, mutation, location, value, direction),
+			Statement::ImplicitDrop(location) => Ok(match direction {
+				Direction::Advance =>
+					self.stack.drop(context.location(location, |_, item| item.clone())),
+				Direction::Reverse => {
+					let stack_item = self.stack.restore();
+					context.location(location, |_, item| *item = stack_item);
+				}
+			}),
 		}.map_err(|error| Diagnostic::new(Spanned::new(error, span))).map(|_| false)
 	}
 

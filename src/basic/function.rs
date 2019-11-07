@@ -21,15 +21,26 @@ pub fn basic_function(context: &Context, function_path: &Spanned<Arc<FunctionPat
 	let function = crate::node::function(context, function_path)?;
 	let span = function.context[&function.expression].span;
 	function.function_type.parameters.iter().map(|parameter| &parameter.node)
-		.for_each(|Parameter(pattern, _)| pattern.traverse(&mut |terminal| -> Result<_, !> {
-			Ok(parameters.push(terminal.clone().map(|BindingVariable(variable, _)| variable)))
-		}).unwrap());
+		.for_each(|Parameter(pattern, _)| pattern.traverse(&mut |terminal|
+			parameters.push(terminal.clone().map(|BindingVariable(variable, _)| variable))));
 
 	let mut basic_context = BasicContext::new(reversibility);
+	let mut component = function.function_type.parameters.iter().map(|parameter| &parameter.node)
+		.fold(basic_context.component(), |component, Parameter(pattern, _)| {
+			let location = Location::new(basic_context.temporary());
+			super::pattern::binding(&mut basic_context, component, pattern, location)
+		});
+
 	let type_context = crate::inference::function(context, function_path)?;
-	let (value, component) = basic(&function.context, &mut basic_context,
-		&type_context, &function.expression);
-	basic_context[&component.exit].advance = Spanned::new(Branch::Return(value), span);
+	let (value, other) = basic(&function.context, &type_context,
+		&mut basic_context, &function.expression);
+	component = basic_context.join(component, other, span);
+
+	basic_context.consume_value(&value);
+	let other = basic_context.pop_frame();
+	component = basic_context.join(component, other, span);
+	let return_branch = Spanned::new(Branch::Return(value), span);
+	basic_context[&component.exit].advance = return_branch;
 
 	let (nodes, component) = basic_context.flatten(component);
 	let function = Arc::new(BasicFunction { parameters, component, nodes });
@@ -37,22 +48,27 @@ pub fn basic_function(context: &Context, function_path: &Spanned<Arc<FunctionPat
 	Ok(function)
 }
 
-pub fn basic(function: &FunctionContext, context: &mut BasicContext,
-             type_context: &TypeContext, expression_key: &ExpressionKey) -> (Value, Component) {
+pub fn basic(function: &FunctionContext, type_context: &TypeContext,
+             context: &mut BasicContext, expression_key: &ExpressionKey) -> (Value, Component) {
 	let expression = &function[expression_key];
 	let span = expression.span;
 	match &expression.node {
 		Expression::Block(block) => {
+			context.push_frame();
 			let (mut value, mut component) = (None, context.component());
 			for expression in block {
-				let (other_value, other) = basic(function, context, type_context, expression);
+				let (other_value, other) = basic(function, type_context, context, expression);
 				component = context.join(component, other, span);
 				value = Some(other_value);
 			}
-			(value.unwrap(), component)
+
+			let value = value.unwrap();
+			context.consume_value(&value);
+			let other = context.pop_frame();
+			(value, context.join(component, other, span))
 		}
 		Expression::Binding(binding, _, expression) => {
-			let (value, mut component) = basic(function, context, type_context, expression);
+			let (value, mut component) = basic(function, type_context, context, expression);
 			match &binding.node {
 				Pattern::Wildcard => panic!("Wildcard binding is invalid"),
 				Pattern::Terminal(variable) => {
@@ -67,24 +83,27 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 					}.clone();
 
 					component = super::pattern::binding(context,
-						component, &value, &binding.node, location);
+						component, &binding.node, location);
 				}
 			}
 			(Value::Item(Item::Unit), component)
 		}
 		Expression::TerminationLoop(condition_start, condition_end, expression) =>
-			super::conditional::termination(function, context, type_context,
+			super::conditional::termination(function, type_context, context,
 				condition_start, condition_end, expression, span),
 		Expression::Conditional(branches) =>
-			super::conditional::conditional(function, context, type_context, branches, span),
+			super::conditional::conditional(function, type_context, context, branches, span),
 		Expression::Mutation(mutation, mutable, expression) => {
-			let (value, component) = basic(function, context, type_context, expression);
-			let (variable, other) = basic(function, context, type_context, mutable);
-			let component = context.join(component, other, span);
-			// TODO: Implicitly drop location on assignment
-
+			let (value, component) = basic(function, type_context, context, expression);
+			let (variable, other) = basic(function, type_context, context, mutable);
+			let mut component = context.join(component, other, span);
 			match variable {
 				Value::Location(location) => {
+					if mutation.node == MutationKind::Assign && context.is_reversible() {
+						let statement = Statement::ImplicitDrop(location.clone());
+						component = context.push(component, Spanned::new(statement, span));
+					}
+
 					let statement = Statement::Mutation(mutation.node.clone(), location, value);
 					(Value::Item(Item::Unit), context.push(component, Spanned::new(statement, span)))
 				}
@@ -94,7 +113,8 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 		Expression::ExplicitDrop(_, _) if !context.is_reversible() =>
 			(Value::Item(Item::Unit), context.component()),
 		Expression::ExplicitDrop(variable, expression) => {
-			let (value, component) = basic(function, context, type_context, expression);
+			variable.traverse(&mut |variable| context.consume_variable(&variable.node));
+			let (value, component) = basic(function, type_context, context, expression);
 			let component = context.invert(component);
 			let component = match &variable {
 				Pattern::Wildcard => panic!("Wildcard explicit drop is invalid"),
@@ -130,7 +150,7 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 			let mut values = Vec::new();
 			let mut component = context.component();
 			for expression in expressions {
-				let (value, other) = basic(function, context, type_context, expression);
+				let (value, other) = basic(function, type_context, context, expression);
 				component = context.join(component, other, function[expression].span);
 				values.push(value);
 			}
@@ -143,14 +163,14 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 		}
 		Expression::Unary(operator, expression) => {
 			let variable = context.temporary();
-			let (value, component) = basic(function, context, type_context, expression);
+			let (value, component) = basic(function, type_context, context, expression);
 			let compound = Compound::Unary(operator.node.clone(), value);
 			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
 			(Value::Location(Location::new(variable)), context.push(component, statement))
 		}
 		Expression::Binary(operator, left, right) => {
-			let (left_value, left) = basic(function, context, type_context, left);
-			let (right_value, right) = basic(function, context, type_context, right);
+			let (left_value, left) = basic(function, type_context, context, left);
+			let (right_value, right) = basic(function, type_context, context, right);
 			let component = context.join(left, right, span);
 
 			let variable = context.temporary();
@@ -159,7 +179,7 @@ pub fn basic(function: &FunctionContext, context: &mut BasicContext,
 			(Value::Location(Location::new(variable)), context.push(component, statement))
 		}
 		Expression::Pattern(expression) =>
-			super::pattern::pattern(function, context, type_context, expression, span),
+			super::pattern::pattern(function, type_context, context, expression, span),
 		Expression::Variable(variable) =>
 			(Value::Location(Location::new(variable.clone())), context.component()),
 		Expression::Integer(integer) => {

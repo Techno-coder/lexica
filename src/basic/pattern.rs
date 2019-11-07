@@ -8,7 +8,7 @@ use crate::span::{Span, Spanned};
 use super::{BasicContext, Component, Compound, Instance, Item, Location, Projection,
 	Statement, Value};
 
-pub fn binding(context: &mut BasicContext, mut component: Component, value: &Value,
+pub fn binding(context: &mut BasicContext, mut component: Component,
                pattern: &BindingPattern, location: Location) -> Component {
 	match &pattern {
 		Pattern::Wildcard => panic!("Wildcard binding is invalid"),
@@ -22,7 +22,7 @@ pub fn binding(context: &mut BasicContext, mut component: Component, value: &Val
 			for (index, pattern) in patterns.iter().enumerate() {
 				let field: Arc<str> = index.to_string().into();
 				let location = location.clone().push(Projection::Field(field));
-				component = binding(context, component, value, pattern, location);
+				component = binding(context, component, pattern, location);
 			}
 			component
 		}
@@ -50,12 +50,12 @@ pub fn explicit_drop(context: &mut BasicContext, mut component: Component, value
 	}
 }
 
-pub fn pattern(function: &FunctionContext, context: &mut BasicContext, type_context: &TypeContext,
+pub fn pattern(function: &FunctionContext, type_context: &TypeContext, context: &mut BasicContext,
                expression: &ExpressionPattern, span: Span) -> (Value, Component) {
 	match expression {
 		Pattern::Wildcard => panic!("Wildcard expression is not a value"),
 		Pattern::Terminal(expression) => super::function::basic(function,
-			context, type_context, expression),
+			type_context, context, expression),
 		Pattern::Tuple(patterns) => {
 			let variable = context.temporary();
 			let mut component = context.component();
@@ -64,7 +64,7 @@ pub fn pattern(function: &FunctionContext, context: &mut BasicContext, type_cont
 			let mut statements = Vec::new();
 			for (index, expression) in patterns.iter().enumerate() {
 				let field: Arc<str> = index.to_string().into();
-				let (value, other) = pattern(function, context, type_context, expression, span);
+				let (value, other) = pattern(function, type_context, context, expression, span);
 				instance.fields.insert(field.clone(), Item::Uninitialised);
 				component = context.join(component, other, span);
 

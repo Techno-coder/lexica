@@ -3,7 +3,7 @@ module vector
 use crate::vector::vector::*
 
 fn main() -> u64:
-	#collapse((1337, 13901230912093812903812))
+	#collapse((1337, 1337))
 
 fn fibonacci(n: u64) -> u64:
 	let ~first = 1

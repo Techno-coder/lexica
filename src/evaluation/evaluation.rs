@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 
@@ -35,13 +34,13 @@ impl From<EvaluationError> for CompileError {
 }
 
 pub fn evaluate(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
-                arguments: HashMap<Arc<str>, Item>) -> Result<Item, Diagnostic> {
+                arguments: Vec<Item>) -> Result<Item, Diagnostic> {
 	let function = crate::basic::basic_function(context,
 		function_path, Reversibility::Entropic)?;
 
 	let mut frame = EvaluationFrame::new(function);
-	arguments.into_iter().for_each(|(variable, item)|
-		frame.context.insert(Variable::new_parameter(variable), item));
+	arguments.into_iter().enumerate().for_each(|(index, item)|
+		frame.context.insert(Variable::new_temporary(index), item));
 
 	let context = &mut EvaluationContext::new(context, Reversibility::Entropic, frame);
 	loop {

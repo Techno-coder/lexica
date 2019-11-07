@@ -47,13 +47,13 @@ fn main() {
 		})), Span::INTERNAL), crate::basic::Reversibility::Entropic));
 	result.map(|result| println!("{}", result));
 
-//	let parameters = std::collections::HashMap::new();
-//	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
-//		FunctionPath(crate::declaration::DeclarationPath {
-//			module_path: ModulePath::root(),
-//			identifier: "main".into(),
-//		})), Span::INTERNAL), parameters));
-//	result.map(|result| println!("{}", result));
+	let parameters = Vec::new();
+	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
+		FunctionPath(crate::declaration::DeclarationPath {
+			module_path: ModulePath::root(),
+			identifier: "main".into(),
+		})), Span::INTERNAL), parameters));
+	result.map(|result| println!("{}", result));
 
 	for error in context.errors.read().iter() {
 		crate::error::display(context, error);

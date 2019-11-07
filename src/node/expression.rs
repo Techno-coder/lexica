@@ -59,7 +59,7 @@ impl fmt::Display for UnaryOperator {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Arithmetic {
 	Add,
 	Minus,
@@ -99,7 +99,7 @@ impl fmt::Display for BinaryOperator {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum MutationKind {
 	Arithmetic(Arithmetic),
 	Assign,

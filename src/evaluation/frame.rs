@@ -44,10 +44,7 @@ impl FrameContext {
 	}
 
 	pub fn insert(&mut self, variable: Variable, object: Item) {
-		if self.variables.insert(variable.clone(), object).is_some() {
-			// TODO: Add implicit drop on scope close
-//			panic!("Variable: {}, is already bound in frame", variable);
-		}
+		self.variables.insert(variable.clone(), object);
 	}
 
 	pub fn value<'a>(&'a self, value: &'a Value) -> &'a Item {
@@ -59,7 +56,8 @@ impl FrameContext {
 				location.projections.iter().fold(variable, |variable, projection| {
 					match projection {
 						Projection::Field(field) => match variable {
-							Item::Instance(instance) => instance.fields.get(field).unwrap(),
+							Item::Instance(instance) => instance.fields.get(field)
+								.unwrap_or_else(|| panic!("Field: {}, does not exist on instance", field)),
 							_ => panic!("Field projection: {}, on item that is not instance", field)
 						}
 					}
@@ -74,7 +72,8 @@ impl FrameContext {
 			function(frame, location.projections.iter().fold(variable, |variable, projection| {
 				match projection {
 					Projection::Field(field) => match variable {
-						Item::Instance(instance) => instance.fields.get_mut(field).unwrap(),
+						Item::Instance(instance) => instance.fields.get_mut(field)
+							.unwrap_or_else(|| panic!("Field: {}, does not exist on instance", field)),
 						_ => panic!("Field projection: {}, on item that is not instance", field)
 					}
 				}

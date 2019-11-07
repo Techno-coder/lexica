@@ -10,6 +10,7 @@ use super::Item;
 pub enum Statement {
 	Binding(Variable, Compound),
 	Mutation(MutationKind, Location, Value),
+	ImplicitDrop(Location),
 }
 
 impl fmt::Display for Statement {
@@ -19,6 +20,8 @@ impl fmt::Display for Statement {
 				write!(f, "let {} = {}", variable, compound),
 			Statement::Mutation(mutation, location, value) =>
 				write!(f, "{} {} {}", location, mutation, value),
+			Statement::ImplicitDrop(location) =>
+				write!(f, "drop {}", location),
 		}
 	}
 }
@@ -30,6 +33,8 @@ impl fmt::Debug for Statement {
 				write!(f, "Binding({:?}, {:?})", variable, compound),
 			Statement::Mutation(mutation, location, value) =>
 				write!(f, "Mutation({:?}, {:?}, {:?})", location, mutation, value),
+			Statement::ImplicitDrop(location) =>
+				write!(f, "ImplicitDrop({})", location),
 		}
 	}
 }

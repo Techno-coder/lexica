@@ -13,7 +13,6 @@ pub enum NodeError {
 	ResolutionConflict(DeclarationPath),
 	UnresolvedResolution(DeclarationPath),
 	RuntimeExpression,
-	BindingExpression,
 	ArgumentType(AscriptionPattern),
 }
 
@@ -32,8 +31,6 @@ impl fmt::Display for NodeError {
 				write!(f, "Item: {}, has no matching resolutions", item),
 			NodeError::RuntimeExpression =>
 				write!(f, "Expression is not available at compile time"),
-			NodeError::BindingExpression =>
-				write!(f, "Binding pattern does not match expression"),
 			NodeError::ArgumentType(pattern) =>
 				write!(f, "Argument type does not match function parameter: {}", pattern),
 		}

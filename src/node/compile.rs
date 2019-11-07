@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::basic::{Instance, Item};
@@ -7,7 +6,7 @@ use crate::declaration::{ModulePath, StructurePath};
 use crate::error::Diagnostic;
 use crate::intrinsic::Intrinsic;
 use crate::node::{Ascription, Pattern};
-use crate::span::{Span, Spanned};
+use crate::span::Spanned;
 
 use super::*;
 
@@ -35,13 +34,11 @@ fn compile(context: &Context, function: &mut FunctionContext, expression: &Expre
 				let function_path = function_path.clone().map(Arc::new);
 				let function_type = super::function_type(context, &function_path)?;
 
-				let mut arguments = HashMap::new();
-				Iterator::zip(function_type.parameters.iter(), expressions.iter())
-					.try_for_each(|(parameter, expression)| {
-						let Parameter(binding, ascription) = &parameter.node;
-						let item = compile(context, function, expression, Some(ascription))?;
-						function_arguments(&mut arguments, binding, item, span)
-					})?;
+				let arguments = Iterator::zip(function_type.parameters.iter(), expressions.iter())
+					.map(|(parameter, expression)| {
+						let Parameter(_, ascription) = &parameter.node;
+						compile(context, function, expression, Some(ascription))
+					}).collect::<Result<_, _>>()?;
 
 				crate::evaluation::evaluate(context, &function_path, arguments).map_err(|diagnostic|
 					diagnostic.note(format!("Invoked from: {}", span.location(context))))
@@ -70,30 +67,6 @@ fn compile(context: &Context, function: &mut FunctionContext, expression: &Expre
 			_ => Err(Diagnostic::new(Spanned::new(NodeError::RuntimeExpression, span))),
 		}
 	})
-}
-
-fn function_arguments(arguments: &mut HashMap<Arc<str>, Item>, pattern: &BindingPattern,
-                      mut item: Item, span: Span) -> Result<(), Diagnostic> {
-	match pattern {
-		Pattern::Wildcard => panic!("Wildcard binding is invalid"),
-		Pattern::Terminal(terminal) => {
-			let BindingVariable(Variable(identifier, _), _) = &terminal.node;
-			arguments.insert(identifier.clone(), item);
-			Ok(())
-		}
-		Pattern::Tuple(patterns) => {
-			for (index, pattern) in patterns.iter().enumerate() {
-				if let Item::Instance(instance) = &mut item {
-					if let Some(item) = instance.fields.remove(index.to_string().as_str()) {
-						function_arguments(arguments, pattern, item, span)?;
-						continue;
-					}
-				}
-				return Err(Diagnostic::new(Spanned::new(NodeError::BindingExpression, span)));
-			}
-			Ok(())
-		}
-	}
 }
 
 fn pattern(context: &Context, function: &mut FunctionContext, expression: &ExpressionPattern,

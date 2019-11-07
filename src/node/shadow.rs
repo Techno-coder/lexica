@@ -94,8 +94,8 @@ pub fn shadow_function(function: &mut Function) -> Result<(), Diagnostic> {
 		pattern.traverse(&mut |terminal| {
 			let BindingVariable(Variable(identifier, _), _) = &terminal.node;
 			assert!(!context.frame().generations.contains_key(identifier));
-			Ok(context.register_variable(&mut terminal.node.clone()))
-		})?;
+			context.register_variable(&mut terminal.node.clone());
+		});
 	}
 
 	shadow(&mut function.context, context, &function.expression)?;

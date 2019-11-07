@@ -35,6 +35,7 @@ pub struct BasicNode {
 	pub advance: Spanned<Branch>,
 	pub in_reverse: Vec<NodeTarget>,
 	pub in_advance: Vec<NodeTarget>,
+	pub direction: Direction,
 }
 
 impl BasicNode {
@@ -45,6 +46,7 @@ impl BasicNode {
 			advance: Spanned::new(Branch::Unreachable, Span::INTERNAL),
 			in_reverse: Vec::new(),
 			in_advance: Vec::new(),
+			direction: Direction::Advance,
 		}
 	}
 
@@ -55,7 +57,9 @@ impl BasicNode {
 		}
 	}
 
+	/// Reverses and inverts the direction of the block.
 	pub fn invert(&mut self) {
+		self.direction = !self.direction;
 		std::mem::swap(&mut self.advance, &mut self.reverse);
 		std::mem::swap(&mut self.in_advance, &mut self.in_reverse);
 		self.statements.reverse();

@@ -42,7 +42,11 @@ impl fmt::Display for BasicFunction {
 		self.nodes.iter().enumerate().try_for_each(|(index, node)| {
 			if NodeTarget(index) == self.component.entry { write!(indent, "-")?; }
 			if NodeTarget(index) == self.component.exit { write!(indent, "+")?; }
-			writeln!(indent, "{}:", index)?;
+
+			match node.direction {
+				Direction::Advance => writeln!(indent, "{}:", index),
+				Direction::Reverse => writeln!(indent, "!{}:", index),
+			}?;
 
 			let indent = &mut Indent::new(indent);
 			writeln!(indent, "{}", node)
