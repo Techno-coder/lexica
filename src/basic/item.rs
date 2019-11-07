@@ -3,6 +3,7 @@ use std::fmt::{self, Write};
 use std::sync::Arc;
 
 use crate::extension::Indent;
+use crate::inference::TypeResolution;
 use crate::intrinsic::Intrinsic;
 
 #[derive(Clone, PartialEq)]
@@ -34,6 +35,23 @@ impl Item {
 			Intrinsic::Unsigned64 => Item::Unsigned64(integer as u64),
 			_ => return None,
 		})
+	}
+
+	pub fn type_resolution(&self) -> Option<TypeResolution> {
+		Some(TypeResolution(match self {
+			Item::Truth(_) => Intrinsic::Truth.structure(),
+			Item::Signed8(_) => Intrinsic::Signed8.structure(),
+			Item::Signed16(_) => Intrinsic::Signed16.structure(),
+			Item::Signed32(_) => Intrinsic::Signed32.structure(),
+			Item::Signed64(_) => Intrinsic::Signed64.structure(),
+			Item::Unsigned8(_) => Intrinsic::Unsigned8.structure(),
+			Item::Unsigned16(_) => Intrinsic::Unsigned16.structure(),
+			Item::Unsigned32(_) => Intrinsic::Unsigned32.structure(),
+			Item::Unsigned64(_) => Intrinsic::Unsigned64.structure(),
+			Item::Unit => Intrinsic::Unit.structure(),
+			Item::Instance(instance) => return Some(instance.type_resolution.clone()),
+			Item::Uninitialised => return None,
+		}, Vec::new()))
 	}
 }
 
@@ -75,14 +93,27 @@ impl fmt::Debug for Item {
 	}
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Instance {
+	pub type_resolution: TypeResolution,
 	pub fields: HashMap<Arc<str>, Item>,
+}
+
+impl Instance {
+	pub fn new(type_resolution: TypeResolution) -> Self {
+		Instance { type_resolution, fields: HashMap::new() }
+	}
+
+	pub fn tuple() -> Self {
+		Instance::new(TypeResolution(Intrinsic::Tuple.structure(), Vec::new()))
+	}
 }
 
 impl fmt::Display for Instance {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		writeln!(f)?;
+		let TypeResolution(structure, _) = &self.type_resolution;
+		writeln!(f, "{}", structure)?;
+
 		let indent = &mut Indent::new(f);
 		for (index, (field, item)) in self.fields.iter().enumerate() {
 			match item {

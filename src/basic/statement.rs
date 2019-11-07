@@ -96,7 +96,7 @@ impl fmt::Display for Compound {
 			Compound::Binary(operator, left, right) =>
 				write!(f, "{} {} {}", left, operator, right),
 			Compound::FunctionCall(function, values) => {
-				write!(f, "{}", function.node)?;
+				write!(f, "{}", function)?;
 				values.iter().try_for_each(|value|
 					write!(f, " {}", value))
 			}

@@ -156,6 +156,7 @@ pub fn inference_type(context: &Context, function: &FunctionContext, environment
 			Arc::new(InferenceType::Variable(environment[variable])),
 		Expression::Integer(_) => engine.new_variable_type(),
 		Expression::Truth(_) => Intrinsic::Truth.inference(),
-		Expression::Item(_) => engine.new_variable_type(),
+		Expression::Item(item) => item.type_resolution()
+			.expect("Item has no type resolution").inference(),
 	})
 }

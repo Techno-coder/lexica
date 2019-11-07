@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::declaration::DeclarationPath;
 use crate::error::CompileError;
+use crate::node::AscriptionPattern;
 
 #[derive(Debug)]
 pub enum NodeError {
@@ -13,7 +14,7 @@ pub enum NodeError {
 	UnresolvedResolution(DeclarationPath),
 	RuntimeExpression,
 	BindingExpression,
-	ArgumentType,
+	ArgumentType(AscriptionPattern),
 }
 
 impl fmt::Display for NodeError {
@@ -33,8 +34,8 @@ impl fmt::Display for NodeError {
 				write!(f, "Expression is not available at compile time"),
 			NodeError::BindingExpression =>
 				write!(f, "Binding pattern does not match expression"),
-			NodeError::ArgumentType =>
-				write!(f, "Argument type does not match function parameter"),
+			NodeError::ArgumentType(pattern) =>
+				write!(f, "Argument type does not match function parameter: {}", pattern),
 		}
 	}
 }

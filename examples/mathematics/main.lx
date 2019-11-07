@@ -3,7 +3,7 @@ module vector
 use crate::vector::vector::*
 
 fn main() -> u64:
-	#fibonacci(35)
+	#collapse((1337, 13901230912093812903812))
 
 fn fibonacci(n: u64) -> u64:
 	let ~first = 1
@@ -38,7 +38,7 @@ fn summation(n: u64) -> u64:
 	summation
 
 fn collapse((a, b): (u64, u64)) -> u64:
-	a + b
+	a * b
 
 fn absolute_value(x: i32) -> i32:
 	if x < 0: x = -x

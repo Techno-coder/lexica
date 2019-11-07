@@ -16,7 +16,7 @@ impl<'a> SourceParse<'a> {
 		match declarations.get(&structure_path) {
 			None => declarations.insert(structure_path, declaration),
 			Some(declaration) => {
-				let (location, _) = declaration.span().location(self.context);
+				let location = declaration.span().location(self.context);
 				let error = DeclarationError::DuplicateStructure(structure_path);
 				self.context.emit(Err(Diagnostic::new(Spanned::new(error, placement_span))
 					.note(format!("Duplicate declared in: {}", location))))
@@ -29,7 +29,7 @@ impl<'a> SourceParse<'a> {
 		match declarations.get(&function_path) {
 			None => declarations.insert(function_path, declaration),
 			Some(declaration) => {
-				let (location, _) = declaration.span().location(self.context);
+				let location = declaration.span().location(self.context);
 				let error = DeclarationError::DuplicateFunction(function_path);
 				self.context.emit(Err(Diagnostic::new(Spanned::new(error, placement_span))
 					.note(format!("Duplicate declared in: {}", location))))

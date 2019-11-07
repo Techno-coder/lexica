@@ -92,9 +92,9 @@ impl IndexMut<Direction> for BasicNode {
 
 impl fmt::Display for BasicNode {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		writeln!(f, "-{}", self.reverse.node)?;
+		writeln!(f, "-{}", self.reverse)?;
 		self.statements.iter().try_for_each(|statement|
-			writeln!(f, "{}", statement.node))?;
-		write!(f, "+{}", self.advance.node)
+			writeln!(f, "{}", statement))?;
+		write!(f, "+{}", self.advance)
 	}
 }

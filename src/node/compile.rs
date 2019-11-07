@@ -43,20 +43,28 @@ fn compile(context: &Context, function: &mut FunctionContext, expression: &Expre
 						function_arguments(&mut arguments, binding, item, span)
 					})?;
 
-				crate::evaluation::evaluate(context, &function_path, arguments)
+				crate::evaluation::evaluate(context, &function_path, arguments).map_err(|diagnostic|
+					diagnostic.note(format!("Invoked from: {}", span.location(context))))
 			}
 			Expression::Integer(integer) => match ascription {
-				Some(Pattern::Terminal(terminal)) => {
-					let Ascription(StructurePath(declaration_path)) = &terminal.node;
-					let is_intrinsic = declaration_path.module_path == ModulePath::intrinsic();
-					let intrinsic = Intrinsic::parse(&declaration_path.identifier)
-						.and_then(|intrinsic| Item::integer(intrinsic, *integer));
-					match (is_intrinsic, intrinsic) {
-						(true, Some(item)) => Ok(item),
-						_ => Err(Diagnostic::new(Spanned::new(NodeError::ArgumentType, span))),
+				Some(pattern) => {
+					let error = Spanned::new(NodeError::ArgumentType(pattern.clone()), span);
+					let error = Err(Diagnostic::new(error));
+					match pattern {
+						Pattern::Terminal(terminal) => {
+							let Ascription(StructurePath(declaration_path)) = &terminal.node;
+							let is_intrinsic = declaration_path.module_path == ModulePath::intrinsic();
+							let intrinsic = Intrinsic::parse(&declaration_path.identifier)
+								.and_then(|intrinsic| Item::integer(intrinsic, *integer));
+							match (is_intrinsic, intrinsic) {
+								(true, Some(item)) => Ok(item),
+								_ => error,
+							}
+						}
+						_ => error,
 					}
 				}
-				_ => Err(Diagnostic::new(Spanned::new(NodeError::RuntimeExpression, span))),
+				None => Err(Diagnostic::new(Spanned::new(NodeError::RuntimeExpression, span))),
 			},
 			Expression::Pattern(expression) => pattern(context, function, expression, ascription),
 			_ => Err(Diagnostic::new(Spanned::new(NodeError::RuntimeExpression, span))),
@@ -94,7 +102,7 @@ fn pattern(context: &Context, function: &mut FunctionContext, expression: &Expre
 		Pattern::Wildcard => panic!("Wildcard expression is invalid"),
 		Pattern::Terminal(terminal) => compile(context, function, terminal, ascription),
 		Pattern::Tuple(patterns) => {
-			let mut instance = Instance::default();
+			let mut instance = Instance::tuple();
 			for (index, expression) in patterns.iter().enumerate() {
 				let field: Arc<str> = index.to_string().into();
 				let ascription = ascription.and_then(|ascription| match ascription {

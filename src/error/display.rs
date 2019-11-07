@@ -10,7 +10,7 @@ pub fn display(context: &Context, diagnostic: &Diagnostic) {
 	println!("{} {}", "[Error]", diagnostic.error.node);
 
 	let span = diagnostic.error.span;
-	let (location, has_error) = span.location(context);
+	let (location, has_error) = span.location_type(context);
 	println!("{} {}", LOCATION_PREFIX, location);
 
 	if has_error {

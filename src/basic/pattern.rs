@@ -58,8 +58,8 @@ pub fn pattern(function: &FunctionContext, context: &mut BasicContext, type_cont
 			context, type_context, expression),
 		Pattern::Tuple(patterns) => {
 			let variable = context.temporary();
-			let mut instance = Instance::default();
 			let mut component = context.component();
+			let mut instance = Instance::tuple();
 
 			let mut statements = Vec::new();
 			for (index, expression) in patterns.iter().enumerate() {

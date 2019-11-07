@@ -23,7 +23,6 @@ fn main() {
 	use crate::context::Context;
 	use crate::declaration::*;
 	use crate::span::*;
-	use std::collections::HashMap;
 	use std::path::PathBuf;
 
 	let path: Arc<PathBuf> = Arc::new("examples/mathematics/main.lx".to_owned().into());
@@ -35,11 +34,6 @@ fn main() {
 
 	let context = &Context::default();
 	context.modules_pending.insert(ModulePath::root(), module);
-	let _ = context.emit(crate::inference::function(context, &Spanned::new(Arc::new(
-		FunctionPath(crate::declaration::DeclarationPath {
-			module_path: ModulePath::root(),
-			identifier: "fibonacci".into(),
-		})), Span::INTERNAL)));
 	let _ = context.emit(crate::node::structure(context, &Spanned::new(Arc::new(
 		StructurePath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root().push("vector".into()).push("vector".into()),
@@ -53,13 +47,13 @@ fn main() {
 		})), Span::INTERNAL), crate::basic::Reversibility::Entropic));
 	result.map(|result| println!("{}", result));
 
-	let parameters = HashMap::new();
-	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
-		FunctionPath(crate::declaration::DeclarationPath {
-			module_path: ModulePath::root(),
-			identifier: "main".into(),
-		})), Span::INTERNAL), parameters));
-	result.map(|result| println!("{}", result));
+//	let parameters = std::collections::HashMap::new();
+//	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
+//		FunctionPath(crate::declaration::DeclarationPath {
+//			module_path: ModulePath::root(),
+//			identifier: "main".into(),
+//		})), Span::INTERNAL), parameters));
+//	result.map(|result| println!("{}", result));
 
 	for error in context.errors.read().iter() {
 		crate::error::display(context, error);

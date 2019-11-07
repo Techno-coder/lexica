@@ -33,8 +33,8 @@ impl fmt::Display for BasicFunction {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "(")?;
 		if let Some((last, slice)) = self.parameters.split_last() {
-			slice.iter().try_for_each(|parameter| write!(f, "{}, ", parameter.node))?;
-			write!(f, "{}", last.node)?;
+			slice.iter().try_for_each(|parameter| write!(f, "{}, ", parameter))?;
+			write!(f, "{}", last)?;
 		}
 
 		writeln!(f, "):")?;

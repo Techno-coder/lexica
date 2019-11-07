@@ -31,9 +31,14 @@ impl Span {
 		self
 	}
 
+	pub fn location(&self, context: &Context) -> String {
+		let (location, _) = self.location_type(context);
+		location
+	}
+
 	/// Creates a readable representation of the span path and location.
 	/// Returns `true` if the span source is internal or not a string.
-	pub fn location(&self, context: &Context) -> (String, bool) {
+	pub fn location_type(&self, context: &Context) -> (String, bool) {
 		if self.source == SourceKey::INTERNAL {
 			return ("<Internal compiler source>".to_owned(), true);
 		}
@@ -78,5 +83,11 @@ impl<T> Spanned<T> {
 
 	pub fn map<F, R>(self, apply: F) -> Spanned<R> where F: FnOnce(T) -> R {
 		Spanned::new(apply(self.node), self.span)
+	}
+}
+
+impl<T> fmt::Display for Spanned<T> where T: fmt::Display {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "{}", self.node)
 	}
 }

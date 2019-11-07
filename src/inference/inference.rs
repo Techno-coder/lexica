@@ -80,7 +80,7 @@ impl fmt::Display for InferenceType {
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypeResolution(pub StructurePath, pub Vec<TypeResolution>);
 
 impl TypeResolution {
@@ -91,6 +91,12 @@ impl TypeResolution {
 			true => Intrinsic::parse(&declaration_path.identifier),
 			false => None,
 		}
+	}
+
+	pub fn inference(&self) -> Arc<InferenceType> {
+		let TypeResolution(structure, resolutions) = self;
+		let inferences = resolutions.iter().map(Self::inference).collect();
+		Arc::new(InferenceType::Instance(structure.clone(), inferences))
 	}
 }
 

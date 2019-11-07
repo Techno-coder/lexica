@@ -81,6 +81,13 @@ impl fmt::Debug for Ascription {
 	}
 }
 
+impl fmt::Display for Ascription {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let Ascription(structure_path) = self;
+		write!(f, "{}", structure_path)
+	}
+}
+
 #[derive(Debug, Clone)]
 pub enum Pattern<T> {
 	Wildcard,
@@ -106,6 +113,23 @@ impl<T> Pattern<T> {
 			Pattern::Terminal(terminal) => function(terminal),
 			Pattern::Tuple(patterns) => patterns.iter()
 				.try_for_each(|pattern| pattern.traverse(function)),
+		}
+	}
+}
+
+impl<T> fmt::Display for Pattern<T> where T: fmt::Display {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Pattern::Wildcard => write!(f, "_"),
+			Pattern::Terminal(terminal) => write!(f, "{}", terminal),
+			Pattern::Tuple(patterns) => {
+				write!(f, "(")?;
+				patterns.split_last().map(|(last, rest)| {
+					rest.iter().try_for_each(|pattern| write!(f, "{}, ", pattern))?;
+					write!(f, "{}", last)
+				}).transpose()?;
+				write!(f, ")")
+			}
 		}
 	}
 }
