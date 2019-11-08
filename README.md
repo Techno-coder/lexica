@@ -1,4 +1,4 @@
-# Lexica
+# [Lexica](https://technocoder.gitbook.io/lexica/)
 A reversible programming language.
 
 ```
