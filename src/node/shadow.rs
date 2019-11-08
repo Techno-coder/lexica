@@ -5,7 +5,7 @@ use crate::error::Diagnostic;
 use crate::node::{Expression, FunctionType};
 use crate::span::{Span, Spanned};
 
-use super::{BindingVariable, ExpressionKey, Function, FunctionContext, NodeError,
+use super::{BindingVariable, ExpressionKey, FunctionContext, NodeError, NodeFunction,
 	Parameter, Variable};
 
 #[derive(Debug, Default)]
@@ -85,7 +85,7 @@ pub fn shadow_function_type(function_type: &mut FunctionType) -> Result<(), Diag
 	Ok(())
 }
 
-pub fn shadow_function(function: &mut Function) -> Result<(), Diagnostic> {
+pub fn shadow_function(function: &mut NodeFunction) -> Result<(), Diagnostic> {
 	let context = &mut ShadowContext::default();
 	context.new_frame();
 
@@ -105,36 +105,18 @@ pub fn shadow_function(function: &mut Function) -> Result<(), Diagnostic> {
 
 fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
           expression: &ExpressionKey) -> Result<(), Diagnostic> {
-	function.apply(expression, |function, expression| {
+	function.traverse(expression, &mut |function, expression| {
 		match &mut expression.node {
 			Expression::Block(block) => {
 				context.new_frame();
 				block.iter().try_for_each(|expression|
 					shadow(function, context, expression))?;
 				context.pop_frame();
-				Ok(())
 			}
 			Expression::Binding(pattern, _, expression) => {
 				shadow(function, context, expression)?;
 				pattern.node.apply(&mut |terminal|
-					Ok(context.register_variable(&mut terminal.node)))
-			}
-			Expression::TerminationLoop(condition_start, condition_end, expression) => {
-				shadow(function, context, condition_end)?;
-				condition_start.as_mut().map(|condition_start|
-					shadow(function, context, condition_start)).transpose()?;
-				shadow(function, context, expression)
-			}
-			Expression::Conditional(branches) => branches.iter_mut()
-				.try_for_each(|(condition_start, condition_end, expression)| {
-					shadow(function, context, condition_start)?;
-					condition_end.as_mut().map(|condition_end|
-						shadow(function, context, condition_end)).transpose()?;
-					shadow(function, context, expression)
-				}),
-			Expression::Mutation(_, mutable, expression) => {
-				shadow(function, context, mutable)?;
-				shadow(function, context, expression)
+					Ok(context.register_variable(&mut terminal.node)))?;
 			}
 			Expression::ExplicitDrop(pattern, expression) => {
 				pattern.apply(&mut |terminal| {
@@ -143,20 +125,12 @@ fn shadow(function: &mut FunctionContext, context: &mut ShadowContext,
 					context.frame().drops.insert(identifier.clone());
 					Ok(())
 				})?;
-				shadow(function, context, expression)
+				shadow(function, context, expression)?;
 			}
-			Expression::FunctionCall(_, expressions, _) => expressions.iter()
-				.try_for_each(|expression| shadow(function, context, expression)),
-			Expression::Unary(_, expression) =>
-				shadow(function, context, expression),
-			Expression::Binary(_, left, right) => {
-				shadow(function, context, left)?;
-				shadow(function, context, right)
-			}
-			Expression::Pattern(pattern) => pattern.apply(&mut |terminal|
-				shadow(function, context, terminal)),
-			Expression::Variable(variable) => context.resolve_variable(variable, expression.span),
-			Expression::Integer(_) | Expression::Truth(_) | Expression::Item(_) => Ok(()),
+			Expression::Variable(variable) =>
+				context.resolve_variable(variable, expression.span)?,
+			_ => return Ok(false),
 		}
+		Ok(true)
 	})
 }

@@ -40,15 +40,8 @@ fn main() {
 			identifier: "Vector".into(),
 		})), Span::INTERNAL)));
 
-	let result = context.emit(crate::basic::basic_function(context, &Spanned::new(Arc::new(
-		FunctionPath(crate::declaration::DeclarationPath {
-			module_path: ModulePath::root(),
-			identifier: "main".into(),
-		})), Span::INTERNAL), crate::basic::Reversibility::Entropic));
-	result.map(|result| println!("{}", result));
-
 	let parameters = Vec::new();
-	let result = context.emit(crate::evaluation::evaluate(context, &Spanned::new(Arc::new(
+	let result = context.emit(crate::evaluation::function(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root(),
 			identifier: "main".into(),

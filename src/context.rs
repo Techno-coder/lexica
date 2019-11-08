@@ -16,5 +16,6 @@ pub struct Context {
 	pub node_structures: node::NodeStructures,
 
 	pub type_contexts: inference::TypeContexts,
+	pub partial_functions: evaluation::PartialFunctions,
 	pub basic_functions: basic::BasicFunctions,
 }

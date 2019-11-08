@@ -62,7 +62,7 @@ impl<'a> EvaluationContext<'a> {
 
 		match &statement.node {
 			Statement::Binding(_, Compound::FunctionCall(function_path, arguments)) => {
-				let function = crate::basic::basic_function(&self.context,
+				let function = crate::basic::function(&self.context,
 					function_path, self.reversibility)?;
 				let mut frame = EvaluationFrame::new(function.clone());
 				arguments.iter().map(|argument| context.value(argument))

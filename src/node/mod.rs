@@ -1,7 +1,7 @@
 pub use context::{function, function_type, structure};
 pub use expression::{Arithmetic, BinaryOperator, Expression, ExpressionKey,
 	MutationKind, ConditionStart, ConditionEnd, UnaryOperator, Branch, Execution};
-pub use function::{Function, FunctionContext, FunctionType, FunctionTypes, NodeFunctions,
+pub use function::{NodeFunction, FunctionContext, FunctionType, FunctionTypes, NodeFunctions,
 	Parameter};
 pub use node::NodeError;
 pub use structure::{NodeStructures, Structure};
@@ -14,6 +14,5 @@ mod variable;
 mod context;
 mod structure;
 mod resolution;
-mod compile;
 mod shadow;
 mod node;

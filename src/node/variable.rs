@@ -96,6 +96,7 @@ pub enum Pattern<T> {
 }
 
 impl<T> Pattern<T> {
+	/// Mutates all terminals of the pattern.
 	pub fn apply<F, E>(&mut self, function: &mut F) -> Result<(), E>
 		where F: FnMut(&mut T) -> Result<(), E> {
 		match self {
@@ -106,6 +107,7 @@ impl<T> Pattern<T> {
 		}
 	}
 
+	/// Traverses the terminals of the pattern.
 	pub fn traverse<F>(&self, function: &mut F) where F: FnMut(&T) {
 		match self {
 			Pattern::Wildcard => (),

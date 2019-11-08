@@ -4,7 +4,7 @@ use crate::context::Context;
 use crate::declaration::{self, FunctionPath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{Ascription, AscriptionPattern, Function, FunctionContext, FunctionType,
+use crate::node::{Ascription, AscriptionPattern, NodeFunction, FunctionContext, FunctionType,
 	Parameter, Pattern};
 use crate::span::Spanned;
 
@@ -35,7 +35,7 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 }
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
-                -> Result<Function, Diagnostic> {
+                -> Result<NodeFunction, Diagnostic> {
 	let function_type = crate::node::function_type(context, function_path)?;
 	let source_key = context.declarations_function.get(&function_path.node).unwrap().source;
 	let source = source_key.get(context);
@@ -45,7 +45,7 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 
 	let mut function_context = FunctionContext::new(function_path.node.clone());
 	let expression = super::expression(&mut function_context, lexer)?;
-	Ok(Function::new(function_context, expression, function_type))
+	Ok(NodeFunction::new(function_context, expression, function_type))
 }
 
 fn parameters(lexer: &mut Lexer) -> Result<Vec<Spanned<Parameter>>, Diagnostic> {

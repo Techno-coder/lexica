@@ -4,7 +4,7 @@ use crate::node::{Arithmetic, BinaryOperator, ConditionEnd, ConditionStart,
 use crate::span::{Span, Spanned};
 
 use super::*;
-use super::function::basic;
+use super::expression::basic;
 
 pub fn termination(function: &FunctionContext, type_context: &TypeContext, context: &mut BasicContext,
                    condition_start: &Option<ConditionStart>, condition_end: &ConditionEnd,

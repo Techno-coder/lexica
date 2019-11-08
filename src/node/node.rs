@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use crate::declaration::DeclarationPath;
 use crate::error::CompileError;
-use crate::node::AscriptionPattern;
 
 #[derive(Debug)]
 pub enum NodeError {
@@ -12,8 +11,6 @@ pub enum NodeError {
 	DuplicateParameter(Arc<str>),
 	ResolutionConflict(DeclarationPath),
 	UnresolvedResolution(DeclarationPath),
-	RuntimeExpression,
-	ArgumentType(AscriptionPattern),
 }
 
 impl fmt::Display for NodeError {
@@ -29,10 +26,6 @@ impl fmt::Display for NodeError {
 				write!(f, "Item: {}, has conflicting resolutions", item),
 			NodeError::UnresolvedResolution(item) =>
 				write!(f, "Item: {}, has no matching resolutions", item),
-			NodeError::RuntimeExpression =>
-				write!(f, "Expression is not available at compile time"),
-			NodeError::ArgumentType(pattern) =>
-				write!(f, "Argument type does not match function parameter: {}", pattern),
 		}
 	}
 }

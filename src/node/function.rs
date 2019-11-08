@@ -9,7 +9,7 @@ use crate::span::{Span, Spanned};
 use super::{AscriptionPattern, BindingPattern, Expression, ExpressionKey};
 
 pub type FunctionTypes = CHashMap<Arc<FunctionPath>, Arc<FunctionType>>;
-pub type NodeFunctions = CHashMap<Arc<FunctionPath>, Arc<Function>>;
+pub type NodeFunctions = CHashMap<Arc<FunctionPath>, Arc<NodeFunction>>;
 
 #[derive(Debug, Clone)]
 pub struct FunctionType {
@@ -29,16 +29,16 @@ impl FunctionType {
 pub struct Parameter(pub BindingPattern, pub AscriptionPattern);
 
 #[derive(Debug, Clone)]
-pub struct Function {
+pub struct NodeFunction {
 	pub context: FunctionContext,
 	pub expression: ExpressionKey,
 	pub function_type: Arc<FunctionType>,
 }
 
-impl Function {
+impl NodeFunction {
 	pub fn new(context: FunctionContext, expression: ExpressionKey,
-	           function_type: Arc<FunctionType>) -> Function {
-		Function { context, expression, function_type }
+	           function_type: Arc<FunctionType>) -> NodeFunction {
+		NodeFunction { context, expression, function_type }
 	}
 }
 
@@ -61,6 +61,7 @@ impl FunctionContext {
 		expression_key
 	}
 
+	/// Temporarily removes an expression and mutates it.
 	pub fn apply<F, R>(&mut self, expression_key: &ExpressionKey, function: F) -> R
 		where F: FnOnce(&mut Self, &mut Spanned<Expression>) -> R {
 		let replacement = Spanned::new(Expression::Block(Vec::new()), Span::INTERNAL);
@@ -68,6 +69,54 @@ impl FunctionContext {
 		let value = function(self, &mut expression);
 		self[expression_key] = expression;
 		value
+	}
+
+	/// Applies a function to all expressions in order.
+	/// The traversal deepens if the function returns false.
+	pub fn traverse<F, E>(&mut self, expression: &ExpressionKey, function: &mut F) -> Result<(), E>
+		where F: FnMut(&mut Self, &mut Spanned<Expression>) -> Result<bool, E> {
+		self.apply(expression, |context, expression| {
+			if !function(context, expression)? {
+				match &mut expression.node {
+					Expression::Block(block) => block.iter().try_for_each(|expression|
+						context.traverse(expression, function)),
+					Expression::Binding(_, _, expression) =>
+						context.traverse(expression, function),
+					Expression::TerminationLoop(condition_start, condition_end, expression) => {
+						context.traverse(condition_end, function)?;
+						condition_start.as_mut().map(|condition_start|
+							context.traverse(condition_start, function)).transpose()?;
+						context.traverse(expression, function)
+					}
+					Expression::Conditional(branches) => branches.iter_mut()
+						.try_for_each(|(condition_start, condition_end, expression)| {
+							context.traverse(condition_start, function)?;
+							condition_end.as_mut().map(|condition_end|
+								context.traverse(condition_end, function)).transpose()?;
+							context.traverse(expression, function)
+						}),
+					Expression::Mutation(_, mutable, expression) => {
+						context.traverse(mutable, function)?;
+						context.traverse(expression, function)
+					}
+					Expression::ExplicitDrop(_, expression) =>
+						context.traverse(expression, function),
+					Expression::FunctionCall(_, expressions, _) => expressions.iter()
+						.try_for_each(|expression| context.traverse(expression, function)),
+					Expression::Unary(_, expression) =>
+						context.traverse(expression, function),
+					Expression::Binary(_, left, right) => {
+						context.traverse(left, function)?;
+						context.traverse(right, function)
+					}
+					Expression::Pattern(pattern) => pattern.apply(&mut |terminal|
+						context.traverse(terminal, function)),
+					Expression::Variable(_) | Expression::Integer(_) |
+					Expression::Truth(_) | Expression::Item(_) => Ok(()),
+				}?;
+			}
+			Ok(())
+		})
 	}
 }
 

@@ -54,7 +54,7 @@ pub fn pattern(function: &FunctionContext, type_context: &TypeContext, context: 
                expression: &ExpressionPattern, span: Span) -> (Value, Component) {
 	match expression {
 		Pattern::Wildcard => panic!("Wildcard expression is not a value"),
-		Pattern::Terminal(expression) => super::function::basic(function,
+		Pattern::Terminal(expression) => super::expression::basic(function,
 			type_context, context, expression),
 		Pattern::Tuple(patterns) => {
 			let variable = context.temporary();
