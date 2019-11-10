@@ -14,6 +14,7 @@ pub enum Token {
 	ParenthesisClose,
 	BlockOpen,
 	BlockClose,
+	Dot,
 	Separator,
 	ListSeparator,
 	ReturnSeparator,

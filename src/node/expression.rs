@@ -1,4 +1,5 @@
 use std::fmt;
+use std::sync::Arc;
 
 use crate::basic::Item;
 use crate::declaration::FunctionPath;
@@ -30,8 +31,8 @@ pub enum Expression {
 	Unary(Spanned<UnaryOperator>, ExpressionKey),
 	Binary(Spanned<BinaryOperator>, ExpressionKey, ExpressionKey),
 	Conditional(Vec<Branch>),
-//	Field(ExpressionKey, Arc<str>),
-//	MethodCall(ExpressionKey, Arc<str>, Vec<ExpressionKey>),
+	Field(ExpressionKey, Spanned<Arc<str>>),
+//	MethodCall(ExpressionKey, Spanned<Arc<str>>, Vec<ExpressionKey>),
 	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>, Execution),
 	Pattern(ExpressionPattern),
 	Variable(Variable),

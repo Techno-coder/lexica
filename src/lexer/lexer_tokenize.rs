@@ -39,6 +39,7 @@ impl<'a> Iterator for LexerTokenize<'a> {
 				"_" => Token::Wildcard,
 				"(" => Token::ParenthesisOpen,
 				")" => Token::ParenthesisClose,
+				"." => Token::Dot,
 				":" => Token::Separator,
 				"::" => Token::PathSeparator,
 				"," => Token::ListSeparator,

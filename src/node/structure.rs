@@ -12,9 +12,3 @@ pub type NodeStructures = CHashMap<Arc<StructurePath>, Arc<Structure>>;
 pub struct Structure {
 	pub fields: HashMap<Arc<str>, AscriptionPattern>,
 }
-
-impl Structure {
-	pub fn new(fields: HashMap<Arc<str>, AscriptionPattern>) -> Self {
-		Structure { fields }
-	}
-}

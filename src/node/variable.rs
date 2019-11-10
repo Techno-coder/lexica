@@ -60,8 +60,8 @@ pub struct BindingVariable(pub Variable, pub Mutability);
 
 impl fmt::Debug for BindingVariable {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let BindingVariable(Variable(identifier, generation), mutability) = self;
-		write!(f, "BindingVariable({}, {}, {:?})", identifier, generation, mutability)
+		let BindingVariable(variable, mutability) = self;
+		write!(f, "BindingVariable({:?}, {:?})", variable, mutability)
 	}
 }
 

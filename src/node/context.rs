@@ -5,7 +5,7 @@ use crate::declaration::{FunctionPath, StructurePath};
 use crate::error::Diagnostic;
 use crate::span::Spanned;
 
-use super::{NodeFunction, FunctionType, Structure};
+use super::{FunctionType, NodeFunction, Structure};
 
 pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                      -> Result<Arc<FunctionType>, Diagnostic> {
@@ -49,7 +49,12 @@ pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>
 		return Ok(structure.clone());
 	}
 
-	let structure = Arc::new(crate::parser::structure(context, structure_path)?);
+	let StructurePath(declaration_path) = structure_path.node.as_ref();
+	let mut structure = crate::parser::structure(context, structure_path)?;
+	super::resolution::resolve_structure(context, &context.module_contexts
+		.get(&declaration_path.module_path).unwrap(), &mut structure)?;
+
+	let structure = Arc::new(structure);
 	context.node_structures.insert(structure_path.node.clone(), structure.clone());
 	Ok(structure)
 }

@@ -5,7 +5,8 @@ use crate::node::{BindingVariable, Expression, ExpressionKey,
 	FunctionContext, MutationKind, Pattern};
 use crate::span::Spanned;
 
-use super::{BasicContext, Component, Compound, Direction, Item, Location, Statement, Value};
+use super::{BasicContext, Component, Compound, Direction, Item, Location,
+	Projection, Statement, Value};
 
 pub fn basic(function: &FunctionContext, type_context: &TypeContext,
              context: &mut BasicContext, expression_key: &ExpressionKey) -> (Value, Component) {
@@ -104,6 +105,21 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 			context.link(Direction::Reverse, &exit, &component, span);
 			context.link(Direction::Reverse, &component, &entry, span);
 			(Value::Item(Item::Unit), Component::new(entry.entry, exit.exit))
+		}
+		Expression::Field(expression, field) => {
+			let (value, mut component) = basic(function, type_context, context, expression);
+			let location = match value {
+				Value::Location(location) => location,
+				Value::Item(_) => {
+					let variable = context.temporary();
+					let statement = Statement::Binding(variable.clone(), Compound::Value(value));
+					component = context.push(component, Spanned::new(statement, span));
+					Location::new(variable)
+				}
+			};
+
+			let location = location.push(Projection::Field(field.node.clone()));
+			(Value::Location(location), component)
 		}
 		Expression::FunctionCall(function_path, expressions, _) => {
 			let mut values = Vec::new();

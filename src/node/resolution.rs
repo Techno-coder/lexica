@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use crate::context::Context;
-use crate::declaration::{DeclarationPath, FunctionPath, InclusionTerminal, ModuleContext, ModulePath, StructurePath};
+use crate::declaration::{DeclarationPath, FunctionPath, InclusionTerminal,
+	ModuleContext, ModulePath, StructurePath};
 use crate::error::Diagnostic;
 use crate::intrinsic::Intrinsic;
+use crate::node::Structure;
 use crate::span::{Span, Spanned};
 
 use super::{Ascription, Expression, FunctionContext, FunctionType, NodeError, Parameter, Pattern};
@@ -30,6 +32,12 @@ pub fn resolve_function(context: &Context, module_context: &ModuleContext,
 		}
 	}
 	Ok(())
+}
+
+pub fn resolve_structure(context: &Context, module_context: &ModuleContext,
+                         structure: &mut Structure) -> Result<(), Diagnostic> {
+	structure.fields.values_mut().try_for_each(|ascriptions|
+		resolve_ascriptions(context, module_context, ascriptions))
 }
 
 fn resolve_ascriptions(context: &Context, module_context: &ModuleContext,

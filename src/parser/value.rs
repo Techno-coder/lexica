@@ -26,6 +26,10 @@ fn value(context: &mut FunctionContext, lexer: &mut Lexer, precedence: usize)
 fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
           -> Result<ExpressionKey, Diagnostic> {
 	let binder = lexer.next();
+	if binder.node == Token::Dot {
+		return access(context, lexer, left);
+	}
+
 	let precedence = token_precedence(&binder.node);
 	let right = value(context, lexer, precedence)?;
 	let span = context[&left].span.merge(context[&right].span);
@@ -53,6 +57,7 @@ fn token_precedence(token: &Token) -> usize {
 		Token::LessEqual | Token::GreaterEqual => 2,
 		Token::Add | Token::Minus => 3,
 		Token::Asterisk => 4,
+		Token::Dot => 5,
 		_ => 0,
 	}
 }
@@ -104,24 +109,44 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 
 fn function_call(context: &mut FunctionContext, lexer: &mut Lexer, execution: Execution,
                  identifier: Arc<str>, initial_span: Span) -> Result<ExpressionKey, Diagnostic> {
+	let module_path = ModulePath::unresolved();
+	let function_path = FunctionPath(DeclarationPath { module_path, identifier });
+	let function_path = Spanned::new(function_path, initial_span);
+
+	let arguments = arguments(context, lexer)?;
+	let function_call = Expression::FunctionCall(function_path, arguments.node, execution);
+	Ok(context.register(Spanned::new(function_call, initial_span.merge(arguments.span))))
+}
+
+fn access(context: &mut FunctionContext, lexer: &mut Lexer,
+          expression: ExpressionKey) -> Result<ExpressionKey, Diagnostic> {
+	let identifier = super::identifier(lexer).map_err(|diagnostic|
+		diagnostic.note("In parsing a field or method call"))?;
+	let span = identifier.span;
+
+	let expression = Spanned::new(match lexer.peek().node {
+		// TODO: Implement parse of method call
+		Token::ParenthesisOpen => unimplemented!(),
+		_ => Expression::Field(expression, identifier),
+	}, span);
+	Ok(context.register(expression))
+}
+
+fn arguments(context: &mut FunctionContext, lexer: &mut Lexer)
+             -> Result<Spanned<Vec<ExpressionKey>>, Diagnostic> {
 	let mut arguments = Vec::new();
-	super::expect(lexer, Token::ParenthesisOpen)?;
+	let initial_span = super::expect(lexer, Token::ParenthesisOpen)?;
 	while lexer.peek().node != Token::ParenthesisClose {
 		arguments.push(root_value(context, lexer).map_err(|diagnostic|
-			diagnostic.note("In parsing a function call argument"))?);
+			diagnostic.note("In parsing an argument"))?);
 		match lexer.peek().node {
 			Token::ListSeparator => lexer.next(),
 			_ => break,
 		};
 	}
 
-	let module_path = ModulePath::unresolved();
-	let function_path = FunctionPath(DeclarationPath { module_path, identifier });
-	let function_path = Spanned::new(function_path, initial_span);
-
 	let span = initial_span.merge(super::expect(lexer, Token::ParenthesisClose)?);
-	let function_call = Expression::FunctionCall(function_path, arguments, execution);
-	Ok(context.register(Spanned::new(function_call, span)))
+	Ok(Spanned::new(arguments, span))
 }
 
 fn block(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {

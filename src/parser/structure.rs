@@ -35,7 +35,7 @@ pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>
 		_ => fields(lexer, None, Token::LineBreak),
 	}?;
 
-	Ok(Structure::new(fields))
+	Ok(Structure { fields })
 }
 
 fn fields(lexer: &mut Lexer, skip_token: Option<Token>, terminator: Token)

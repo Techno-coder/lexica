@@ -101,6 +101,8 @@ impl FunctionContext {
 					}
 					Expression::ExplicitDrop(_, expression) =>
 						context.traverse(expression, function),
+					Expression::Field(expression, _) =>
+						context.traverse(expression, function),
 					Expression::FunctionCall(_, expressions, _) => expressions.iter()
 						.try_for_each(|expression| context.traverse(expression, function)),
 					Expression::Unary(_, expression) =>

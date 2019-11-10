@@ -71,7 +71,7 @@ pub fn expression_pattern(context: &Context, function: &FunctionContext, environ
 	match pattern {
 		Pattern::Wildcard => Ok(engine.new_variable_type()),
 		Pattern::Terminal(terminal) =>
-			super::function::expression(context, function, environment, engine, terminal),
+			super::expression(context, function, environment, engine, terminal),
 		Pattern::Tuple(patterns) => {
 			let expression_types: Result<Vec<_>, _> = patterns.iter().map(|pattern|
 				expression_pattern(context, function, environment, engine, pattern)).collect();

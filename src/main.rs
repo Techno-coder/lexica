@@ -40,6 +40,20 @@ fn main() {
 			identifier: "Vector".into(),
 		})), Span::INTERNAL)));
 
+//	let result = context.emit(crate::parser::function(context, &Spanned::new(Arc::new(
+//		FunctionPath(crate::declaration::DeclarationPath {
+//			module_path: ModulePath::root().push("vector".into()).push("vector".into()),
+//			identifier: "reflect".into(),
+//		})), Span::INTERNAL)));
+//	result.map(|result| println!("{:#?}", result));
+
+	let result = context.emit(crate::basic::function(context, &Spanned::new(Arc::new(
+		FunctionPath(crate::declaration::DeclarationPath {
+			module_path: ModulePath::root().push("vector".into()).push("vector".into()),
+			identifier: "reflect".into(),
+		})), Span::INTERNAL), crate::basic::Reversibility::Reversible));
+	result.map(|result| println!("{}", result));
+
 	let parameters = Vec::new();
 	let result = context.emit(crate::evaluation::function(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {

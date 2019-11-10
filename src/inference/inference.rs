@@ -11,6 +11,7 @@ pub enum InferenceError {
 	Recursive(InferenceType),
 	Unresolved(TypeVariable),
 	FunctionArity(usize, usize),
+	UndefinedField(Arc<StructurePath>, Arc<str>),
 }
 
 impl fmt::Display for InferenceError {
@@ -24,6 +25,8 @@ impl fmt::Display for InferenceError {
 				write!(f, "Inference type: {}, has not been resolved", variable),
 			InferenceError::FunctionArity(expression, function) =>
 				write!(f, "Expression arity: {}, is not equal to function: {}", expression, function),
+			InferenceError::UndefinedField(structure, field) =>
+				write!(f, "Field: {}, is not defined on structure: {}", field, structure),
 		}
 	}
 }
