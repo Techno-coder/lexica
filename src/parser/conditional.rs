@@ -25,9 +25,8 @@ pub fn conditional(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<E
 	let initial_span = super::expect(lexer, Token::If)?;
 	let (branches, span) = match lexer.peek().node {
 		Token::Separator => {
-			lexer.next();
 			let mut branches = Vec::new();
-			super::expect(lexer, Token::BlockOpen)?;
+			super::expect(lexer.consume(), Token::BlockOpen)?;
 			while lexer.peek().node != Token::BlockClose {
 				if lexer.peek().node == Token::LineBreak {
 					lexer.next();
@@ -59,8 +58,7 @@ pub fn branch(context: &mut FunctionContext, lexer: &mut Lexer)
 
 	let mut condition_end = None;
 	if lexer.peek().node == Token::Implies {
-		lexer.next();
-		condition_end = Some(super::root_value(context, lexer).map_err(|diagnostic|
+		condition_end = Some(super::root_value(context, lexer.consume()).map_err(|diagnostic|
 			diagnostic.note("In parsing conditional branch end condition"))?);
 	}
 

@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 
 use crate::basic::Item;
-use crate::declaration::FunctionPath;
-use crate::span::Spanned;
+use crate::declaration::{FunctionPath, StructurePath};
+use crate::span::{Span, Spanned};
 
 use super::{AscriptionPattern, BindingPattern, ExpressionPattern, Variable, VariablePattern};
 
@@ -34,6 +35,7 @@ pub enum Expression {
 	Field(ExpressionKey, Spanned<Arc<str>>),
 //	MethodCall(ExpressionKey, Spanned<Arc<str>>, Vec<ExpressionKey>),
 	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>, Execution),
+	Structure(Spanned<StructurePath>, HashMap<Arc<str>, (Span, ExpressionKey)>),
 	Pattern(ExpressionPattern),
 	Variable(Variable),
 	Integer(i128),

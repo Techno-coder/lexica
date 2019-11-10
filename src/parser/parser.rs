@@ -15,6 +15,7 @@ pub enum ParserError {
 	ExpectedIdentifier(Token),
 	ExpectedToken(Token, Token),
 	ExpectedExpressionTerminator(Token),
+	ExpectedPathAssociation(Token),
 	DuplicateField(Arc<str>),
 }
 
@@ -33,6 +34,8 @@ impl fmt::Display for ParserError {
 				write!(f, "Expected token: {:?}, instead got: {:?}", expected, token),
 			ParserError::ExpectedExpressionTerminator(token) =>
 				write!(f, "Expected line break or mutation operator, instead got: {:?}", token),
+			ParserError::ExpectedPathAssociation(token) =>
+				write!(f, "Expected a function call or structure literal instead got: {:?}", token),
 			ParserError::DuplicateField(field) =>
 				write!(f, "Field with identifier: {}, has already been defined", field),
 		}
@@ -56,13 +59,25 @@ pub fn identifier(lexer: &mut Lexer) -> Result<Spanned<Arc<str>>, Diagnostic> {
 pub fn expect(lexer: &mut Lexer, expected: Token) -> Result<Span, Diagnostic> {
 	let token = lexer.next();
 	match token.node == expected {
-		false => Err(Diagnostic::new(token.map(|token| ParserError::ExpectedToken(expected, token)))),
+		false => Err(Diagnostic::new(token.map(|token|
+			ParserError::ExpectedToken(expected, token)))),
 		true => Ok(token.span),
 	}
 }
 
-pub fn skip(lexer: &mut Lexer, token: Token) {
-	while lexer.peek().node == token {
+/// Expects a specified token but does not consume it.
+pub fn expect_peek(lexer: &mut Lexer, expected: Token) -> Result<Span, Diagnostic> {
+	let token = lexer.peek();
+	match token.node == expected {
+		false => Err(Diagnostic::new(lexer.next().map(|token|
+			ParserError::ExpectedToken(expected, token)))),
+		true => Ok(token.span),
+	}
+}
+
+/// Ignores a contiguous sequence of tokens of the specified variant.
+pub fn skip(lexer: &mut Lexer, token: &Token) {
+	while &lexer.peek().node == token {
 		lexer.next();
 	}
 }

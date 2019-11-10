@@ -122,6 +122,7 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 				_ => Intrinsic::Truth.inference(),
 			}
 		}
+		Expression::Structure(_, _) => unimplemented!(),
 		Expression::Pattern(pattern) =>
 			pattern::expression_pattern(context, function, environment, engine, pattern)?,
 		Expression::Variable(variable) =>

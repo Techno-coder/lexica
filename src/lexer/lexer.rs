@@ -23,6 +23,12 @@ impl<'a> Lexer<'a> {
 		}
 	}
 
+	/// Ignores the next token and returns itself.
+	pub fn consume(&mut self) -> &mut Self {
+		self.next();
+		self
+	}
+
 	pub fn next(&mut self) -> Spanned<Token> {
 		let lexer = &mut self.lexer;
 		let byte_offset = self.byte_offset;

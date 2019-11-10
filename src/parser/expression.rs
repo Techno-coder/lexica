@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::declaration::{DeclarationPath, ModulePath, StructurePath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
@@ -51,8 +53,9 @@ fn explicit_drop(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Exp
 
 fn expression_terminator(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {
 	let value = super::root_value(context, lexer)?;
-	if let Expression::Block(_) = &context[&value].node {
-		return Ok(value);
+	match &context[&value].node {
+		Expression::Block(_) | Expression::Structure(_, _) => return Ok(value),
+		_ => (),
 	}
 
 	let token = lexer.next();
@@ -91,26 +94,31 @@ pub fn binding_variable(lexer: &mut Lexer) -> Result<Spanned<BindingVariable>, D
 	Ok(variable.map(|variable| BindingVariable(variable, mutability)))
 }
 
-fn structure_path(lexer: &mut Lexer) -> Result<Spanned<StructurePath>, Diagnostic> {
+pub fn path(lexer: &mut Lexer) -> Result<Spanned<DeclarationPath>, Diagnostic> {
+	let identifier = super::identifier(lexer).map_err(|diagnostic|
+		diagnostic.note("In parsing a path"))?;
+	path_identifier(lexer, identifier)
+}
+
+/// Parses a path with the initial identifier already consumed.
+pub fn path_identifier(lexer: &mut Lexer, mut identifier: Spanned<Arc<str>>)
+                       -> Result<Spanned<DeclarationPath>, Diagnostic> {
 	let mut module_path = ModulePath::unresolved();
-	let mut identifier = super::identifier(lexer).map_err(|diagnostic|
-		diagnostic.note("In parsing a structure path"))?;
 	let initial_span = identifier.span;
 
 	while let Token::PathSeparator = lexer.peek().node {
-		lexer.next();
-		let identifier = std::mem::replace(&mut identifier, super::identifier(lexer)
-			.map_err(|diagnostic| diagnostic.note("In parsing a structure path"))?);
+		let identifier = std::mem::replace(&mut identifier, super::identifier(lexer.consume())
+			.map_err(|diagnostic| diagnostic.note("In parsing a path"))?);
 		module_path = module_path.push(identifier.node);
 	}
 
 	let span = initial_span.merge(identifier.span);
 	let declaration_path = DeclarationPath { module_path, identifier: identifier.node };
-	Ok(Spanned::new(StructurePath(declaration_path), span))
+	Ok(Spanned::new(declaration_path, span))
 }
 
 pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> {
-	Ok(structure_path(lexer).map(|structure| structure.map(|structure| Ascription(structure))))
+	Ok(path(lexer).map(|path| path.map(|path| Ascription(StructurePath(path)))))
 		.map_err(|diagnostic: Diagnostic| diagnostic.note("In parsing an ascription"))?
 }
 

@@ -111,6 +111,7 @@ impl FunctionContext {
 						context.traverse(left, function)?;
 						context.traverse(right, function)
 					}
+					Expression::Structure(_, _) => unimplemented!(),
 					Expression::Pattern(pattern) => pattern.apply(&mut |terminal|
 						context.traverse(terminal, function)),
 					Expression::Variable(_) | Expression::Integer(_) |

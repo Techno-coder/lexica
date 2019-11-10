@@ -153,6 +153,7 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
 			(Value::Location(Location::new(variable)), context.push(component, statement))
 		}
+		Expression::Structure(_, _) => unimplemented!(),
 		Expression::Pattern(expression) =>
 			super::pattern::pattern(function, type_context, context, expression, span),
 		Expression::Variable(variable) =>

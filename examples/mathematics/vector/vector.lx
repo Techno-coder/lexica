@@ -2,10 +2,8 @@ data Vector:
 	x: u32,
 	y: u32,
 
-// fn reflect(vector: Vector) -> Vector:
-fn reflect(vector: Vector):
+fn reflect(vector: Vector) -> Vector:
 	vector.x = -vector.x
 	vector.y = -vector.y
 	let x = vector.x
-	let y = vector.y
-//	Vector: x, y,
+	Vector: x, y: vector.y,

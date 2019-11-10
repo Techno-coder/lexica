@@ -1,11 +1,9 @@
-use std::sync::Arc;
-
-use crate::declaration::{DeclarationPath, FunctionPath, ModulePath};
+use crate::declaration::{FunctionPath, StructurePath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
 use crate::node::{Arithmetic, BinaryOperator, Execution, Expression,
 	ExpressionKey, FunctionContext, UnaryOperator, Variable};
-use crate::span::{Span, Spanned};
+use crate::span::Spanned;
 
 use super::ParserError;
 
@@ -72,8 +70,8 @@ fn terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Expressi
 		}
 		Token::Compile => {
 			lexer.next();
-			let identifier = super::identifier(lexer)?;
-			function_call(context, lexer, Execution::Compile, identifier.node, identifier.span)
+			let function_path = super::expression::path(lexer)?.map(|path| FunctionPath(path));
+			function_call(context, lexer, Execution::Compile, function_path)
 		}
 		Token::Minus => {
 			let operator = Spanned::new(UnaryOperator::Negate, lexer.next().span);
@@ -93,8 +91,25 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 		Token::Truth(truth) => Ok(context
 			.register(Spanned::new(Expression::Truth(truth), token.span))),
 		Token::Identifier(identifier) => match lexer.peek().node {
-			Token::ParenthesisOpen => function_call(context, lexer,
-				Execution::Runtime, identifier, token.span),
+			Token::ParenthesisOpen | Token::Separator | Token::PathSeparator => {
+				let identifier = Spanned::new(identifier, token.span);
+				let path = super::expression::path_identifier(lexer, identifier)?;
+				match lexer.peek().node {
+					Token::ParenthesisOpen => {
+						let function_path = path.map(|path| FunctionPath(path));
+						function_call(context, lexer, Execution::Runtime, function_path)
+					}
+					Token::Separator => {
+						let structure_path = path.map(|path| StructurePath(path));
+						super::structure::literal(context, lexer, structure_path)
+					}
+					_ => {
+						let token = lexer.next();
+						let error = ParserError::ExpectedPathAssociation(token.node);
+						Err(Diagnostic::new(Spanned::new(error, token.span)))
+					}
+				}
+			}
 			_ => {
 				let expression = Expression::Variable(Variable::new(identifier));
 				Ok(context.register(Spanned::new(expression, token.span)))
@@ -108,11 +123,8 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 }
 
 fn function_call(context: &mut FunctionContext, lexer: &mut Lexer, execution: Execution,
-                 identifier: Arc<str>, initial_span: Span) -> Result<ExpressionKey, Diagnostic> {
-	let module_path = ModulePath::unresolved();
-	let function_path = FunctionPath(DeclarationPath { module_path, identifier });
-	let function_path = Spanned::new(function_path, initial_span);
-
+                 function_path: Spanned<FunctionPath>) -> Result<ExpressionKey, Diagnostic> {
+	let initial_span = function_path.span;
 	let arguments = arguments(context, lexer)?;
 	let function_call = Expression::FunctionCall(function_path, arguments.node, execution);
 	Ok(context.register(Spanned::new(function_call, initial_span.merge(arguments.span))))

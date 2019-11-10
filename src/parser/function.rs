@@ -72,8 +72,7 @@ fn return_type(lexer: &mut Lexer) -> Result<Spanned<AscriptionPattern>, Diagnost
 	let token = lexer.peek();
 	match token.node {
 		Token::ReturnSeparator => {
-			lexer.next();
-			super::pattern(lexer, &mut super::ascription).map_err(|diagnostic|
+			super::pattern(lexer.consume(), &mut super::ascription).map_err(|diagnostic|
 				diagnostic.note("In parsing function return type"))
 		}
 		_ => {
