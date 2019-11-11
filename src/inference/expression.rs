@@ -122,7 +122,30 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 				_ => Intrinsic::Truth.inference(),
 			}
 		}
-		Expression::Structure(_, _) => unimplemented!(),
+		Expression::Structure(structure_path, expressions) => {
+			let structure_path = structure_path.clone().map(Arc::new);
+			let structure = crate::node::structure(context, &structure_path)?;
+			structure.fields.iter().try_for_each(|(field, pattern)| {
+				let (span, expression_key) = expressions.get(field).ok_or({
+					let structure_path = structure_path.node.clone();
+					let error = InferenceError::MissingField(structure_path, field.clone());
+					Diagnostic::new(Spanned::new(error, span))
+				})?;
+
+				let field_type = super::pattern::ascription_type(environment, engine, pattern);
+				let expression_type = expression(context, function, environment, engine, expression_key)?;
+				engine.unify(field_type, expression_type).map_err(|error|
+					Diagnostic::new(Spanned::new(error, *span)))
+			})?;
+
+			expressions.iter().find(|(field, _)|
+				!structure.fields.contains_key(field.as_ref())).map(|(field, (span, _))| {
+				let structure_path = structure_path.node.clone();
+				let error = InferenceError::UndefinedField(structure_path, field.clone());
+				Result::<!, _>::Err(Diagnostic::new(Spanned::new(error, *span)))
+			}).transpose()?;
+			Arc::new(InferenceType::Instance(structure_path.node.as_ref().clone(), Vec::new()))
+		}
 		Expression::Pattern(pattern) =>
 			pattern::expression_pattern(context, function, environment, engine, pattern)?,
 		Expression::Variable(variable) =>

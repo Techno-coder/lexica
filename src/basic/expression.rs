@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use crate::inference::TypeContext;
+use crate::inference::{TypeContext, TypeResolution};
 use crate::node::{BindingVariable, Expression, ExpressionKey,
 	FunctionContext, MutationKind, Pattern};
 use crate::span::Spanned;
 
-use super::{BasicContext, Component, Compound, Direction, Item, Location,
-	Projection, Statement, Value};
+use super::{BasicContext, Component, Compound, Direction, Instance, Item,
+	Location, Projection, Statement, Value};
 
 pub fn basic(function: &FunctionContext, type_context: &TypeContext,
              context: &mut BasicContext, expression_key: &ExpressionKey) -> (Value, Component) {
@@ -153,7 +153,13 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
 			(Value::Location(Location::new(variable)), context.push(component, statement))
 		}
-		Expression::Structure(_, _) => unimplemented!(),
+		Expression::Structure(structure_path, expressions) => {
+			let type_resolution = TypeResolution(structure_path.node.clone(), Vec::new());
+			let instance = Instance::new(type_resolution);
+			super::pattern::fields(context, instance, expressions.iter()
+				.map(|(field, (_, expression))| (field.clone(), expression)), span,
+				&mut |context, expression| basic(function, type_context, context, expression))
+		}
 		Expression::Pattern(expression) =>
 			super::pattern::pattern(function, type_context, context, expression, span),
 		Expression::Variable(variable) =>

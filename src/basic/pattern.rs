@@ -56,31 +56,34 @@ pub fn pattern(function: &FunctionContext, type_context: &TypeContext, context: 
 		Pattern::Wildcard => panic!("Wildcard expression is not a value"),
 		Pattern::Terminal(expression) => super::expression::basic(function,
 			type_context, context, expression),
-		Pattern::Tuple(patterns) => {
-			let variable = context.temporary();
-			let mut component = context.component();
-			let mut instance = Instance::tuple();
-
-			let mut statements = Vec::new();
-			for (index, expression) in patterns.iter().enumerate() {
-				let field: Arc<str> = index.to_string().into();
-				let (value, other) = pattern(function, type_context, context, expression, span);
-				instance.fields.insert(field.clone(), Item::Uninitialised);
-				component = context.join(component, other, span);
-
-				let projection = Projection::Field(field);
-				let location = Location::new(variable.clone()).push(projection);
-				let statement = Statement::Mutation(MutationKind::Assign, location, value);
-				statements.push(Spanned::new(statement, span));
-			}
-
-			let compound = Compound::Value(Value::Item(Item::Instance(instance)));
-			let statement = Statement::Binding(variable.clone(), compound);
-			component = context.push(component, Spanned::new(statement, span));
-
-			let component = statements.into_iter().fold(component,
-				|component, statement| context.push(component, statement));
-			(Value::Location(Location::new(variable)), component)
-		}
+		Pattern::Tuple(patterns) => fields(context, Instance::tuple(), patterns.iter()
+			.enumerate().map(|(index, expression)| (index.to_string().into(), expression)), span,
+			&mut |context, expression| pattern(function, type_context, context, expression, span)),
 	}
+}
+
+pub fn fields<T, F>(context: &mut BasicContext, mut instance: Instance,
+                    fields: impl Iterator<Item=(Arc<str>, T)>, span: Span, function: &mut F)
+                    -> (Value, Component) where F: FnMut(&mut BasicContext, T) -> (Value, Component) {
+	let variable = context.temporary();
+	let mut component = context.component();
+	let mut statements = Vec::new();
+	for (field, value) in fields {
+		let (value, other) = function(context, value);
+		instance.fields.insert(field.clone(), Item::Uninitialised);
+		component = context.join(component, other, span);
+
+		let projection = Projection::Field(field);
+		let location = Location::new(variable.clone()).push(projection);
+		let statement = Statement::Mutation(MutationKind::Assign, location, value);
+		statements.push(Spanned::new(statement, span));
+	}
+
+	let compound = Compound::Value(Value::Item(Item::Instance(instance)));
+	let statement = Statement::Binding(variable.clone(), compound);
+	component = context.push(component, Spanned::new(statement, span));
+
+	let component = statements.into_iter().fold(component,
+		|component, statement| context.push(component, statement));
+	(Value::Location(Location::new(variable)), component)
 }

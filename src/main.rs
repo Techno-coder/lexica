@@ -50,8 +50,8 @@ fn main() {
 	let result = context.emit(crate::basic::function(context, &Spanned::new(Arc::new(
 		FunctionPath(crate::declaration::DeclarationPath {
 			module_path: ModulePath::root().push("vector".into()).push("vector".into()),
-			identifier: "reflect".into(),
-		})), Span::INTERNAL), crate::basic::Reversibility::Reversible));
+			identifier: "position".into(),
+		})), Span::INTERNAL), crate::basic::Reversibility::Entropic));
 	result.map(|result| println!("{}", result));
 
 	let parameters = Vec::new();

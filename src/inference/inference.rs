@@ -12,6 +12,7 @@ pub enum InferenceError {
 	Unresolved(TypeVariable),
 	FunctionArity(usize, usize),
 	UndefinedField(Arc<StructurePath>, Arc<str>),
+	MissingField(Arc<StructurePath>, Arc<str>),
 }
 
 impl fmt::Display for InferenceError {
@@ -27,6 +28,8 @@ impl fmt::Display for InferenceError {
 				write!(f, "Expression arity: {}, is not equal to function: {}", expression, function),
 			InferenceError::UndefinedField(structure, field) =>
 				write!(f, "Field: {}, is not defined on structure: {}", field, structure),
+			InferenceError::MissingField(structure, field) =>
+				write!(f, "Structure: {}, is missing field: {}", structure, field),
 		}
 	}
 }

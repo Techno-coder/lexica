@@ -7,3 +7,17 @@ fn reflect(vector: Vector) -> Vector:
 	vector.y = -vector.y
 	let x = vector.x
 	Vector: x, y: vector.y,
+
+data Position:
+	vector: Vector
+
+data Velocity:
+	vector: Vector
+
+fn position() -> Position:
+	Position: vector: Vector: x: 0, y: 0,
+
+fn step(position: Position, velocity: Velocity) -> Position:
+	position.vector.x += velocity.vector.x
+	position.vector.y += velocity.vector.y
+	position

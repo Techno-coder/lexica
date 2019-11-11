@@ -27,7 +27,9 @@ pub fn resolve_function(context: &Context, module_context: &ModuleContext,
 			Expression::Binding(_, Some(ascriptions), _) =>
 				resolve_ascriptions(context, module_context, ascriptions)?,
 			Expression::FunctionCall(function_path, _, _) =>
-				resolve_function_call(context, module_context, function_path)?,
+				resolve_function_path(context, module_context, function_path)?,
+			Expression::Structure(structure_path, _) =>
+				resolve_structure_path(context, module_context, structure_path)?,
 			_ => (),
 		}
 	}
@@ -61,7 +63,7 @@ fn resolve_ascription(context: &Context, module_context: &ModuleContext,
 		&mut |candidate| structures.contains_key(&StructurePath(candidate)))
 }
 
-fn resolve_function_call(context: &Context, module_context: &ModuleContext,
+fn resolve_function_path(context: &Context, module_context: &ModuleContext,
                          function_path: &mut Spanned<FunctionPath>) -> Result<(), Diagnostic> {
 	let FunctionPath(declaration_path) = &mut function_path.node;
 	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
@@ -69,6 +71,16 @@ fn resolve_function_call(context: &Context, module_context: &ModuleContext,
 	let functions = &context.declarations_function;
 	resolve_declaration(context, module_context, declaration_path, function_path.span,
 		&mut |candidate| functions.contains_key(&FunctionPath(candidate)))
+}
+
+fn resolve_structure_path(context: &Context, module_context: &ModuleContext,
+                          structure_path: &mut Spanned<StructurePath>) -> Result<(), Diagnostic> {
+	let StructurePath(declaration_path) = &mut structure_path.node;
+	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
+
+	let structures = &context.declarations_structure;
+	resolve_declaration(context, module_context, declaration_path, structure_path.span,
+		&mut |candidate| structures.contains_key(&StructurePath(candidate)))
 }
 
 fn resolve_declaration<F>(context: &Context, module_context: &ModuleContext,
