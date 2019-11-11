@@ -5,8 +5,9 @@ use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
 use crate::node::{Arithmetic, Ascription, BindingVariable, Expression, ExpressionKey,
 	FunctionContext, Mutability, MutationKind, Variable};
-use crate::parser::ParserError;
 use crate::span::{Span, Spanned};
+
+use super::ParserError;
 
 pub fn expression(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionKey, Diagnostic> {
 	let token = lexer.peek();
@@ -118,8 +119,11 @@ pub fn path_identifier(lexer: &mut Lexer, mut identifier: Spanned<Arc<str>>)
 }
 
 pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> {
-	Ok(path(lexer).map(|path| path.map(|path| Ascription(StructurePath(path)))))
-		.map_err(|diagnostic: Diagnostic| diagnostic.note("In parsing an ascription"))?
+	match lexer.peek().node {
+		Token::Template => Ok(super::identifier(lexer.consume())?
+			.map(|identifier| Ascription::Template(identifier))),
+		_ => path(lexer).map(|path| path.map(|path| Ascription::Structure(StructurePath(path))))
+	}.map_err(|diagnostic: Diagnostic| diagnostic.note("In parsing an ascription"))
 }
 
 fn expect_terminator(lexer: &mut Lexer, expression: &Spanned<Expression>) -> Result<Span, Diagnostic> {

@@ -76,7 +76,7 @@ fn return_type(lexer: &mut Lexer) -> Result<Spanned<AscriptionPattern>, Diagnost
 				diagnostic.note("In parsing function return type"))
 		}
 		_ => {
-			let ascription = Ascription(crate::intrinsic::Intrinsic::Unit.structure());
+			let ascription = Ascription::Structure(crate::intrinsic::Intrinsic::Unit.structure());
 			Ok(Spanned::new(Pattern::Terminal(Spanned::new(ascription, token.span)), token.span))
 		}
 	}

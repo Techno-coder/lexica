@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::{Index, IndexMut};
 use std::sync::Arc;
 
@@ -9,17 +9,29 @@ use crate::error::Diagnostic;
 use crate::node::{ExpressionKey, FunctionContext, Variable};
 use crate::span::{Span, Spanned};
 
-use super::{InferenceType, TypeEngine, TypeResolution, TypeVariable};
+use super::{InferenceError, InferenceType, TypeEngine, TypeResolution, TypeVariable};
 
 pub type TypeContexts = CHashMap<Arc<FunctionPath>, Arc<TypeContext>>;
 
 #[derive(Debug, Default)]
 pub struct Environment {
+	templates: HashMap<Arc<str>, (TypeVariable, Span)>,
 	variables: HashMap<Variable, (TypeVariable, Span)>,
 	expressions: HashMap<ExpressionKey, Arc<InferenceType>>,
 }
 
 impl Environment {
+	pub fn template(&mut self, engine: &mut TypeEngine, template: &Arc<str>, span: Span) -> Arc<InferenceType> {
+		Arc::new(InferenceType::Variable(match self.templates.get(template) {
+			Some((type_variable, _)) => type_variable.clone(),
+			None => {
+				let type_variable = engine.new_variable();
+				self.templates.insert(template.clone(), (type_variable, span));
+				type_variable
+			}
+		}))
+	}
+
 	pub fn variable(&mut self, variable: Variable, type_variable: TypeVariable, span: Span) {
 		if self.variables.insert(variable.clone(), (type_variable, span)).is_some() {
 			panic!("Variable: {}, already exists in inference environment", variable);
@@ -34,17 +46,30 @@ impl Environment {
 
 	pub fn context(self, function: &FunctionContext, engine: &mut TypeEngine)
 	               -> Result<TypeContext, Diagnostic> {
-		let variables = self.variables.into_iter().map(|(variable, (type_variable, span))|
-			(variable, (Arc::new(InferenceType::Variable(type_variable)), span)))
-			.map(|(variable, (inference, span))| engine.construct(inference)
-				.map(|inference| (variable, inference))
-				.map_err(|error| Diagnostic::new(Spanned::new(error, span))))
+		let templates = self.templates.into_iter().map(|(template, (type_variable, span))| {
+			match engine.find(Arc::new(InferenceType::Variable(type_variable))).as_ref() {
+				InferenceType::Variable(type_variable) => Ok(*type_variable),
+				InferenceType::Instance(structure, _) => {
+					let error = InferenceError::ResolvedTemplate(template, Arc::new(structure.clone()));
+					Err(Diagnostic::new(Spanned::new(error, span)))
+				}
+			}
+		}).collect::<Result<HashSet<_>, _>>()?;
+		let construct = &mut |engine: &mut TypeEngine, inference: Arc<InferenceType>, span| {
+			match *engine.find(inference.clone()) {
+				InferenceType::Variable(variable) if templates.contains(&variable) => None,
+				_ => Some(engine.construct(inference).map_err(|error|
+					Diagnostic::new(Spanned::new(error, span))))
+			}
+		};
+
+		let variables = self.variables.into_iter().filter_map(|(variable, (type_variable, span))|
+			construct(engine, Arc::new(InferenceType::Variable(type_variable)), span)
+				.map(|resolution| resolution.map(|resolution| (variable, resolution))))
 			.collect::<Result<_, _>>()?;
-		let expressions = self.expressions.into_iter()
-			.map(|(expression, inference)| engine.construct(inference)
-				.map(|inference| (expression, inference))
-				.map_err(|error| Diagnostic::new(Spanned::new(error,
-					function[&expression].span))))
+		let expressions = self.expressions.into_iter().filter_map(|(expression, inference)|
+			construct(engine, inference, function[&expression].span)
+				.map(|resolution| resolution.map(|resolution| (expression, resolution))))
 			.collect::<Result<_, _>>()?;
 		Ok(TypeContext { variables, expressions })
 	}

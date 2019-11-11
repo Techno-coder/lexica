@@ -72,19 +72,23 @@ pub enum Mutability {
 }
 
 #[derive(Clone)]
-pub struct Ascription(pub StructurePath);
+pub enum Ascription {
+	Structure(StructurePath),
+	Template(Arc<str>),
+}
 
 impl fmt::Debug for Ascription {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let Ascription(structure_path) = self;
-		write!(f, "Ascription({})", structure_path)
+		write!(f, "Ascription({})", self)
 	}
 }
 
 impl fmt::Display for Ascription {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let Ascription(structure_path) = self;
-		write!(f, "{}", structure_path)
+		match self {
+			Ascription::Structure(structure) => write!(f, "{}", structure),
+			Ascription::Template(template) => write!(f, "${}", template),
+		}
 	}
 }
 

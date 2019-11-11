@@ -33,6 +33,7 @@ pub enum Token {
 	Equality,
 	Implies,
 	Swap,
+	Template,
 	Mutable,
 	Add,
 	Minus,

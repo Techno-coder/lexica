@@ -66,7 +66,7 @@ impl TypeEngine {
 		Ok(())
 	}
 
-	fn find(&mut self, inference_type: Arc<InferenceType>) -> Arc<InferenceType> {
+	pub fn find(&mut self, inference_type: Arc<InferenceType>) -> Arc<InferenceType> {
 		match self.resolutions.get(&inference_type) {
 			None => inference_type,
 			Some(parent) => {

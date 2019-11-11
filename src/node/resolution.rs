@@ -49,9 +49,12 @@ fn resolve_ascriptions(context: &Context, module_context: &ModuleContext,
 
 fn resolve_ascription(context: &Context, module_context: &ModuleContext,
                       ascription: &mut Spanned<Ascription>) -> Result<(), Diagnostic> {
-	let Ascription(StructurePath(declaration_path)) = &mut ascription.node;
-	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
+	let declaration_path = match &mut ascription.node {
+		Ascription::Structure(StructurePath(declaration_path)) => declaration_path,
+		_ => return Ok(()),
+	};
 
+	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
 	let intrinsic = Intrinsic::parse(&declaration_path.identifier.as_ref());
 	if declaration_path.module_path.is_unresolved() && intrinsic.is_some() {
 		declaration_path.module_path = ModulePath::intrinsic();

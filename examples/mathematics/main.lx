@@ -4,6 +4,8 @@ use crate::vector::vector::*
 
 fn main() -> u64:
 	#crate::collapse((1337, 1337))
+	identity(collapse((1337, 1337)))
+	add(1, 2)
 
 fn fibonacci(n: u64) -> u64:
 	let ~first = 1
@@ -43,3 +45,9 @@ fn collapse((a, b): (u64, u64)) -> u64:
 fn absolute_value(x: i32) -> i32:
 	if x < 0: x = -x
 	x
+
+fn identity(value: $Value) -> $Value:
+	value
+
+fn add(left: $Value, right: $Value) -> $Value:
+	left + right

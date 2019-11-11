@@ -28,10 +28,11 @@ impl<'a> SourceSplit<'a> {
 
 	fn comment(&mut self) -> Option<()> {
 		loop {
-			let (_, character) = self.characters.next()?;
-			if character == '\n' {
-				break Some(());
-			}
+			let (_, character) = self.characters.peek()?;
+			match character {
+				'\n' => break Some(()),
+				_ => self.characters.next(),
+			};
 		}
 	}
 }

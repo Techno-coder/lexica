@@ -43,6 +43,7 @@ impl<'a> Iterator for LexerTokenize<'a> {
 				":" => Token::Separator,
 				"::" => Token::PathSeparator,
 				"," => Token::ListSeparator,
+				"$" => Token::Template,
 				"~" => Token::Mutable,
 				"+" => Token::Add,
 				"-" => Token::Minus,

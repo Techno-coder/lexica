@@ -112,7 +112,7 @@ impl Instance {
 impl fmt::Display for Instance {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let TypeResolution(structure, _) = &self.type_resolution;
-		writeln!(f, "{}", structure)?;
+		writeln!(f, "{}:", structure)?;
 
 		let indent = &mut Indent::new(f);
 		for (index, (field, item)) in self.fields.iter().enumerate() {

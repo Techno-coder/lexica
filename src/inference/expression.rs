@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::context::Context;
@@ -100,15 +101,18 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 				return Err(Diagnostic::new(Spanned::new(error, span)));
 			}
 
+			let templates = &mut HashMap::new();
 			Iterator::zip(expressions.iter(), function_type.parameters.iter())
 				.try_for_each(|(expression_key, parameter)| {
 					let Parameter(_, ascription) = &parameter.node;
-					let ascription = pattern::ascription_type(environment, engine, ascription);
+					let ascription = pattern::argument_type(environment, engine, templates, ascription);
 					let expression_type = expression(context, function, environment, engine, expression_key)?;
 					engine.unify(expression_type, ascription).map_err(|error|
 						Diagnostic::new(Spanned::new(error, function[expression_key].span)))
 				})?;
-			pattern::ascription_type(environment, engine, &function_type.return_type.node)
+
+			let return_ascription = &function_type.return_type.node;
+			pattern::argument_type(environment, engine, templates, return_ascription)
 		}
 		Expression::Unary(_, expression_key) =>
 			expression(context, function, environment, engine, expression_key)?,

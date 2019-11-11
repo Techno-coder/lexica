@@ -13,6 +13,7 @@ pub enum InferenceError {
 	FunctionArity(usize, usize),
 	UndefinedField(Arc<StructurePath>, Arc<str>),
 	MissingField(Arc<StructurePath>, Arc<str>),
+	ResolvedTemplate(Arc<str>, Arc<StructurePath>),
 }
 
 impl fmt::Display for InferenceError {
@@ -30,6 +31,8 @@ impl fmt::Display for InferenceError {
 				write!(f, "Field: {}, is not defined on structure: {}", field, structure),
 			InferenceError::MissingField(structure, field) =>
 				write!(f, "Structure: {}, is missing field: {}", structure, field),
+			InferenceError::ResolvedTemplate(template, structure) =>
+				write!(f, "Template: {}, cannot be resolved to a structure: {}", template, structure),
 		}
 	}
 }

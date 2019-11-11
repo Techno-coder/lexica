@@ -31,9 +31,9 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 
 	let expression = super::expression(context, &function.context,
 		&mut environment, engine, &function.expression)?;
-	access(context, &function.context, &environment, engine)?;
+	access(context, &function.context, &mut environment, engine)?;
 
-	let return_type = pattern::ascription_type(&environment, engine,
+	let return_type = pattern::ascription_type(&mut environment, engine,
 		&function_type.return_type.node);
 	engine.unify(expression, return_type).map_err(|error|
 		Diagnostic::new(Spanned::new(error, function_type.return_type.span)))?;
@@ -44,7 +44,7 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 }
 
 /// Resolves field and method call types.
-fn access(context: &Context, function: &FunctionContext, environment: &Environment,
+fn access(context: &Context, function: &FunctionContext, environment: &mut Environment,
           engine: &mut TypeEngine) -> Result<(), Diagnostic> {
 	for (index, expression) in function.expressions.iter().enumerate() {
 		let expression_key = ExpressionKey(index);
