@@ -34,7 +34,7 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 		&mut environment, engine, &function.expression)?;
 	projection(context, &function.context, &mut environment, engine)?;
 
-	let return_type = pattern::ascription_type(&mut environment, engine,
+	let return_type = pattern::template_type(&mut environment, engine,
 		&function_type.return_type.node);
 	engine.unify(expression, return_type).map_err(|error|
 		Diagnostic::new(Spanned::new(error, function_type.return_type.span)))?;
@@ -47,7 +47,6 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 /// Resolves field and method call types.
 fn projection(context: &Context, function: &FunctionContext, environment: &mut Environment,
               engine: &mut TypeEngine) -> Result<(), Diagnostic> {
-	let templates = environment.templates(engine)?;
 	for (index, expression) in function.expressions.iter().enumerate() {
 		let expression_key = ExpressionKey(index);
 		match &expression.node {
@@ -66,14 +65,14 @@ fn projection(context: &Context, function: &FunctionContext, environment: &mut E
 							Diagnostic::new(Spanned::new(error, field.span))
 						}).map(|pattern| super::pattern::ascription(environment, engine, templates, pattern))?;
 						engine.unify(field_type, environment[&expression_key].clone())
-							.map_err(|error| Diagnostic::new(Spanned::new(error, span)))?;
 					}
-					InferenceType::Variable(variable) => if !templates.contains(&variable) {
+					InferenceType::Variable(variable) =>
+						Err(InferenceError::Unresolved(*variable)),
+					InferenceType::Template(_) => {
 						let projection = Projection::Field(field.node.clone());
-						let error = InferenceError::TemplateProjection(projection);
-						return Err(Diagnostic::new(Spanned::new(error, span)));
+						Err(InferenceError::TemplateProjection(projection))
 					}
-				}
+				}.map_err(|error| Diagnostic::new(Spanned::new(error, span)))?
 			}
 			_ => (),
 		}

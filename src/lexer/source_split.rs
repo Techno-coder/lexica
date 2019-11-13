@@ -99,7 +99,7 @@ mod tests {
 
 	#[test]
 	fn test_comment() {
-		let string = "// comment\n";
+		let string = "// comment";
 		assert!(SourceSplit::new(string, SourceKey::INTERNAL).next().is_none());
 	}
 }

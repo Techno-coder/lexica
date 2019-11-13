@@ -18,6 +18,7 @@ pub enum InferenceError {
 	MissingField(Arc<StructurePath>, Arc<str>),
 	ResolvedTemplate(Arc<str>, StructurePath),
 	TemplateProjection(Projection),
+	TemplateUnification(Arc<InferenceType>, Arc<InferenceType>),
 }
 
 impl fmt::Display for InferenceError {
@@ -39,6 +40,8 @@ impl fmt::Display for InferenceError {
 				write!(f, "Template: {}, cannot be resolved to a structure: {}", template, structure),
 			InferenceError::TemplateProjection(projection) =>
 				write!(f, "Projection: {:?}, cannot be performed on a template", projection),
+			InferenceError::TemplateUnification(left, right) =>
+				write!(f, "Templates: {}, and: {}, cannot match", left, right),
 		}
 	}
 }
@@ -63,6 +66,7 @@ impl fmt::Display for TypeVariable {
 pub enum InferenceType {
 	Instance(StructurePath, Vec<Arc<InferenceType>>),
 	Variable(TypeVariable),
+	Template(Arc<str>),
 }
 
 impl InferenceType {
@@ -70,10 +74,13 @@ impl InferenceType {
 		match self {
 			InferenceType::Instance(_, variables) => variables.iter()
 				.try_for_each(|type_variable| type_variable.occurs(variable)),
-			InferenceType::Variable(type_variable) => match type_variable == &variable {
-				true => Err(InferenceError::Recursive(self.clone())),
-				false => Ok(())
-			},
+			InferenceType::Template(_) => Ok(()),
+			InferenceType::Variable(type_variable) => {
+				match type_variable == &variable {
+					true => Err(InferenceError::Recursive(self.clone())),
+					false => Ok(())
+				}
+			}
 		}
 	}
 }
@@ -82,6 +89,7 @@ impl fmt::Display for InferenceType {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			InferenceType::Variable(variable) => write!(f, "{}", variable),
+			InferenceType::Template(variable) => write!(f, "${}", variable),
 			InferenceType::Instance(structure, variables) => {
 				write!(f, "{}", structure)?;
 				match variables.split_last() {

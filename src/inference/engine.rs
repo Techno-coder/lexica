@@ -19,22 +19,21 @@ impl TypeEngine {
 		TypeVariable(self.next_variable - 1)
 	}
 
-	pub fn construct<F>(&mut self, inference_type: Arc<InferenceType>, predicate: &mut F)
-	                    -> Result<TypeResolution, InferenceError> where F: FnMut(&TypeVariable) -> bool {
+	pub fn resolve(&mut self, inference_type: Arc<InferenceType>)
+	               -> Result<TypeResolution, InferenceError> {
 		match inference_type.as_ref() {
 			InferenceType::Variable(_) => {
 				let inference_type = self.find(inference_type.clone());
 				match *inference_type {
-					InferenceType::Instance(_, _) => self.construct(inference_type, predicate),
-					InferenceType::Variable(variable) => match predicate(&variable) {
-						false => Err(InferenceError::Unresolved(variable)),
-						true => Ok(TypeResolution::Template)
-					}
+					InferenceType::Variable(variable) =>
+						Err(InferenceError::Unresolved(variable)),
+					_ => self.resolve(inference_type),
 				}
 			}
+			InferenceType::Template(_) => Ok(TypeResolution::Template),
 			InferenceType::Instance(structure, variables) => {
-				let variables: Result<_, _> = variables.iter().map(|variable|
-					self.construct(variable.clone(), predicate)).collect();
+				let variables: Result<_, _> = variables.iter()
+					.map(|variable| self.resolve(variable.clone())).collect();
 				Ok(TypeResolution::Instance(structure.clone(), variables?))
 			}
 		}
@@ -44,19 +43,24 @@ impl TypeEngine {
 	             -> Result<(), InferenceError> {
 		let (left, right) = (self.find(left), self.find(right));
 		match (left.as_ref(), right.as_ref()) {
+			(InferenceType::Template(_), InferenceType::Template(_)) => {
+				if left != right {
+					return Err(InferenceError::TemplateUnification(left, right));
+				}
+			}
 			(InferenceType::Variable(_), InferenceType::Variable(_)) => {
 				if left != right {
 					self.union(left, right);
 				}
 			}
+			(_, InferenceType::Variable(_)) => self.unify(right, left)?,
 			(InferenceType::Variable(variable), representative) => {
 				representative.occurs(*variable)?;
 				self.union(right, left);
 			}
-			(representative, InferenceType::Variable(variable)) => {
-				representative.occurs(*variable)?;
-				self.union(left, right);
-			}
+			(_, InferenceType::Template(_)) => self.unify(right, left)?,
+			(InferenceType::Template(template), InferenceType::Instance(structure, _)) =>
+				return Err(InferenceError::ResolvedTemplate(template.clone(), structure.clone())),
 			(InferenceType::Instance(left_structure, left_variables),
 				InferenceType::Instance(right_structure, right_variables)) => {
 				let equivalent_arity = left_variables.len() == right_variables.len();
@@ -106,10 +110,10 @@ mod tests {
 		assert!(engine.unify(inference_tuple.clone(),
 			Arc::new(InferenceType::Instance(Tuple.structure(), variables))).is_ok());
 
-		let variables = vec![TypeResolution(Unit.structure(), Vec::new()),
-			TypeResolution(Truth.structure(), Vec::new())];
-		assert_eq!(engine.construct(inference_tuple),
-			Ok(TypeResolution(Tuple.structure(), variables)));
+		let variables = vec![TypeResolution::Instance(Unit.structure(), Vec::new()),
+			TypeResolution::Instance(Truth.structure(), Vec::new())];
+		assert_eq!(engine.resolve(inference_tuple),
+			Ok(TypeResolution::Instance(Tuple.structure(), variables)));
 	}
 
 	#[test]
@@ -124,5 +128,21 @@ mod tests {
 		let variable = engine.new_variable_type();
 		let other = Arc::new(InferenceType::Instance(Tuple.structure(), vec![variable.clone()]));
 		assert!(engine.unify(variable, other).is_err());
+	}
+
+	#[test]
+	fn test_template_inference() {
+		let mut engine = TypeEngine::default();
+		let variable = engine.new_variable_type();
+		let other = Arc::new(InferenceType::Template("template".into()));
+		assert!(engine.unify(variable, other).is_ok());
+	}
+
+	#[test]
+	fn test_template_unification() {
+		let mut engine = TypeEngine::default();
+		let template = Arc::new(InferenceType::Template("template".into()));
+		let other = Arc::new(InferenceType::Template("other".into()));
+		assert!(engine.unify(template, other).is_err());
 	}
 }
