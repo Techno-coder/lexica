@@ -4,7 +4,7 @@ use crate::context::Context;
 use crate::declaration::{self, FunctionPath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{Ascription, AscriptionPattern, NodeFunction, FunctionContext, FunctionType,
+use crate::node::{Ascription, AscriptionPattern, FunctionContext, FunctionType, NodeFunction,
 	Parameter, Pattern};
 use crate::span::Spanned;
 
@@ -51,18 +51,14 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 fn parameters(lexer: &mut Lexer) -> Result<Vec<Spanned<Parameter>>, Diagnostic> {
 	let mut parameters = Vec::new();
 	super::expect(lexer, Token::ParenthesisOpen)?;
-	while lexer.peek().node != Token::ParenthesisClose {
+	super::list(lexer, Token::ParenthesisClose, Token::ListSeparator, &mut |lexer| {
 		let pattern = super::pattern(lexer, &mut super::binding_variable)?;
 		super::expect(lexer, Token::Separator)?;
-		let ascription = super::pattern(lexer, &mut super::ascription)?;
 
-		let span = pattern.span.merge(ascription.span);
-		parameters.push(Spanned::new(Parameter(pattern.node, ascription.node), span));
-		match lexer.peek().node {
-			Token::ListSeparator => lexer.next(),
-			_ => break,
-		};
-	}
+		let ascription = super::pattern(lexer, &mut super::ascription)?;
+		Ok(parameters.push(Spanned::new(Parameter(pattern.node, ascription.node),
+			pattern.span.merge(ascription.span))))
+	})?;
 
 	super::expect(lexer, Token::ParenthesisClose)?;
 	Ok(parameters)
@@ -76,7 +72,8 @@ fn return_type(lexer: &mut Lexer) -> Result<Spanned<AscriptionPattern>, Diagnost
 				diagnostic.note("In parsing function return type"))
 		}
 		_ => {
-			let ascription = Ascription::Structure(crate::intrinsic::Intrinsic::Unit.structure());
+			let intrinsic = crate::intrinsic::Intrinsic::Unit.structure();
+			let ascription = Ascription::Structure(intrinsic, Vec::new());
 			Ok(Spanned::new(Pattern::Terminal(Spanned::new(ascription, token.span)), token.span))
 		}
 	}

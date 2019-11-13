@@ -119,11 +119,23 @@ pub fn path_identifier(lexer: &mut Lexer, mut identifier: Spanned<Arc<str>>)
 }
 
 pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> {
-	match lexer.peek().node {
-		Token::Template => Ok(super::identifier(lexer.consume())?
-			.map(|identifier| Ascription::Template(identifier))),
-		_ => path(lexer).map(|path| path.map(|path| Ascription::Structure(StructurePath(path))))
-	}.map_err(|diagnostic: Diagnostic| diagnostic.note("In parsing an ascription"))
+	Ok(match lexer.peek().node {
+		Token::Template => super::identifier(lexer.consume())?
+			.map(|identifier| Ascription::Template(identifier)),
+		_ => {
+			let path = path(lexer).map(|path| path.map(|path| StructurePath(path)))?;
+			Spanned::new(Ascription::Structure(path.node, match lexer.peek().node {
+				Token::AngleLeft => {
+					let (templates, _) = super::list(lexer.consume(), Token::AngleRight,
+						Token::ListSeparator, &mut |lexer| Ok(super::pattern(lexer,
+							&mut ascription)?.node))?;
+					lexer.next();
+					templates
+				}
+				_ => Vec::new(),
+			}), path.span)
+		}
+	})
 }
 
 fn expect_terminator(lexer: &mut Lexer, expression: &Spanned<Expression>) -> Result<Span, Diagnostic> {

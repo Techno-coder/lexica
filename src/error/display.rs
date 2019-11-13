@@ -26,8 +26,8 @@ pub fn display(context: &Context, diagnostic: &Diagnostic) {
 
 	display_prefix(string, line_offsets, start_offset);
 	let (end_offset, end_index) = line_offsets.range(span.byte_end..).next()
-		.map(|(offset, index)| (*offset, *index - 1))
-		.unwrap_or((LineOffset(string.len()), line_offsets.len()));
+		.map(|(offset, index)| (*offset, *index - 1)).unwrap_or((LineOffset(string.len()),
+		line_offsets.len().saturating_sub(1)));
 	match end_index > start_index {
 		true => display_multiple(string, line_offsets, start_offset, end_offset, start_index),
 		false => display_single(string, start_offset, end_offset, start_index, span),

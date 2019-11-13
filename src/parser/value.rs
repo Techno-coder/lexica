@@ -25,7 +25,7 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
           -> Result<ExpressionKey, Diagnostic> {
 	let binder = lexer.next();
 	if binder.node == Token::Dot {
-		return access(context, lexer, left);
+		return projection(context, lexer, left);
 	}
 
 	let precedence = token_precedence(&binder.node);
@@ -33,9 +33,9 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
 	let span = context[&left].span.merge(context[&right].span);
 
 	let operator = match binder.node {
-		Token::GreaterThan => BinaryOperator::GreaterThan,
+		Token::AngleRight => BinaryOperator::GreaterThan,
 		Token::GreaterEqual => BinaryOperator::GreaterEqual,
-		Token::LessThan => BinaryOperator::LessThan,
+		Token::AngleLeft => BinaryOperator::LessThan,
 		Token::LessEqual => BinaryOperator::LessEqual,
 		Token::Equality => BinaryOperator::Equality,
 		Token::Add => BinaryOperator::Arithmetic(Arithmetic::Add),
@@ -51,7 +51,7 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
 fn token_precedence(token: &Token) -> usize {
 	match token {
 		Token::Equality => 1,
-		Token::LessThan | Token::GreaterThan => 2,
+		Token::AngleLeft | Token::AngleRight => 2,
 		Token::LessEqual | Token::GreaterEqual => 2,
 		Token::Add | Token::Minus => 3,
 		Token::Asterisk => 4,
@@ -130,8 +130,8 @@ fn function_call(context: &mut FunctionContext, lexer: &mut Lexer, execution: Ex
 	Ok(context.register(Spanned::new(function_call, initial_span.merge(arguments.span))))
 }
 
-fn access(context: &mut FunctionContext, lexer: &mut Lexer,
-          expression: ExpressionKey) -> Result<ExpressionKey, Diagnostic> {
+fn projection(context: &mut FunctionContext, lexer: &mut Lexer,
+              expression: ExpressionKey) -> Result<ExpressionKey, Diagnostic> {
 	let identifier = super::identifier(lexer).map_err(|diagnostic|
 		diagnostic.note("In parsing a field or method call"))?;
 	let span = identifier.span;
@@ -148,15 +148,9 @@ fn arguments(context: &mut FunctionContext, lexer: &mut Lexer)
              -> Result<Spanned<Vec<ExpressionKey>>, Diagnostic> {
 	let mut arguments = Vec::new();
 	let initial_span = super::expect(lexer, Token::ParenthesisOpen)?;
-	while lexer.peek().node != Token::ParenthesisClose {
-		arguments.push(root_value(context, lexer).map_err(|diagnostic|
-			diagnostic.note("In parsing an argument"))?);
-		match lexer.peek().node {
-			Token::ListSeparator => lexer.next(),
-			_ => break,
-		};
-	}
-
+	super::list(lexer, Token::ParenthesisClose, Token::ListSeparator, &mut |lexer|
+		Ok(arguments.push(root_value(context, lexer).map_err(|diagnostic|
+			diagnostic.note("In parsing an argument"))?)))?;
 	let span = initial_span.merge(super::expect(lexer, Token::ParenthesisClose)?);
 	Ok(Spanned::new(arguments, span))
 }
@@ -165,12 +159,8 @@ fn block(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<ExpressionK
 	let mut block = Vec::new();
 	let initial_span = super::expect(lexer, Token::BlockOpen)?;
 	while lexer.peek().node != Token::BlockClose {
-		if lexer.peek().node == Token::LineBreak {
-			lexer.next();
-			continue;
-		}
-
 		block.push(super::expression(context, lexer)?);
+		super::skip(lexer, &Token::LineBreak);
 	}
 
 	let span = initial_span.merge(super::expect(lexer, Token::BlockClose)?);

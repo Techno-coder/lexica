@@ -46,32 +46,29 @@ impl Environment {
 
 	pub fn context(self, function: &FunctionContext, engine: &mut TypeEngine)
 	               -> Result<TypeContext, Diagnostic> {
-		let templates = self.templates.into_iter().map(|(template, (type_variable, span))| {
-			match engine.find(Arc::new(InferenceType::Variable(type_variable))).as_ref() {
+		let templates = self.templates(engine)?;
+		let construct = &mut |engine: &mut TypeEngine, inference: Arc<InferenceType>, span|
+			engine.construct(inference, &mut |variable| templates.contains(variable))
+				.map_err(|error| Diagnostic::new(Spanned::new(error, span)));
+		let variables = self.variables.into_iter().map(|(variable, (type_variable, span))|
+			construct(engine, Arc::new(InferenceType::Variable(type_variable)), span)
+				.map(|resolution| (variable, resolution))).collect::<Result<_, _>>()?;
+		let expressions = self.expressions.into_iter().map(|(expression, inference)|
+			construct(engine, inference, function[&expression].span)
+				.map(|resolution| (expression, resolution))).collect::<Result<_, _>>()?;
+		Ok(TypeContext { variables, expressions })
+	}
+
+	pub fn templates(&self, engine: &mut TypeEngine) -> Result<HashSet<TypeVariable>, Diagnostic> {
+		self.templates.iter().map(|(template, (type_variable, span))| {
+			match &*engine.find(Arc::new(InferenceType::Variable(*type_variable))) {
 				InferenceType::Variable(type_variable) => Ok(*type_variable),
 				InferenceType::Instance(structure, _) => {
-					let error = InferenceError::ResolvedTemplate(template, Arc::new(structure.clone()));
-					Err(Diagnostic::new(Spanned::new(error, span)))
+					let error = InferenceError::ResolvedTemplate(template.clone(), structure.clone());
+					Err(Diagnostic::new(Spanned::new(error, *span)))
 				}
 			}
-		}).collect::<Result<HashSet<_>, _>>()?;
-		let construct = &mut |engine: &mut TypeEngine, inference: Arc<InferenceType>, span| {
-			match *engine.find(inference.clone()) {
-				InferenceType::Variable(variable) if templates.contains(&variable) => None,
-				_ => Some(engine.construct(inference).map_err(|error|
-					Diagnostic::new(Spanned::new(error, span))))
-			}
-		};
-
-		let variables = self.variables.into_iter().filter_map(|(variable, (type_variable, span))|
-			construct(engine, Arc::new(InferenceType::Variable(type_variable)), span)
-				.map(|resolution| resolution.map(|resolution| (variable, resolution))))
-			.collect::<Result<_, _>>()?;
-		let expressions = self.expressions.into_iter().filter_map(|(expression, inference)|
-			construct(engine, inference, function[&expression].span)
-				.map(|resolution| resolution.map(|resolution| (expression, resolution))))
-			.collect::<Result<_, _>>()?;
-		Ok(TypeContext { variables, expressions })
+		}).collect()
 	}
 }
 

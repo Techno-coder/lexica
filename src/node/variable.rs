@@ -73,7 +73,7 @@ pub enum Mutability {
 
 #[derive(Clone)]
 pub enum Ascription {
-	Structure(StructurePath),
+	Structure(StructurePath, Vec<AscriptionPattern>),
 	Template(Arc<str>),
 }
 
@@ -86,7 +86,14 @@ impl fmt::Debug for Ascription {
 impl fmt::Display for Ascription {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			Ascription::Structure(structure) => write!(f, "{}", structure),
+			Ascription::Structure(structure, templates) => match templates.split_last() {
+				None => write!(f, "{}", structure),
+				Some((last, slice)) => {
+					write!(f, "<")?;
+					slice.iter().try_for_each(|template| write!(f, "{}, ", template))?;
+					write!(f, "{}>", last)
+				}
+			},
 			Ascription::Template(template) => write!(f, "${}", template),
 		}
 	}

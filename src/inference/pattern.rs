@@ -45,37 +45,53 @@ pub fn variable_type(environment: &Environment, engine: &mut TypeEngine,
 	}
 }
 
+/// Constructs an inference type from an ascription.
+/// Templates are replaced with type variables and are not added to the environment.
 pub fn ascription_type(environment: &mut Environment, engine: &mut TypeEngine,
-                       ascription: &AscriptionPattern) -> Arc<InferenceType> {
-	match ascription {
+                       pattern: &AscriptionPattern) -> Arc<InferenceType> {
+	ascription(environment, engine, &mut HashMap::new(), pattern)
+}
+
+pub fn ascription(environment: &mut Environment, engine: &mut TypeEngine,
+                  templates: &mut HashMap<Arc<str>, Arc<InferenceType>>,
+                  pattern: &AscriptionPattern) -> Arc<InferenceType> {
+	match pattern {
 		Pattern::Wildcard => engine.new_variable_type(),
 		Pattern::Terminal(terminal) => match &terminal.node {
-			Ascription::Structure(structure) =>
-				Arc::new(InferenceType::Instance(structure.clone(), Vec::new())),
-			Ascription::Template(template) => environment.template(engine, template, terminal.span),
+			Ascription::Template(template) => templates.entry(template.clone())
+				.or_insert_with(|| engine.new_variable_type()).clone(),
+			Ascription::Structure(structure, structure_templates) => {
+				let templates = structure_templates.iter().map(|template|
+					ascription(environment, engine, templates, template)).collect();
+				Arc::new(InferenceType::Instance(structure.clone(), templates))
+			}
 		}
 		Pattern::Tuple(patterns) => {
 			let ascription_types = patterns.iter().map(|pattern|
-				ascription_type(environment, engine, pattern)).collect();
+				ascription(environment, engine, templates, pattern)).collect();
 			Arc::new(InferenceType::Instance(Intrinsic::Tuple.structure(), ascription_types))
 		}
 	}
 }
 
-pub fn argument_type(environment: &mut Environment, engine: &mut TypeEngine,
-                     templates: &mut HashMap<Arc<str>, Arc<InferenceType>>,
+/// Constructs an inference type from an ascription.
+/// Templates are added to the environment as a type variable.
+pub fn template_type(environment: &mut Environment, engine: &mut TypeEngine,
                      ascription: &AscriptionPattern) -> Arc<InferenceType> {
 	match ascription {
 		Pattern::Wildcard => engine.new_variable_type(),
 		Pattern::Terminal(terminal) => match &terminal.node {
-			Ascription::Structure(structure) =>
-				Arc::new(InferenceType::Instance(structure.clone(), Vec::new())),
-			Ascription::Template(template) => templates.entry(template.clone())
-				.or_insert_with(|| engine.new_variable_type()).clone(),
+			Ascription::Template(template) =>
+				environment.template(engine, template, terminal.span),
+			Ascription::Structure(structure, templates) => {
+				let templates = templates.iter().map(|template|
+					template_type(environment, engine, template)).collect();
+				Arc::new(InferenceType::Instance(structure.clone(), templates))
+			}
 		}
 		Pattern::Tuple(patterns) => {
 			let ascription_types = patterns.iter().map(|pattern|
-				ascription_type(environment, engine, pattern)).collect();
+				template_type(environment, engine, pattern)).collect();
 			Arc::new(InferenceType::Instance(Intrinsic::Tuple.structure(), ascription_types))
 		}
 	}

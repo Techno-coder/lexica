@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use crate::basic::Projection;
 use crate::context::Context;
 use crate::declaration::FunctionPath;
 use crate::error::Diagnostic;
 use crate::node::*;
 use crate::span::Spanned;
 
-use super::{Environment, InferenceError, pattern, TypeContext, TypeEngine, TypeResolution};
+use super::{Environment, InferenceError, InferenceType, pattern, TypeContext, TypeEngine};
 
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                 -> Result<Arc<TypeContext>, Diagnostic> {
@@ -24,14 +25,14 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 		pattern::bind_pattern(&mut environment, engine, binding);
 
 		let binding_type = pattern::binding_type(&mut environment, engine, binding);
-		let ascription_type = pattern::ascription_type(&mut environment, engine, ascription);
+		let ascription_type = pattern::template_type(&mut environment, engine, ascription);
 		engine.unify(binding_type, ascription_type).map_err(|error|
 			Diagnostic::new(Spanned::new(error, parameter.span)))?;
 	}
 
 	let expression = super::expression(context, &function.context,
 		&mut environment, engine, &function.expression)?;
-	access(context, &function.context, &mut environment, engine)?;
+	projection(context, &function.context, &mut environment, engine)?;
 
 	let return_type = pattern::ascription_type(&mut environment, engine,
 		&function_type.return_type.node);
@@ -44,27 +45,38 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 }
 
 /// Resolves field and method call types.
-fn access(context: &Context, function: &FunctionContext, environment: &mut Environment,
-          engine: &mut TypeEngine) -> Result<(), Diagnostic> {
+fn projection(context: &Context, function: &FunctionContext, environment: &mut Environment,
+              engine: &mut TypeEngine) -> Result<(), Diagnostic> {
+	let templates = environment.templates(engine)?;
 	for (index, expression) in function.expressions.iter().enumerate() {
 		let expression_key = ExpressionKey(index);
 		match &expression.node {
 			Expression::Field(expression, field) => {
 				let span = function[expression].span;
-				let type_resolution = engine.construct(environment[expression].clone())
-					.map_err(|error| Diagnostic::new(Spanned::new(error, span)))?;
-				let TypeResolution(structure_path, _) = type_resolution;
-				let structure_path = Spanned::new(Arc::new(structure_path), span);
-				let structure = crate::node::structure(context, &structure_path)?;
+				match &*engine.find(environment[expression].clone()) {
+					InferenceType::Instance(path, inferences) => {
+						let path = Spanned::new(Arc::new(path.clone()), span);
+						let structure = crate::node::structure(context, &path)?;
+						let templates = &mut Iterator::zip(structure.templates.iter(), inferences.iter())
+							.map(|(template, inference)| (template.node.clone(), inference.clone()))
+							.collect();
 
-				let field_type = structure.fields.get(&field.node).ok_or({
-					let error = InferenceError::UndefinedField(structure_path.node, field.node.clone());
-					Diagnostic::new(Spanned::new(error, field.span))
-				}).map(|pattern| super::pattern::ascription_type(environment, engine, pattern))?;
-				engine.unify(field_type, environment[&expression_key].clone())
+						let field_type = structure.fields.get(&field.node).ok_or({
+							let error = InferenceError::UndefinedField(path.node, field.node.clone());
+							Diagnostic::new(Spanned::new(error, field.span))
+						}).map(|pattern| super::pattern::ascription(environment, engine, templates, pattern))?;
+						engine.unify(field_type, environment[&expression_key].clone())
+							.map_err(|error| Diagnostic::new(Spanned::new(error, span)))?;
+					}
+					InferenceType::Variable(variable) => if !templates.contains(&variable) {
+						let projection = Projection::Field(field.node.clone());
+						let error = InferenceError::TemplateProjection(projection);
+						return Err(Diagnostic::new(Spanned::new(error, span)));
+					}
+				}
 			}
-			_ => Ok(()),
-		}.map_err(|error| Diagnostic::new(Spanned::new(error, expression.span)))?;
+			_ => (),
+		}
 	}
 	Ok(())
 }

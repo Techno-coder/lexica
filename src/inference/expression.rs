@@ -33,10 +33,10 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 		Expression::Binding(binding, ascription, expression_key) => {
 			pattern::bind_pattern(environment, engine, &binding.node);
 			let binding_type = pattern::binding_type(environment, engine, &binding.node);
-			let ascription_type = ascription.as_ref()
-				.map(|ascription| pattern::ascription_type(environment, engine, ascription))
+			let template_type = ascription.as_ref()
+				.map(|ascription| pattern::template_type(environment, engine, ascription))
 				.unwrap_or_else(|| engine.new_variable_type());
-			engine.unify(binding_type.clone(), ascription_type)
+			engine.unify(binding_type.clone(), template_type)
 				.map_err(|error| Diagnostic::new(Spanned::new(error, binding.span)))?;
 
 			let expression = expression(context, function, environment, engine, expression_key)?;
@@ -105,14 +105,14 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 			Iterator::zip(expressions.iter(), function_type.parameters.iter())
 				.try_for_each(|(expression_key, parameter)| {
 					let Parameter(_, ascription) = &parameter.node;
-					let ascription = pattern::argument_type(environment, engine, templates, ascription);
+					let ascription = pattern::ascription(environment, engine, templates, ascription);
 					let expression_type = expression(context, function, environment, engine, expression_key)?;
 					engine.unify(expression_type, ascription).map_err(|error|
 						Diagnostic::new(Spanned::new(error, function[expression_key].span)))
 				})?;
 
 			let return_ascription = &function_type.return_type.node;
-			pattern::argument_type(environment, engine, templates, return_ascription)
+			pattern::ascription(environment, engine, templates, return_ascription)
 		}
 		Expression::Unary(_, expression_key) =>
 			expression(context, function, environment, engine, expression_key)?,
@@ -127,6 +127,7 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 			}
 		}
 		Expression::Structure(structure_path, expressions) => {
+			let templates = &mut HashMap::new();
 			let structure_path = structure_path.clone().map(Arc::new);
 			let structure = crate::node::structure(context, &structure_path)?;
 			structure.fields.iter().try_for_each(|(field, pattern)| {
@@ -136,7 +137,7 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 					Diagnostic::new(Spanned::new(error, span))
 				})?;
 
-				let field_type = super::pattern::ascription_type(environment, engine, pattern);
+				let field_type = pattern::ascription(environment, engine, templates, pattern);
 				let expression_type = expression(context, function, environment, engine, expression_key)?;
 				engine.unify(field_type, expression_type).map_err(|error|
 					Diagnostic::new(Spanned::new(error, *span)))
@@ -148,7 +149,10 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 				let error = InferenceError::UndefinedField(structure_path, field.clone());
 				Result::<!, _>::Err(Diagnostic::new(Spanned::new(error, *span)))
 			}).transpose()?;
-			Arc::new(InferenceType::Instance(structure_path.node.as_ref().clone(), Vec::new()))
+
+			let templates = structure.templates.iter().map(|template| templates.get(&template.node)
+				.cloned().unwrap_or_else(|| engine.new_variable_type())).collect();
+			Arc::new(InferenceType::Instance(structure_path.node.as_ref().clone(), templates))
 		}
 		Expression::Pattern(pattern) =>
 			pattern::expression_pattern(context, function, environment, engine, pattern)?,
@@ -157,6 +161,6 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 		Expression::Integer(_) => engine.new_variable_type(),
 		Expression::Truth(_) => Intrinsic::Truth.inference(),
 		Expression::Item(item) => item.type_resolution()
-			.expect("Item has no type resolution").inference(),
+			.expect("Item has no type resolution").inference(engine),
 	})
 }

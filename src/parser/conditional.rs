@@ -28,14 +28,10 @@ pub fn conditional(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<E
 			let mut branches = Vec::new();
 			super::expect(lexer.consume(), Token::BlockOpen)?;
 			while lexer.peek().node != Token::BlockClose {
-				if lexer.peek().node == Token::LineBreak {
-					lexer.next();
-					continue;
-				}
-
 				let (condition_start, condition_end) = branch(context, lexer)?;
 				branches.push((condition_start, condition_end,
 					super::expression(context, lexer)?));
+				super::skip(lexer, &Token::LineBreak);
 			}
 			(branches, super::expect(lexer, Token::BlockClose)?)
 		}

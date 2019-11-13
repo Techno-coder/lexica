@@ -19,19 +19,23 @@ impl TypeEngine {
 		TypeVariable(self.next_variable - 1)
 	}
 
-	pub fn construct(&mut self, inference_type: Arc<InferenceType>)
-	                 -> Result<TypeResolution, InferenceError> {
+	pub fn construct<F>(&mut self, inference_type: Arc<InferenceType>, predicate: &mut F)
+	                    -> Result<TypeResolution, InferenceError> where F: FnMut(&TypeVariable) -> bool {
 		match inference_type.as_ref() {
 			InferenceType::Variable(_) => {
 				let inference_type = self.find(inference_type.clone());
 				match *inference_type {
-					InferenceType::Instance(_, _) => self.construct(inference_type),
-					InferenceType::Variable(variable) => Err(InferenceError::Unresolved(variable)),
+					InferenceType::Instance(_, _) => self.construct(inference_type, predicate),
+					InferenceType::Variable(variable) => match predicate(&variable) {
+						false => Err(InferenceError::Unresolved(variable)),
+						true => Ok(TypeResolution::Template)
+					}
 				}
 			}
 			InferenceType::Instance(structure, variables) => {
-				let variables = variables.iter().map(|variable| self.construct(variable.clone()));
-				Ok(TypeResolution(structure.clone(), variables.collect::<Result<_, _>>()?))
+				let variables: Result<_, _> = variables.iter().map(|variable|
+					self.construct(variable.clone(), predicate)).collect();
+				Ok(TypeResolution::Instance(structure.clone(), variables?))
 			}
 		}
 	}

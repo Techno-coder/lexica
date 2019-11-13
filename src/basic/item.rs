@@ -38,7 +38,7 @@ impl Item {
 	}
 
 	pub fn type_resolution(&self) -> Option<TypeResolution> {
-		Some(TypeResolution(match self {
+		Some(TypeResolution::Instance(match self {
 			Item::Truth(_) => Intrinsic::Truth.structure(),
 			Item::Signed8(_) => Intrinsic::Signed8.structure(),
 			Item::Signed16(_) => Intrinsic::Signed16.structure(),
@@ -105,15 +105,13 @@ impl Instance {
 	}
 
 	pub fn tuple() -> Self {
-		Instance::new(TypeResolution(Intrinsic::Tuple.structure(), Vec::new()))
+		Instance::new(TypeResolution::Instance(Intrinsic::Tuple.structure(), Vec::new()))
 	}
 }
 
 impl fmt::Display for Instance {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let TypeResolution(structure, _) = &self.type_resolution;
-		writeln!(f, "{}:", structure)?;
-
+		writeln!(f, "{}:", self.type_resolution)?;
 		let indent = &mut Indent::new(f);
 		for (index, (field, item)) in self.fields.iter().enumerate() {
 			match item {

@@ -26,14 +26,18 @@ pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>
 
 	super::expect(lexer, Token::Data)?;
 	super::identifier(lexer)?;
-	super::expect(lexer, Token::Separator)?;
 
+	let templates = templates(lexer)?;
 	let fields = match lexer.peek().node {
-		Token::BlockOpen => fields(lexer.consume(), Some(Token::LineBreak), Token::BlockClose),
-		_ => fields(lexer, None, Token::LineBreak),
-	}?;
+		Token::BlockOpen => {
+			let fields = fields(lexer.consume(), Some(Token::LineBreak), Token::BlockClose)?;
+			super::expect(lexer, Token::BlockClose)?;
+			fields
+		}
+		_ => fields(lexer, None, Token::LineBreak)?,
+	};
 
-	Ok(Structure { fields })
+	Ok(Structure { templates, fields })
 }
 
 pub fn literal(context: &mut FunctionContext, lexer: &mut Lexer,
@@ -46,16 +50,33 @@ pub fn literal(context: &mut FunctionContext, lexer: &mut Lexer,
 			super::expect(lexer, Token::BlockClose)?;
 			fields
 		}
-		_ => {
-			let fields = literal_fields(context, lexer, None, Token::LineBreak);
-			super::expect_peek(lexer, Token::LineBreak)?;
-			fields
-		}
+		_ => literal_fields(context, lexer, None, Token::LineBreak),
 	}?;
 
 	let span = structure_path.span;
 	let expression = Expression::Structure(structure_path, fields);
 	Ok(context.register(Spanned::new(expression, span)))
+}
+
+fn templates(lexer: &mut Lexer) -> Result<Vec<Spanned<Arc<str>>>, Diagnostic> {
+	let mut templates = Vec::new();
+	let token = lexer.next();
+	match token.node {
+		Token::Separator => (),
+		Token::AngleLeft => {
+			super::list(lexer, Token::AngleRight, Token::ListSeparator, &mut |lexer| {
+				super::expect(lexer, Token::Template)?;
+				templates.push(super::identifier(lexer)?);
+				Ok(())
+			})?;
+			lexer.next();
+		}
+		other => {
+			let error = ParserError::ExpectedStructureTerminator(other);
+			return Err(Diagnostic::new(Spanned::new(error, token.span)));
+		}
+	}
+	Ok(templates)
 }
 
 fn fields(lexer: &mut Lexer, skip_token: Option<Token>, terminator: Token)

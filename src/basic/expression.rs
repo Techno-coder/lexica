@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::inference::{TypeContext, TypeResolution};
+use crate::inference::TypeContext;
 use crate::node::{BindingVariable, Expression, ExpressionKey,
 	FunctionContext, MutationKind, Pattern};
 use crate::span::Spanned;
@@ -153,9 +153,8 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
 			(Value::Location(Location::new(variable)), context.push(component, statement))
 		}
-		Expression::Structure(structure_path, expressions) => {
-			let type_resolution = TypeResolution(structure_path.node.clone(), Vec::new());
-			let instance = Instance::new(type_resolution);
+		Expression::Structure(_, expressions) => {
+			let instance = Instance::new(type_context[expression_key].clone());
 			super::pattern::fields(context, instance, expressions.iter()
 				.map(|(field, (_, expression))| (field.clone(), expression)), span,
 				&mut |context, expression| basic(function, type_context, context, expression))

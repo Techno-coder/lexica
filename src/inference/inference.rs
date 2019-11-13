@@ -1,9 +1,12 @@
 use std::fmt;
 use std::sync::Arc;
 
+use crate::basic::Projection;
 use crate::declaration::{ModulePath, StructurePath};
 use crate::error::CompileError;
 use crate::intrinsic::Intrinsic;
+
+use super::TypeEngine;
 
 #[derive(Debug, PartialEq)]
 pub enum InferenceError {
@@ -13,7 +16,8 @@ pub enum InferenceError {
 	FunctionArity(usize, usize),
 	UndefinedField(Arc<StructurePath>, Arc<str>),
 	MissingField(Arc<StructurePath>, Arc<str>),
-	ResolvedTemplate(Arc<str>, Arc<StructurePath>),
+	ResolvedTemplate(Arc<str>, StructurePath),
+	TemplateProjection(Projection),
 }
 
 impl fmt::Display for InferenceError {
@@ -33,6 +37,8 @@ impl fmt::Display for InferenceError {
 				write!(f, "Structure: {}, is missing field: {}", structure, field),
 			InferenceError::ResolvedTemplate(template, structure) =>
 				write!(f, "Template: {}, cannot be resolved to a structure: {}", template, structure),
+			InferenceError::TemplateProjection(projection) =>
+				write!(f, "Projection: {:?}, cannot be performed on a template", projection),
 		}
 	}
 }
@@ -75,37 +81,70 @@ impl InferenceType {
 impl fmt::Display for InferenceType {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
+			InferenceType::Variable(variable) => write!(f, "{}", variable),
 			InferenceType::Instance(structure, variables) => {
 				write!(f, "{}", structure)?;
-				if let Some((last, rest)) = variables.split_last() {
-					write!(f, "<")?;
-					rest.iter().try_for_each(|variable| write!(f, "{}, ", variable))?;
-					write!(f, "{}>", last)?;
+				match variables.split_last() {
+					None => Ok(()),
+					Some((last, slice)) => {
+						write!(f, "<")?;
+						slice.iter().try_for_each(|variable| write!(f, "{}, ", variable))?;
+						write!(f, "{}>", last)
+					}
 				}
-				Ok(())
 			}
-			InferenceType::Variable(variable) => write!(f, "{}", variable),
 		}
 	}
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct TypeResolution(pub StructurePath, pub Vec<TypeResolution>);
+pub enum TypeResolution {
+	Instance(StructurePath, Vec<TypeResolution>),
+	Template,
+}
 
 impl TypeResolution {
 	pub fn intrinsic(&self) -> Option<Intrinsic> {
-		let TypeResolution(StructurePath(declaration_path), parameters) = self;
-		let is_intrinsic = declaration_path.module_path == ModulePath::intrinsic();
-		match is_intrinsic && parameters.is_empty() {
-			true => Intrinsic::parse(&declaration_path.identifier),
-			false => None,
+		match self {
+			TypeResolution::Template => None,
+			TypeResolution::Instance(StructurePath(path), parameters) => {
+				let is_intrinsic = path.module_path == ModulePath::intrinsic();
+				match is_intrinsic && parameters.is_empty() {
+					true => Intrinsic::parse(&path.identifier),
+					false => None,
+				}
+			}
 		}
 	}
 
-	pub fn inference(&self) -> Arc<InferenceType> {
-		let TypeResolution(structure, resolutions) = self;
-		let inferences = resolutions.iter().map(Self::inference).collect();
-		Arc::new(InferenceType::Instance(structure.clone(), inferences))
+	pub fn inference(&self, engine: &mut TypeEngine) -> Arc<InferenceType> {
+		match self {
+			TypeResolution::Template => engine.new_variable_type(),
+			TypeResolution::Instance(structure, resolutions) => {
+				let inferences = resolutions.iter().map(|resolution|
+					resolution.inference(engine)).collect();
+				Arc::new(InferenceType::Instance(structure.clone(), inferences))
+			}
+		}
+	}
+}
+
+impl fmt::Display for TypeResolution {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			TypeResolution::Template => write!(f, "$"),
+			TypeResolution::Instance(structure, resolutions) => {
+				write!(f, "{}", structure)?;
+				match resolutions.split_last() {
+					None => Ok(()),
+					Some((last, slice)) => {
+						write!(f, "<")?;
+						slice.iter().try_for_each(|resolution| write!(f, "{}, ", resolution))?;
+						write!(f, "{}>", last)
+					}
+				}
+			}
+		}
 	}
 }
 

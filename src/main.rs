@@ -34,25 +34,6 @@ fn main() {
 
 	let context = &Context::default();
 	context.modules_pending.insert(ModulePath::root(), module);
-	let _ = context.emit(crate::node::structure(context, &Spanned::new(Arc::new(
-		StructurePath(crate::declaration::DeclarationPath {
-			module_path: ModulePath::root().push("vector".into()).push("vector".into()),
-			identifier: "Vector".into(),
-		})), Span::INTERNAL)));
-
-//	let result = context.emit(crate::parser::function(context, &Spanned::new(Arc::new(
-//		FunctionPath(crate::declaration::DeclarationPath {
-//			module_path: ModulePath::root().push("vector".into()).push("vector".into()),
-//			identifier: "reflect".into(),
-//		})), Span::INTERNAL)));
-//	result.map(|result| println!("{:#?}", result));
-
-	let result = context.emit(crate::basic::function(context, &Spanned::new(Arc::new(
-		FunctionPath(crate::declaration::DeclarationPath {
-			module_path: ModulePath::root().push("vector".into()).push("vector".into()),
-			identifier: "position".into(),
-		})), Span::INTERNAL), crate::basic::Reversibility::Entropic));
-	result.map(|result| println!("{}", result));
 
 	let parameters = Vec::new();
 	let result = context.emit(crate::evaluation::function(context, &Spanned::new(Arc::new(
@@ -62,9 +43,6 @@ fn main() {
 		})), Span::INTERNAL), parameters));
 	result.map(|result| println!("{}", result));
 
-	for error in context.errors.read().iter() {
-		crate::error::display(context, error);
-	}
-
+	context.errors.read().iter().for_each(|error| crate::error::display(context, error));
 	println!("{:#?}", context);
 }

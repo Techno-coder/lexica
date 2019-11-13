@@ -15,6 +15,7 @@ pub enum ParserError {
 	ExpectedIdentifier(Token),
 	ExpectedToken(Token, Token),
 	ExpectedExpressionTerminator(Token),
+	ExpectedStructureTerminator(Token),
 	ExpectedPathAssociation(Token),
 	DuplicateField(Arc<str>),
 }
@@ -34,6 +35,8 @@ impl fmt::Display for ParserError {
 				write!(f, "Expected token: {:?}, instead got: {:?}", expected, token),
 			ParserError::ExpectedExpressionTerminator(token) =>
 				write!(f, "Expected line break or mutation operator, instead got: {:?}", token),
+			ParserError::ExpectedStructureTerminator(token) =>
+				write!(f, "Expected separator or template declaration, instead got: {:?}", token),
 			ParserError::ExpectedPathAssociation(token) =>
 				write!(f, "Expected a function call or structure literal instead got: {:?}", token),
 			ParserError::DuplicateField(field) =>
@@ -65,21 +68,32 @@ pub fn expect(lexer: &mut Lexer, expected: Token) -> Result<Span, Diagnostic> {
 	}
 }
 
-/// Expects a specified token but does not consume it.
-pub fn expect_peek(lexer: &mut Lexer, expected: Token) -> Result<Span, Diagnostic> {
-	let token = lexer.peek();
-	match token.node == expected {
-		false => Err(Diagnostic::new(lexer.next().map(|token|
-			ParserError::ExpectedToken(expected, token)))),
-		true => Ok(token.span),
-	}
-}
-
 /// Ignores a contiguous sequence of tokens of the specified variant.
 pub fn skip(lexer: &mut Lexer, token: &Token) {
 	while &lexer.peek().node == token {
 		lexer.next();
 	}
+}
+
+/// Parses a separated and terminated list of elements.
+/// Returns true if the list separator was trailing.
+/// The list terminator is not consumed.
+pub fn list<T, F, E>(lexer: &mut Lexer, terminator: Token, separator: Token, element: &mut F)
+                     -> Result<(Vec<T>, bool), E> where F: FnMut(&mut Lexer) -> Result<T, E> {
+	let mut trailing = false;
+	let mut elements = Vec::new();
+	while lexer.peek().node != terminator {
+		trailing = false;
+		elements.push(element(lexer)?);
+		match lexer.peek().node == separator {
+			false => break,
+			true => {
+				trailing = true;
+				lexer.next();
+			}
+		}
+	}
+	Ok((elements, trailing))
 }
 
 pub fn pattern<F, T>(lexer: &mut Lexer, terminal: &mut F) -> Result<Spanned<Pattern<T>>, Diagnostic>
@@ -88,24 +102,11 @@ pub fn pattern<F, T>(lexer: &mut Lexer, terminal: &mut F) -> Result<Spanned<Patt
 	let token_span = token.span;
 	Ok(match token.node {
 		Token::ParenthesisOpen => {
-			lexer.next();
-			let mut elements = Vec::new();
-			let mut trailing_separator = false;
-			while lexer.peek().node != Token::ParenthesisClose {
-				trailing_separator = false;
-				elements.push(pattern(lexer, terminal).map_err(|diagnostic|
-					diagnostic.note("In parsing a tuple pattern"))?.node);
-				match lexer.peek().node {
-					Token::ListSeparator => {
-						trailing_separator = true;
-						lexer.next();
-					}
-					_ => break,
-				}
-			}
-
+			let (mut elements, trailing) = list(lexer.consume(), Token::ParenthesisClose,
+				Token::ListSeparator, &mut |lexer| Ok(pattern(lexer, terminal).map_err(|diagnostic|
+					diagnostic.note("In parsing a tuple pattern"))?.node))?;
 			let end_span = super::expect(lexer, Token::ParenthesisClose)?;
-			Spanned::new(match trailing_separator {
+			Spanned::new(match trailing {
 				false if elements.len() == 1 => match elements.pop().unwrap() {
 					Pattern::Terminal(terminal) => Pattern::Terminal(terminal),
 					_ => Pattern::Tuple(elements),

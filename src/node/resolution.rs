@@ -50,7 +50,11 @@ fn resolve_ascriptions(context: &Context, module_context: &ModuleContext,
 fn resolve_ascription(context: &Context, module_context: &ModuleContext,
                       ascription: &mut Spanned<Ascription>) -> Result<(), Diagnostic> {
 	let declaration_path = match &mut ascription.node {
-		Ascription::Structure(StructurePath(declaration_path)) => declaration_path,
+		Ascription::Structure(StructurePath(declaration_path), templates) => {
+			templates.iter_mut().try_for_each(|template|
+				resolve_ascriptions(context, module_context, template))?;
+			declaration_path
+		}
 		_ => return Ok(()),
 	};
 
