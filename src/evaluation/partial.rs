@@ -33,7 +33,8 @@ pub fn partial_function(context: &Context, function_path: &Spanned<Arc<FunctionP
 				expression_key, HashMap::new()).map_err(|diagnostic|
 				diagnostic.note(format!("Invoked from: {}", span.location(context))))?;
 			function.context.apply(expression_key, |_, expression|
-				expression.node = Expression::Item(item));
+				Ok(expression.node = Expression::Item(item.collapse()
+					.map_err(|error| Diagnostic::new(Spanned::new(error, span)))?)))?;
 		}
 	}
 

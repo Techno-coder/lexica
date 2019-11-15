@@ -11,7 +11,7 @@ type LexerTokenizer<'a> = Peekable<LexerTokenize<'a>>;
 
 /// Resolves indentation into semantic blocks.
 /// Emits `End` tokens upon stream exhaustion.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IndentLexer<'a> {
 	lexer: LexerTokenizer<'a>,
 	end_token: Spanned<LexerToken>,

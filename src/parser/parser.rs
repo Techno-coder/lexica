@@ -28,17 +28,17 @@ impl fmt::Display for ParserError {
 			ParserError::UndefinedStructure(path) =>
 				write!(f, "Structure: {}, is not defined", path),
 			ParserError::ExpectedExpression(token) =>
-				write!(f, "Expected an expression, instead got: {:?}", token),
+				write!(f, "Expected an expression, instead got token: {:?}", token),
 			ParserError::ExpectedIdentifier(token) =>
-				write!(f, "Expected an identifier, instead got: {:?}", token),
+				write!(f, "Expected an identifier, instead got token: {:?}", token),
 			ParserError::ExpectedToken(expected, token) =>
-				write!(f, "Expected token: {:?}, instead got: {:?}", expected, token),
+				write!(f, "Expected token: {:?}, instead got token: {:?}", expected, token),
 			ParserError::ExpectedExpressionTerminator(token) =>
-				write!(f, "Expected line break or mutation operator, instead got: {:?}", token),
+				write!(f, "Expected line break or mutation operator, instead got token: {:?}", token),
 			ParserError::ExpectedStructureTerminator(token) =>
-				write!(f, "Expected separator or template declaration, instead got: {:?}", token),
+				write!(f, "Expected separator or template declaration, instead got token: {:?}", token),
 			ParserError::ExpectedPathAssociation(token) =>
-				write!(f, "Expected a function call or structure literal instead got: {:?}", token),
+				write!(f, "Expected a function call or structure literal instead got token: {:?}", token),
 			ParserError::DuplicateField(field) =>
 				write!(f, "Field with identifier: {}, has already been defined", field),
 		}

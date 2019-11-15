@@ -10,7 +10,7 @@ use super::{BasicContext, Component, Compound, Instance, Item, Location, Project
 
 pub fn binding(context: &mut BasicContext, mut component: Component,
                pattern: &BindingPattern, location: Location) -> Component {
-	match &pattern {
+	match pattern {
 		Pattern::Wildcard => panic!("Wildcard binding is invalid"),
 		Pattern::Terminal(terminal) => {
 			let BindingVariable(variable, _) = terminal.node.clone();
@@ -31,7 +31,7 @@ pub fn binding(context: &mut BasicContext, mut component: Component,
 
 pub fn explicit_drop(context: &mut BasicContext, mut component: Component, value: &Value,
                      pattern: &VariablePattern, location: Location) -> Component {
-	match &pattern {
+	match pattern {
 		Pattern::Wildcard => panic!("Wildcard explicit drop is invalid"),
 		Pattern::Terminal(terminal) => {
 			let value = Value::Location(location);

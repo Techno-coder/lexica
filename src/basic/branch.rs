@@ -63,7 +63,7 @@ pub struct Divergence {
 
 impl Divergence {
 	pub fn truth(discriminant: Value, target: NodeTarget, default: NodeTarget) -> Self {
-		let branches = vec![(Item::Truth(true).into(), target)];
+		let branches = vec![(Discriminant::item(Item::Truth(true)), target)];
 		Divergence { discriminant, branches, default }
 	}
 
@@ -93,15 +93,15 @@ impl fmt::Display for Divergence {
 #[derive(Clone, PartialEq)]
 pub struct Discriminant(pub u64);
 
-impl From<Item> for Discriminant {
-	fn from(object: Item) -> Self {
-		Discriminant(match object {
+impl Discriminant {
+	pub fn item(item: Item) -> Self {
+		Discriminant(match item {
 			Item::Truth(truth) => match truth {
 				false => 0,
 				true => !0,
 			},
 			Item::Unsigned64(value) => value,
-			_ => panic!("Invalid discriminant object"),
+			_ => panic!("Invalid discriminant item"),
 		})
 	}
 }

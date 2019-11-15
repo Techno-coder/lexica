@@ -6,7 +6,8 @@ use crate::basic::Item;
 use crate::declaration::{FunctionPath, StructurePath};
 use crate::span::{Span, Spanned};
 
-use super::{AscriptionPattern, BindingPattern, ExpressionPattern, Variable, VariablePattern};
+use super::{AscriptionPattern, BindingPattern, ExpressionPattern, Mutability,
+	Variable, VariablePattern};
 
 pub type ConditionStart = ExpressionKey;
 pub type ConditionEnd = ExpressionKey;
@@ -52,12 +53,17 @@ pub enum Execution {
 #[derive(Debug, Clone)]
 pub enum UnaryOperator {
 	Negate,
+//	Dereference,
+	Reference(Mutability),
 }
 
 impl fmt::Display for UnaryOperator {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			UnaryOperator::Negate => write!(f, "-"),
+//			UnaryOperator::Dereference => write!(f, "*"),
+			UnaryOperator::Reference(Mutability::Immutable) => write!(f, "&"),
+			UnaryOperator::Reference(Mutability::Mutable) => write!(f, "~&"),
 		}
 	}
 }

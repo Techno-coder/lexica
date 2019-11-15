@@ -6,7 +6,7 @@ use super::token::{LexerToken, Token};
 
 /// Parses a string into lexer tokens.
 /// Annotates string slices provided by `SourceSplit`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LexerTokenize<'a> {
 	source: SourceSplit<'a>,
 }
@@ -35,6 +35,7 @@ impl<'a> Iterator for LexerTokenize<'a> {
 				"loop" => Token::Loop,
 				"drop" => Token::Drop,
 				"if" => Token::If,
+				"&" => Token::Reference,
 				"#" => Token::Compile,
 				"_" => Token::Wildcard,
 				"(" => Token::ParenthesisOpen,

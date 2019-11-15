@@ -7,7 +7,7 @@ use crate::inference::TypeResolution;
 use crate::intrinsic::Intrinsic;
 
 #[derive(Clone, PartialEq)]
-pub enum Item {
+pub enum Item<T = Instance> {
 	Truth(bool),
 	Signed8(i8),
 	Signed16(i16),
@@ -17,7 +17,7 @@ pub enum Item {
 	Unsigned16(u16),
 	Unsigned32(u32),
 	Unsigned64(u64),
-	Instance(Instance),
+	Instance(T),
 	Uninitialised,
 	Unit,
 }
@@ -55,7 +55,7 @@ impl Item {
 	}
 }
 
-impl fmt::Display for Item {
+impl<T> fmt::Display for Item<T> where T: fmt::Display {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Item::Truth(truth) => write!(f, "{}", truth),
@@ -74,7 +74,7 @@ impl fmt::Display for Item {
 	}
 }
 
-impl fmt::Debug for Item {
+impl<T> fmt::Debug for Item<T> where T: fmt::Debug {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Item::Truth(truth) => write!(f, "Truth({})", truth),
@@ -86,7 +86,7 @@ impl fmt::Debug for Item {
 			Item::Unsigned16(integer) => write!(f, "Unsigned16({})", integer),
 			Item::Unsigned32(integer) => write!(f, "Unsigned32({})", integer),
 			Item::Unsigned64(integer) => write!(f, "Unsigned64({})", integer),
-			Item::Instance(instance) => write!(f, "Instance({})", instance),
+			Item::Instance(instance) => write!(f, "Instance({:?})", instance),
 			Item::Uninitialised => write!(f, "Uninitialised"),
 			Item::Unit => write!(f, "Unit"),
 		}
@@ -96,7 +96,7 @@ impl fmt::Debug for Item {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Instance {
 	pub type_resolution: TypeResolution,
-	pub fields: HashMap<Arc<str>, Item>,
+	pub fields: HashMap<Arc<str>, Item<Self>>,
 }
 
 impl Instance {

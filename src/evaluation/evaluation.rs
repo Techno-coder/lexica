@@ -9,7 +9,7 @@ use crate::error::{CompileError, Diagnostic};
 use crate::node::{ExpressionKey, Variable};
 use crate::span::Spanned;
 
-use super::{EvaluationContext, EvaluationFrame};
+use super::{EvaluationContext, EvaluationItem, ValueFrame};
 
 #[derive(Debug)]
 pub enum EvaluationError {
@@ -39,29 +39,23 @@ impl From<EvaluationError> for CompileError {
 
 /// Fully evaluates a function and provides the return value.
 pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
-                arguments: Vec<Item>) -> Result<Item, Diagnostic> {
-	let function = crate::basic::function(context,
-		function_path, Reversibility::Entropic)?;
-
-	let mut frame = EvaluationFrame::new(function);
-	arguments.into_iter().enumerate().for_each(|(index, item)|
-		frame.context.insert(Variable::new_temporary(index), item));
-
-	let context = &mut EvaluationContext::new(context, Reversibility::Entropic, frame);
+                arguments: Vec<Item>) -> Result<EvaluationItem, Diagnostic> {
+	let mut value = ValueFrame::default();
+	arguments.iter().enumerate().for_each(|(index, item)| value.items
+		.insert(Variable::new_temporary(index), EvaluationItem::item(item)).unwrap_none());
+	let function = crate::basic::function(context, function_path, Reversibility::Entropic)?;
+	let mut context = EvaluationContext::new(context, Reversibility::Entropic, function, value)?;
 	loop { if let Some(item) = context.advance()? { return Ok(item); } }
 }
 
 /// Fully evaluates an expression and provides the expression result.
 pub fn expression(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
                   expression: &ExpressionKey, variables: HashMap<Variable, Item>)
-                  -> Result<Item, Diagnostic> {
-	let function = crate::basic::expression(context,
-		function_path, expression, Reversibility::Entropic)?;
-
-	let mut frame = EvaluationFrame::new(Arc::new(function));
+                  -> Result<EvaluationItem, Diagnostic> {
+	let mut value = ValueFrame::default();
 	variables.into_iter().for_each(|(variable, item)|
-		frame.context.insert(variable, item));
-
-	let context = &mut EvaluationContext::new(context, Reversibility::Entropic, frame);
+		value.items.insert(variable, EvaluationItem::item(&item)).unwrap_none());
+	let function = crate::basic::expression(context, function_path, expression, Reversibility::Entropic)?;
+	let mut context = EvaluationContext::new(context, Reversibility::Entropic, Arc::new(function), value)?;
 	loop { if let Some(item) = context.advance()? { return Ok(item); } }
 }

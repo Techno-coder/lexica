@@ -5,7 +5,7 @@ use super::space_lexer::SpaceLexer;
 use super::Token;
 
 /// Adds one token lookahead.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Lexer<'a> {
 	lexer: SpaceLexer<'a>,
 	token: Option<Spanned<Token>>,

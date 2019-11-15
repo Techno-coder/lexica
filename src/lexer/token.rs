@@ -20,6 +20,7 @@ pub enum Token {
 	ReturnSeparator,
 	PathSeparator,
 	Wildcard,
+	Reference,
 	Compile,
 	Let,
 	Loop,

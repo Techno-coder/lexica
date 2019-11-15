@@ -41,7 +41,7 @@ fn main() {
 			module_path: ModulePath::root(),
 			identifier: "main".into(),
 		})), Span::INTERNAL), parameters));
-	result.map(|result| println!("{}", result));
+	result.map(|result| println!("{:#?}", result));
 
 	context.errors.read().iter().for_each(|error| crate::error::display(context, error));
 	println!("{:#?}", context);

@@ -91,7 +91,7 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 		Token::Truth(truth) => Ok(context
 			.register(Spanned::new(Expression::Truth(truth), token.span))),
 		Token::Identifier(identifier) => match lexer.peek().node {
-			Token::ParenthesisOpen | Token::Separator | Token::PathSeparator => {
+			Token::ParenthesisOpen | Token::PathSeparator => {
 				let identifier = Spanned::new(identifier, token.span);
 				let path = super::expression::path_identifier(lexer, identifier)?;
 				match lexer.peek().node {
@@ -99,16 +99,24 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 						let function_path = path.map(|path| FunctionPath(path));
 						function_call(context, lexer, Execution::Runtime, function_path)
 					}
-					Token::Separator => {
-						let structure_path = path.map(|path| StructurePath(path));
-						super::structure::literal(context, lexer, structure_path)
-					}
 					_ => {
 						let token = lexer.next();
 						let error = ParserError::ExpectedPathAssociation(token.node);
 						Err(Diagnostic::new(Spanned::new(error, token.span)))
 					}
 				}
+			}
+			Token::Separator => {
+				let recover = &mut lexer.clone();
+				let identifier = Spanned::new(identifier, token.span);
+				let path = super::expression::path_identifier(recover, identifier.clone())?;
+				let structure_path = path.map(|path| StructurePath(path));
+
+				Ok(match super::structure::literal(context, recover, structure_path) {
+					Err(_) => context.register(identifier.map(|identifier|
+						Expression::Variable(Variable::new(identifier)))),
+					Ok(literal) => literal,
+				})
 			}
 			_ => {
 				let expression = Expression::Variable(Variable::new(identifier));

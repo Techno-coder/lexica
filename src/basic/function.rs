@@ -28,7 +28,7 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
 	let mut component = function.function_type.parameters.iter().map(|parameter| &parameter.node)
 		.fold(basic_context.component(), |component, Parameter(pattern, _)| {
 			let location = Location::new(basic_context.temporary());
-			super::pattern::binding(&mut basic_context, component, pattern, location)
+			super::pattern::binding(&mut basic_context, component, &pattern, location)
 		});
 
 	let type_context = crate::inference::function(context, function_path)?;

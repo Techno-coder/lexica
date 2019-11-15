@@ -12,8 +12,8 @@ pub fn termination_loop(context: &mut FunctionContext, lexer: &mut Lexer) -> Res
 	};
 
 	super::expect(lexer, Token::Implies)?;
-	let condition_end = super::root_value(context, lexer).map_err(|diagnostic|
-		diagnostic.note("In parsing loop end condition"))?;
+	let condition_end = super::root_value(context, lexer)
+		.map_err(|diagnostic| diagnostic.note("In parsing loop end condition"))?;
 	let span = initial_span.merge(super::expect(lexer, Token::Separator)?);
 	let expression = super::root_value(context, lexer)?;
 

@@ -3,9 +3,8 @@ module vector
 use crate::vector::vector::*
 
 fn main() -> u64:
-	#crate::collapse((1337, 1337))
-	let test: Pair<u64> = Pair: first: 2, second: 3
-	identity(pair_add(test))
+	#fibonacci(35)
+//	#reference(&1337)
 
 fn fibonacci(n: u64) -> u64:
 	let ~first = 1
@@ -39,22 +38,9 @@ fn summation(n: u64) -> u64:
 		counter += 1
 	summation
 
-fn collapse((a, b): (u64, u64)) -> u64:
-	a * b
-
 fn absolute_value(x: i32) -> i32:
 	if x < 0: x = -x
 	x
 
-data Pair<$Type>:
-	first: $Type,
-	second: $Type,
-
-fn identity(value: $Value) -> $Value:
-	value
-
-fn add(left: $Value, right: $Value) -> $Value:
-	left + right
-
-fn pair_add(pair: Pair<$Value>) -> $Value:
-	pair.first + pair.second
+fn reference(x: &u64) -> u64:
+	*x

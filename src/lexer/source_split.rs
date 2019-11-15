@@ -7,7 +7,7 @@ use crate::span::{Span, Spanned};
 pub const SINGULARITIES: &[char] = &['\t', '\n', '(', ')', '~', ',', '*', '.', '$'];
 
 /// Splits a source string into spanned string slices.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SourceSplit<'a> {
 	string: &'a str,
 	characters: Peekable<CharIndices<'a>>,

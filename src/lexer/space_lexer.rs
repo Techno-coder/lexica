@@ -6,7 +6,7 @@ use super::indent_lexer::IndentLexer;
 
 /// Replaces `LineBreak` followed by `BlockOpen` with `BlockOpen`.
 /// Ignores `LineBreak` and block changes within brackets.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpaceLexer<'a> {
 	lexer: IndentLexer<'a>,
 	brackets: Vec<Token>,
