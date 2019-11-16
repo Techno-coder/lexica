@@ -20,6 +20,7 @@ pub enum InferenceError {
 	ResolvedTemplate(Arc<str>, StructurePath),
 	TemplateProjection(Projection),
 	TemplateUnification(Arc<InferenceType>, Arc<InferenceType>),
+	Dereference(Arc<InferenceType>),
 }
 
 impl fmt::Display for InferenceError {
@@ -43,6 +44,8 @@ impl fmt::Display for InferenceError {
 				write!(f, "Projection: {:?}, cannot be performed on a template", projection),
 			InferenceError::TemplateUnification(left, right) =>
 				write!(f, "Templates: {}, and: {}, cannot match", left, right),
+			InferenceError::Dereference(inference) =>
+				write!(f, "Dereference is not valid for type: {}", inference),
 		}
 	}
 }

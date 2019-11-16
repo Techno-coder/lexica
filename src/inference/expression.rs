@@ -120,6 +120,7 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 				UnaryOperator::Negate => inference,
 				UnaryOperator::Reference(permission) =>
 					Arc::new(InferenceType::Reference(permission, inference)),
+				UnaryOperator::Dereference => engine.new_variable_type(),
 			}
 		}
 		Expression::Binary(operator, left, right) => {

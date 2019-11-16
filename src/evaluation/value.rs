@@ -58,18 +58,7 @@ impl ValueStack {
 	}
 
 	pub fn location(&mut self, location: &Location) -> &mut EvaluationItem {
-		let item = self.frame().items.get_mut(&location.variable).unwrap_or_else(||
-			panic!("Variable: {}, does not exist in frame", location.variable));
-		location.projections.iter().fold(item, |item, projection| match projection {
-			Projection::Field(field) => match item {
-				EvaluationItem::Item(item) => match item {
-					Item::Instance(instance) => instance.fields.get_mut(field)
-						.unwrap_or_else(|| panic!("Field: {}, does not exist on instance", field)),
-					_ => panic!("Field access can only be performed on instance"),
-				},
-				EvaluationItem::Reference(_, _) => panic!("Field access cannot be performed on reference"),
-			},
-		})
+		self.frame().location(location)
 	}
 
 	pub fn frame_index(&mut self) -> usize {
@@ -84,6 +73,23 @@ impl ValueStack {
 #[derive(Debug, Default)]
 pub struct ValueFrame {
 	pub items: HashMap<Variable, EvaluationItem>,
+}
+
+impl ValueFrame {
+	pub fn location(&mut self, location: &Location) -> &mut EvaluationItem {
+		let item = self.items.get_mut(&location.variable).unwrap_or_else(||
+			panic!("Variable: {}, does not exist in frame", location.variable));
+		location.projections.iter().fold(item, |item, projection| match projection {
+			Projection::Field(field) => match item {
+				EvaluationItem::Item(item) => match item {
+					Item::Instance(instance) => instance.fields.get_mut(field)
+						.unwrap_or_else(|| panic!("Field: {}, does not exist on instance", field)),
+					_ => panic!("Field access can only be performed on instance"),
+				},
+				EvaluationItem::Reference(_, _) => panic!("Field access cannot be performed on reference"),
+			},
+		})
+	}
 }
 
 #[derive(Debug, Default)]

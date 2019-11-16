@@ -3,8 +3,11 @@ module vector
 use crate::vector::vector::*
 
 fn main() -> u64:
-	let test: ~&u64 = ~&3
-	#fibonacci(35)
+	let test = Test: reference: &35
+	fibonacci(*test.reference)
+
+data Test:
+	reference: &u64
 
 fn fibonacci(n: u64) -> u64:
 	let ~first = 1

@@ -86,7 +86,8 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 			.register(Spanned::new(Expression::Truth(truth), token.span))),
 		Token::Minus => unary(context, lexer,
 			Spanned::new(UnaryOperator::Negate, token.span)),
-		Token::Asterisk => unimplemented!(),
+		Token::Asterisk => unary(context, lexer,
+			Spanned::new(UnaryOperator::Dereference, token.span)),
 		Token::Reference => unary(context, lexer,
 			Spanned::new(UnaryOperator::Reference(Permission::Shared), token.span)),
 		Token::Unique => {
@@ -103,6 +104,8 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 						let function_path = path.map(|path| FunctionPath(path));
 						function_call(context, lexer, Execution::Runtime, function_path)
 					}
+					Token::Separator => super::structure::literal(context, lexer,
+						path.map(|path| StructurePath(path))),
 					_ => {
 						let token = lexer.next();
 						let error = ParserError::ExpectedPathAssociation(token.node);
@@ -119,7 +122,10 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 				Ok(match super::structure::literal(context, recover, structure_path) {
 					Err(_) => context.register(identifier.map(|identifier|
 						Expression::Variable(Variable::new(identifier)))),
-					Ok(literal) => literal,
+					Ok(literal) => {
+						std::mem::swap(lexer, recover);
+						literal
+					}
 				})
 			}
 			_ => {

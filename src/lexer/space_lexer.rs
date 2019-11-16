@@ -6,6 +6,7 @@ use super::indent_lexer::IndentLexer;
 
 /// Replaces `LineBreak` followed by `BlockOpen` with `BlockOpen`.
 /// Ignores `LineBreak` and block changes within brackets.
+/// Ignores repeated `LineBreak` tokens.
 #[derive(Debug, Clone)]
 pub struct SpaceLexer<'a> {
 	lexer: IndentLexer<'a>,
@@ -46,6 +47,10 @@ impl<'a> SpaceLexer<'a> {
 			let other = self.lexer.next();
 			match other.node {
 				Token::BlockOpen => return other,
+				Token::LineBreak => {
+					self.buffer = Some(other);
+					return self.next_token();
+				}
 				_ => self.buffer = Some(other),
 			}
 		}

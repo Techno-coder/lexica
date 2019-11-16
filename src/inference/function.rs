@@ -44,11 +44,12 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 	Ok(type_context)
 }
 
-/// Resolves field and method call types.
+/// Resolves field and method call and dereference types.
 fn projection(context: &Context, function: &FunctionContext, environment: &mut Environment,
               engine: &mut TypeEngine) -> Result<(), Diagnostic> {
 	for (index, expression) in function.expressions.iter().enumerate() {
 		let expression_key = ExpressionKey(index);
+		let expression_span = expression.span;
 		match &expression.node {
 			Expression::Field(expression, field) => {
 				let span = function[expression].span;
@@ -69,7 +70,7 @@ fn projection(context: &Context, function: &FunctionContext, environment: &mut E
 							let error = InferenceError::UndefinedField(path.node, field.node.clone());
 							Diagnostic::new(Spanned::new(error, field.span))
 						}).map(|pattern| super::pattern::ascription(environment, engine, templates, pattern))?;
-						engine.unify(field_type, environment[&expression_key].clone())
+						engine.unify(environment[&expression_key].clone(), field_type)
 					}
 					InferenceType::Variable(variable) =>
 						Err(InferenceError::Unresolved(*variable)),
@@ -78,7 +79,18 @@ fn projection(context: &Context, function: &FunctionContext, environment: &mut E
 						Err(InferenceError::TemplateProjection(projection))
 					}
 					InferenceType::Reference(_, _) => unreachable!(),
-				}.map_err(|error| Diagnostic::new(Spanned::new(error, span)))?;
+				}.map_err(|error| Diagnostic::new(Spanned::new(error, expression_span)))?;
+			}
+			Expression::Unary(operator, expression) => match operator.node {
+				UnaryOperator::Dereference => {
+					let inference = engine.find(environment[expression].clone());
+					match &*inference {
+						InferenceType::Reference(_, inference) =>
+							engine.unify(environment[&expression_key].clone(), inference.clone()),
+						_ => Err(InferenceError::Dereference(inference)),
+					}.map_err(|error| Diagnostic::new(Spanned::new(error, expression_span)))?;
+				}
+				_ => (),
 			}
 			_ => (),
 		}

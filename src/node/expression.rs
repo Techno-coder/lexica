@@ -53,7 +53,7 @@ pub enum Execution {
 #[derive(Debug, Clone)]
 pub enum UnaryOperator {
 	Negate,
-//	Dereference,
+	Dereference,
 	Reference(Permission),
 }
 
@@ -61,7 +61,7 @@ impl fmt::Display for UnaryOperator {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			UnaryOperator::Negate => write!(f, "-"),
-//			UnaryOperator::Dereference => write!(f, "*"),
+			UnaryOperator::Dereference => write!(f, "*"),
 			UnaryOperator::Reference(Permission::Shared) => write!(f, "&"),
 			UnaryOperator::Reference(Permission::Unique) => write!(f, "~&"),
 		}

@@ -34,6 +34,11 @@ fn item(context: &mut ValueContext, compound: &Compound) -> Result<EvaluationIte
 	Ok(match compound {
 		Compound::Value(value) => context.value(value),
 		Compound::Unary(operator, value) => match operator {
+			UnaryOperator::Dereference => match context.value(value) {
+				EvaluationItem::Reference(frame, location) =>
+					context.values.frames[frame].location(&location).clone(),
+				_ => panic!("Cannot dereference item that is not reference"),
+			}
 			UnaryOperator::Reference(_) => match value {
 				Value::Location(location) =>
 					EvaluationItem::Reference(context.frame_index(), location.clone()),
