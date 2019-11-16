@@ -114,8 +114,14 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 			let return_ascription = &function_type.return_type.node;
 			pattern::ascription(environment, engine, templates, return_ascription)
 		}
-		Expression::Unary(_, expression_key) =>
-			expression(context, function, environment, engine, expression_key)?,
+		Expression::Unary(operator, expression_key) => {
+			let inference = expression(context, function, environment, engine, expression_key)?;
+			match operator.node {
+				UnaryOperator::Negate => inference,
+				UnaryOperator::Reference(permission) =>
+					Arc::new(InferenceType::Reference(permission, inference)),
+			}
+		}
 		Expression::Binary(operator, left, right) => {
 			let left = expression(context, function, environment, engine, left)?;
 			let right = expression(context, function, environment, engine, right)?;

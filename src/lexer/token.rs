@@ -20,6 +20,7 @@ pub enum Token {
 	ReturnSeparator,
 	PathSeparator,
 	Wildcard,
+	Asterisk,
 	Reference,
 	Compile,
 	Let,
@@ -35,10 +36,10 @@ pub enum Token {
 	Implies,
 	Swap,
 	Template,
-	Mutable,
+	Unique,
 	Add,
 	Minus,
-	Asterisk,
+	Multiply,
 	AddAssign,
 	MinusAssign,
 	MultiplyAssign,
@@ -46,7 +47,7 @@ pub enum Token {
 	End,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LexerToken {
 	Token(Token),
 	Indent,

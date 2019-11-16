@@ -5,6 +5,7 @@ use crate::basic::Projection;
 use crate::declaration::{ModulePath, StructurePath};
 use crate::error::CompileError;
 use crate::intrinsic::Intrinsic;
+use crate::node::Permission;
 
 use super::TypeEngine;
 
@@ -65,6 +66,7 @@ impl fmt::Display for TypeVariable {
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum InferenceType {
 	Instance(StructurePath, Vec<Arc<InferenceType>>),
+	Reference(Permission, Arc<InferenceType>),
 	Variable(TypeVariable),
 	Template(Arc<str>),
 }
@@ -74,6 +76,7 @@ impl InferenceType {
 		match self {
 			InferenceType::Instance(_, variables) => variables.iter()
 				.try_for_each(|type_variable| type_variable.occurs(variable)),
+			InferenceType::Reference(_, inference) => inference.occurs(variable),
 			InferenceType::Template(_) => Ok(()),
 			InferenceType::Variable(type_variable) => {
 				match type_variable == &variable {
@@ -90,6 +93,10 @@ impl fmt::Display for InferenceType {
 		match self {
 			InferenceType::Variable(variable) => write!(f, "{}", variable),
 			InferenceType::Template(variable) => write!(f, "${}", variable),
+			InferenceType::Reference(permission, inference) => match permission {
+				Permission::Shared => write!(f, "&{}", inference),
+				Permission::Unique => write!(f, "~&{}", inference),
+			}
 			InferenceType::Instance(structure, variables) => {
 				write!(f, "{}", structure)?;
 				match variables.split_last() {
@@ -108,13 +115,14 @@ impl fmt::Display for InferenceType {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeResolution {
 	Instance(StructurePath, Vec<TypeResolution>),
+	Reference(Permission, Box<TypeResolution>),
 	Template,
 }
 
 impl TypeResolution {
 	pub fn intrinsic(&self) -> Option<Intrinsic> {
 		match self {
-			TypeResolution::Template => None,
+			TypeResolution::Template | TypeResolution::Reference(_, _) => None,
 			TypeResolution::Instance(StructurePath(path), parameters) => {
 				let is_intrinsic = path.module_path == ModulePath::intrinsic();
 				match is_intrinsic && parameters.is_empty() {
@@ -128,6 +136,8 @@ impl TypeResolution {
 	pub fn inference(&self, engine: &mut TypeEngine) -> Arc<InferenceType> {
 		match self {
 			TypeResolution::Template => engine.new_variable_type(),
+			TypeResolution::Reference(permission, resolution) =>
+				Arc::new(InferenceType::Reference(*permission, resolution.inference(engine))),
 			TypeResolution::Instance(structure, resolutions) => {
 				let inferences = resolutions.iter().map(|resolution|
 					resolution.inference(engine)).collect();
@@ -141,6 +151,10 @@ impl fmt::Display for TypeResolution {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			TypeResolution::Template => write!(f, "$"),
+			TypeResolution::Reference(permission, resolution) => match permission {
+				Permission::Shared => write!(f, "&{}", resolution),
+				Permission::Unique => write!(f, "~&{}", resolution),
+			}
 			TypeResolution::Instance(structure, resolutions) => {
 				write!(f, "{}", structure)?;
 				match resolutions.split_last() {

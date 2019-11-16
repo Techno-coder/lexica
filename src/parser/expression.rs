@@ -4,7 +4,7 @@ use crate::declaration::{DeclarationPath, ModulePath, StructurePath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
 use crate::node::{Arithmetic, Ascription, BindingVariable, Expression, ExpressionKey,
-	FunctionContext, Mutability, MutationKind, Variable};
+	FunctionContext, Mutability, MutationKind, Permission, Variable};
 use crate::span::{Span, Spanned};
 
 use super::ParserError;
@@ -85,7 +85,7 @@ fn variable(lexer: &mut Lexer) -> Result<Spanned<Variable>, Diagnostic> {
 
 pub fn binding_variable(lexer: &mut Lexer) -> Result<Spanned<BindingVariable>, Diagnostic> {
 	let mut mutability = Mutability::Immutable;
-	if lexer.peek().node == Token::Mutable {
+	if lexer.peek().node == Token::Unique {
 		mutability = Mutability::Mutable;
 		lexer.next();
 	}
@@ -122,6 +122,13 @@ pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> 
 	Ok(match lexer.peek().node {
 		Token::Template => super::identifier(lexer.consume())?
 			.map(|identifier| Ascription::Template(identifier)),
+		Token::Reference => super::pattern(lexer.consume(), &mut ascription)?
+			.map(|ascription| Ascription::Reference(Permission::Shared, Box::new(ascription))),
+		Token::Unique => {
+			super::expect(lexer.consume(), Token::Reference)?;
+			super::pattern(lexer, &mut ascription)?.map(|ascription|
+				Ascription::Reference(Permission::Unique, Box::new(ascription)))
+		}
 		_ => {
 			let path = path(lexer).map(|path| path.map(|path| StructurePath(path)))?;
 			Spanned::new(Ascription::Structure(path.node, match lexer.peek().node {

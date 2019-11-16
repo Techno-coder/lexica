@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::inference::TypeContext;
-use crate::node::{BindingVariable, Expression, ExpressionKey,
-	FunctionContext, MutationKind, Pattern};
+use crate::node::{BindingVariable, Expression, ExpressionKey, FunctionContext,
+	MutationKind, Pattern, UnaryOperator};
 use crate::span::Spanned;
 
 use super::{BasicContext, Component, Compound, Direction, Instance, Item,
@@ -138,7 +138,14 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 		}
 		Expression::Unary(operator, expression) => {
 			let variable = context.temporary();
-			let (value, component) = basic(function, type_context, context, expression);
+			let (mut value, mut component) = basic(function, type_context, context, expression);
+			if let (UnaryOperator::Reference(_), Value::Item(_)) = (&operator.node, &value) {
+				let variable = context.temporary();
+				let statement = Statement::Binding(variable.clone(), Compound::Value(value));
+				component = context.push(component, Spanned::new(statement, span));
+				value = Value::Location(Location::new(variable));
+			}
+
 			let compound = Compound::Unary(operator.node.clone(), value);
 			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
 			(Value::Location(Location::new(variable)), context.push(component, statement))

@@ -48,19 +48,16 @@ impl<'a> Iterator for SourceSplit<'a> {
 			return Some(self.slice(byte_start, byte_end));
 		}
 
-		if initial.is_whitespace() {
-			return self.next();
-		} else if let ('/', Some((_, '/'))) = (initial, self.characters.peek()) {
+		if let ('/', Some((_, '/'))) = (initial, self.characters.peek()) {
 			self.comment()?;
 			return self.next();
 		}
 
 		let mut byte_end: Option<usize> = None;
 		while let Some((index, character)) = self.characters.peek() {
-			let class_difference = is_identifier(&initial)
-				!= is_identifier(character);
-			if SINGULARITIES.contains(character) ||
-				character.is_whitespace() || class_difference {
+			let kind_difference = CharacterKind::kind(initial) !=
+				CharacterKind::kind(*character);
+			if SINGULARITIES.contains(character) || kind_difference {
 				byte_end = Some(*index);
 				break;
 			} else {
@@ -73,8 +70,22 @@ impl<'a> Iterator for SourceSplit<'a> {
 	}
 }
 
-fn is_identifier(character: &char) -> bool {
-	character == &'_' || !character.is_ascii_punctuation()
+#[derive(Debug, PartialEq)]
+enum CharacterKind {
+	Whitespace,
+	Identifier,
+	Operator,
+}
+
+impl CharacterKind {
+	pub fn kind(character: char) -> Self {
+		match character {
+			_ if character.is_whitespace() => CharacterKind::Whitespace,
+			_ if !character.is_ascii_punctuation() => CharacterKind::Identifier,
+			'_' => CharacterKind::Identifier,
+			_ => CharacterKind::Operator,
+		}
+	}
 }
 
 #[cfg(test)]
@@ -86,7 +97,8 @@ mod tests {
 		let string = "\tfn _identifier(argument: type):";
 		let lexemes: Vec<_> = SourceSplit::new(string, SourceKey::INTERNAL)
 			.map(|node| node.node).collect();
-		assert_eq!(&lexemes, &["\t", "fn", "_identifier", "(", "argument", ":", "type", ")", ":"]);
+		assert_eq!(&lexemes, &["\t", "fn", " ", "_identifier",
+			"(", "argument", ":", " ", "type", ")", ":"]);
 	}
 
 	#[test]

@@ -31,6 +31,10 @@ impl TypeEngine {
 				}
 			}
 			InferenceType::Template(_) => Ok(TypeResolution::Template),
+			InferenceType::Reference(permission, inference) => {
+				let resolution = Box::new(self.resolve(inference.clone())?);
+				Ok(TypeResolution::Reference(*permission, resolution))
+			}
 			InferenceType::Instance(structure, variables) => {
 				let variables: Result<_, _> = variables.iter()
 					.map(|variable| self.resolve(variable.clone())).collect();
@@ -43,6 +47,13 @@ impl TypeEngine {
 	             -> Result<(), InferenceError> {
 		let (left, right) = (self.find(left), self.find(right));
 		match (left.as_ref(), right.as_ref()) {
+			(InferenceType::Reference(left_permission, left_inference),
+				InferenceType::Reference(right_permission, right_inference)) => {
+				match left_permission == right_permission {
+					false => return Err(InferenceError::Unification(left, right)),
+					true => self.unify(left_inference.clone(), right_inference.clone())?,
+				}
+			}
 			(InferenceType::Template(_), InferenceType::Template(_)) => {
 				if left != right {
 					return Err(InferenceError::TemplateUnification(left, right));
@@ -59,8 +70,11 @@ impl TypeEngine {
 				self.union(right, left);
 			}
 			(_, InferenceType::Template(_)) => self.unify(right, left)?,
+			(_, InferenceType::Reference(_, _)) => self.unify(right, left)?,
 			(InferenceType::Template(template), InferenceType::Instance(structure, _)) =>
 				return Err(InferenceError::ResolvedTemplate(template.clone(), structure.clone())),
+			(InferenceType::Reference(_, _), InferenceType::Instance(_, _)) =>
+				return Err(InferenceError::Unification(left, right)),
 			(InferenceType::Instance(left_structure, left_variables),
 				InferenceType::Instance(right_structure, right_variables)) => {
 				let equivalent_arity = left_variables.len() == right_variables.len();

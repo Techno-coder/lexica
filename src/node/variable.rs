@@ -74,6 +74,7 @@ pub enum Mutability {
 #[derive(Clone)]
 pub enum Ascription {
 	Structure(StructurePath, Vec<AscriptionPattern>),
+	Reference(Permission, Box<AscriptionPattern>),
 	Template(Arc<str>),
 }
 
@@ -86,6 +87,9 @@ impl fmt::Debug for Ascription {
 impl fmt::Display for Ascription {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
+			Ascription::Template(template) => write!(f, "${}", template),
+			Ascription::Reference(Permission::Shared, ascription) => write!(f, "&{}", ascription),
+			Ascription::Reference(Permission::Unique, ascription) => write!(f, "~&{}", ascription),
 			Ascription::Structure(structure, templates) => match templates.split_last() {
 				None => write!(f, "{}", structure),
 				Some((last, slice)) => {
@@ -94,9 +98,14 @@ impl fmt::Display for Ascription {
 					write!(f, "{}>", last)
 				}
 			},
-			Ascription::Template(template) => write!(f, "${}", template),
 		}
 	}
+}
+
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub enum Permission {
+	Shared,
+	Unique,
 }
 
 #[derive(Debug, Clone)]

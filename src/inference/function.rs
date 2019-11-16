@@ -52,7 +52,12 @@ fn projection(context: &Context, function: &FunctionContext, environment: &mut E
 		match &expression.node {
 			Expression::Field(expression, field) => {
 				let span = function[expression].span;
-				match &*engine.find(environment[expression].clone()) {
+				let mut inference = engine.find(environment[expression].clone());
+				while let InferenceType::Reference(_, reference) = &*inference {
+					inference = engine.find(reference.clone());
+				}
+
+				match &*inference {
 					InferenceType::Instance(path, inferences) => {
 						let path = Spanned::new(Arc::new(path.clone()), span);
 						let structure = crate::node::structure(context, &path)?;
@@ -72,7 +77,8 @@ fn projection(context: &Context, function: &FunctionContext, environment: &mut E
 						let projection = Projection::Field(field.node.clone());
 						Err(InferenceError::TemplateProjection(projection))
 					}
-				}.map_err(|error| Diagnostic::new(Spanned::new(error, span)))?
+					InferenceType::Reference(_, _) => unreachable!(),
+				}.map_err(|error| Diagnostic::new(Spanned::new(error, span)))?;
 			}
 			_ => (),
 		}

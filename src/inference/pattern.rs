@@ -55,6 +55,10 @@ pub fn ascription(environment: &mut Environment, engine: &mut TypeEngine,
 		Pattern::Terminal(terminal) => match &terminal.node {
 			Ascription::Template(template) => templates.entry(template.clone())
 				.or_insert_with(|| engine.new_variable_type()).clone(),
+			Ascription::Reference(permission, reference) => {
+				let ascription = ascription(environment, engine, templates, reference);
+				Arc::new(InferenceType::Reference(*permission, ascription))
+			}
 			Ascription::Structure(structure, structure_templates) => {
 				let templates = structure_templates.iter().map(|template|
 					ascription(environment, engine, templates, template)).collect();
@@ -78,6 +82,10 @@ pub fn template_type(environment: &mut Environment, engine: &mut TypeEngine,
 		Pattern::Terminal(terminal) => match &terminal.node {
 			Ascription::Template(template) =>
 				Arc::new(InferenceType::Template(template.clone())),
+			Ascription::Reference(permission, reference) => {
+				let ascription = template_type(environment, engine, reference);
+				Arc::new(InferenceType::Reference(*permission, ascription))
+			}
 			Ascription::Structure(structure, templates) => {
 				let templates = templates.iter().map(|template|
 					template_type(environment, engine, template)).collect();

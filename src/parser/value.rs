@@ -1,8 +1,8 @@
 use crate::declaration::{FunctionPath, StructurePath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{Arithmetic, BinaryOperator, Execution, Expression,
-	ExpressionKey, FunctionContext, UnaryOperator, Variable};
+use crate::node::{Arithmetic, BinaryOperator, Execution, Expression, ExpressionKey,
+	FunctionContext, Permission, UnaryOperator, Variable};
 use crate::span::Spanned;
 
 use super::ParserError;
@@ -40,7 +40,7 @@ fn binder(context: &mut FunctionContext, lexer: &mut Lexer, left: ExpressionKey)
 		Token::Equality => BinaryOperator::Equality,
 		Token::Add => BinaryOperator::Arithmetic(Arithmetic::Add),
 		Token::Minus => BinaryOperator::Arithmetic(Arithmetic::Minus),
-		Token::Asterisk => BinaryOperator::Arithmetic(Arithmetic::Multiply),
+		Token::Multiply => BinaryOperator::Arithmetic(Arithmetic::Multiply),
 		_ => panic!("Invalid value binder: {:?}", binder.node),
 	};
 
@@ -54,7 +54,7 @@ fn token_precedence(token: &Token) -> usize {
 		Token::AngleLeft | Token::AngleRight => 2,
 		Token::LessEqual | Token::GreaterEqual => 2,
 		Token::Add | Token::Minus => 3,
-		Token::Asterisk => 4,
+		Token::Multiply => 4,
 		Token::Dot => 5,
 		_ => 0,
 	}
@@ -73,12 +73,6 @@ fn terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<Expressi
 			let function_path = super::expression::path(lexer)?.map(|path| FunctionPath(path));
 			function_call(context, lexer, Execution::Compile, function_path)
 		}
-		Token::Minus => {
-			let operator = Spanned::new(UnaryOperator::Negate, lexer.next().span);
-			let expression = root_value(context, lexer)?;
-			let span = operator.span.merge(context[&expression].span);
-			Ok(context.register(Spanned::new(Expression::Unary(operator, expression), span)))
-		}
 		_ => consume_terminal(context, lexer),
 	}
 }
@@ -90,6 +84,16 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 			.register(Spanned::new(Expression::Integer(integer), token.span))),
 		Token::Truth(truth) => Ok(context
 			.register(Spanned::new(Expression::Truth(truth), token.span))),
+		Token::Minus => unary(context, lexer,
+			Spanned::new(UnaryOperator::Negate, token.span)),
+		Token::Asterisk => unimplemented!(),
+		Token::Reference => unary(context, lexer,
+			Spanned::new(UnaryOperator::Reference(Permission::Shared), token.span)),
+		Token::Unique => {
+			super::expect(lexer, Token::Reference)?;
+			let operator = UnaryOperator::Reference(Permission::Unique);
+			unary(context, lexer, Spanned::new(operator, token.span))
+		}
 		Token::Identifier(identifier) => match lexer.peek().node {
 			Token::ParenthesisOpen | Token::PathSeparator => {
 				let identifier = Spanned::new(identifier, token.span);
@@ -128,6 +132,13 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 			Err(Diagnostic::new(Spanned::new(error, token.span)))
 		}
 	}
+}
+
+fn unary(context: &mut FunctionContext, lexer: &mut Lexer,
+         operator: Spanned<UnaryOperator>) -> Result<ExpressionKey, Diagnostic> {
+	let expression = root_value(context, lexer)?;
+	let span = operator.span.merge(context[&expression].span);
+	Ok(context.register(Spanned::new(Expression::Unary(operator, expression), span)))
 }
 
 fn function_call(context: &mut FunctionContext, lexer: &mut Lexer, execution: Execution,
