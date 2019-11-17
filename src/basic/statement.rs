@@ -73,12 +73,14 @@ impl fmt::Debug for Location {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Projection {
 	Field(Arc<str>),
+	Dereference,
 }
 
 impl fmt::Display for Projection {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Projection::Field(field) => write!(f, ".{}", field),
+			Projection::Dereference => write!(f, "*"),
 		}
 	}
 }

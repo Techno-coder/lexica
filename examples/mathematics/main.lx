@@ -4,6 +4,7 @@ use crate::vector::vector::*
 
 fn main() -> u64:
 	let test = Test: reference: &35
+	*test.reference = 16
 	fibonacci(*test.reference)
 
 data Test:

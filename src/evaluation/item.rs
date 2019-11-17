@@ -7,7 +7,7 @@ use crate::inference::TypeResolution;
 
 use super::EvaluationError;
 
-type FrameIndex = usize;
+pub type FrameIndex = usize;
 
 #[derive(Clone, PartialEq)]
 pub enum EvaluationItem {

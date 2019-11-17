@@ -146,9 +146,17 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 				value = Value::Location(Location::new(variable));
 			}
 
-			let compound = Compound::Unary(operator.node.clone(), value);
-			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
-			(Value::Location(Location::new(variable)), context.push(component, statement))
+			match (&operator.node, &mut value) {
+				(UnaryOperator::Dereference, Value::Location(location)) => {
+					location.projections.push(Projection::Dereference);
+					(value, component)
+				}
+				_ => {
+					let compound = Compound::Unary(operator.node.clone(), value);
+					let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
+					(Value::Location(Location::new(variable)), context.push(component, statement))
+				}
+			}
 		}
 		Expression::Binary(operator, left, right) => {
 			let (left_value, left) = basic(function, type_context, context, left);

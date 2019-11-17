@@ -1,10 +1,11 @@
+use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 use crate::basic::{Item, Location, Projection, Value};
 use crate::node::Variable;
 
-use super::{EvaluationInstance, EvaluationItem};
+use super::{EvaluationInstance, EvaluationItem, FrameIndex};
 
 #[derive(Debug)]
 pub struct ValueContext {
@@ -58,7 +59,37 @@ impl ValueStack {
 	}
 
 	pub fn location(&mut self, location: &Location) -> &mut EvaluationItem {
-		self.frame().location(location)
+		let frame = self.frame_index();
+		self.dereference(frame, location)
+	}
+
+	pub fn dereference(&mut self, frame: FrameIndex, location: &Location) -> &mut EvaluationItem {
+		let stack = UnsafeCell::new(self);
+		let frame = unsafe { stack.get().as_mut() }.unwrap().frames.get_mut(frame)
+			.unwrap_or_else(|| panic!("Frame: {}, does not exist in stack", frame));
+		let item = frame.items.get_mut(&location.variable).unwrap_or_else(||
+			panic!("Variable: {}, does not exist in frame", location.variable));
+		location.projections.iter().fold(item, |item, projection| match projection {
+			Projection::Field(field) => match item {
+				EvaluationItem::Item(item) => match item {
+					Item::Instance(instance) => instance.fields.get_mut(field)
+						.unwrap_or_else(|| panic!("Field: {}, does not exist on instance", field)),
+					_ => panic!("Field access can only be performed on instance"),
+				},
+				EvaluationItem::Reference(_, _) => panic!("Field access cannot be performed on reference"),
+			},
+			Projection::Dereference => match item {
+				EvaluationItem::Item(_) => panic!("Dereference cannot be performed on item"),
+				EvaluationItem::Reference(frame, location) => {
+					// This is safe as the function never modifies the mutable reference
+					// directly. The function returns only one mutable reference and it
+					// is associated with the self parameter so it is not possible to
+					// obtain more than one mutable reference.
+					let stack = unsafe { stack.get().as_mut() }.unwrap();
+					stack.dereference(*frame, location)
+				}
+			}
+		})
 	}
 
 	pub fn frame_index(&mut self) -> usize {
@@ -73,23 +104,6 @@ impl ValueStack {
 #[derive(Debug, Default)]
 pub struct ValueFrame {
 	pub items: HashMap<Variable, EvaluationItem>,
-}
-
-impl ValueFrame {
-	pub fn location(&mut self, location: &Location) -> &mut EvaluationItem {
-		let item = self.items.get_mut(&location.variable).unwrap_or_else(||
-			panic!("Variable: {}, does not exist in frame", location.variable));
-		location.projections.iter().fold(item, |item, projection| match projection {
-			Projection::Field(field) => match item {
-				EvaluationItem::Item(item) => match item {
-					Item::Instance(instance) => instance.fields.get_mut(field)
-						.unwrap_or_else(|| panic!("Field: {}, does not exist on instance", field)),
-					_ => panic!("Field access can only be performed on instance"),
-				},
-				EvaluationItem::Reference(_, _) => panic!("Field access cannot be performed on reference"),
-			},
-		})
-	}
 }
 
 #[derive(Debug, Default)]
