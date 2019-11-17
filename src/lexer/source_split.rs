@@ -42,7 +42,7 @@ impl<'a> Iterator for SourceSplit<'a> {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let (byte_start, initial) = self.characters.next()?;
-		if SINGULARITIES.contains(&initial) {
+		if SINGULARITIES.contains(&initial) || initial == '\'' {
 			let byte_end = self.characters.peek()
 				.map(|(index, _)| *index).unwrap_or(self.byte_end);
 			return Some(self.slice(byte_start, byte_end));
@@ -82,7 +82,7 @@ impl CharacterKind {
 		match character {
 			_ if character.is_whitespace() => CharacterKind::Whitespace,
 			_ if !character.is_ascii_punctuation() => CharacterKind::Identifier,
-			'_' => CharacterKind::Identifier,
+			'_' | '\'' => CharacterKind::Identifier,
 			_ => CharacterKind::Operator,
 		}
 	}
@@ -113,5 +113,14 @@ mod tests {
 	fn test_comment() {
 		let string = "// comment";
 		assert!(SourceSplit::new(string, SourceKey::INTERNAL).next().is_none());
+	}
+
+	#[test]
+	fn test_prime() {
+		let string = "fn function'(variable: &'lifetime)";
+		let lexemes: Vec<_> = SourceSplit::new(string, SourceKey::INTERNAL)
+			.map(|node| node.node).collect();
+		assert_eq!(&lexemes, &["fn", " ", "function'", "(", "variable",
+			":", " ", "&", "'", "lifetime", ")"]);
 	}
 }

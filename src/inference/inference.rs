@@ -33,7 +33,7 @@ impl fmt::Display for InferenceError {
 			InferenceError::Unresolved(variable) =>
 				write!(f, "Inference type: {}, has not been resolved", variable),
 			InferenceError::FunctionArity(expression, function) =>
-				write!(f, "Expression arity: {}, is not equal to function: {}", expression, function),
+				write!(f, "Expression arity: {}, is not equal to function arity: {}", expression, function),
 			InferenceError::UndefinedField(structure, field) =>
 				write!(f, "Field: {}, is not defined on structure: {}", field, structure),
 			InferenceError::MissingField(structure, field) =>
@@ -96,20 +96,15 @@ impl fmt::Display for InferenceType {
 		match self {
 			InferenceType::Variable(variable) => write!(f, "{}", variable),
 			InferenceType::Template(variable) => write!(f, "${}", variable),
-			InferenceType::Reference(permission, inference) => match permission {
-				Permission::Shared => write!(f, "&{}", inference),
-				Permission::Unique => write!(f, "~&{}", inference),
-			}
+			InferenceType::Reference(permission, inference) =>
+				write!(f, "{}{}", permission, inference),
 			InferenceType::Instance(structure, variables) => {
 				write!(f, "{}", structure)?;
-				match variables.split_last() {
-					None => Ok(()),
-					Some((last, slice)) => {
-						write!(f, "<")?;
-						slice.iter().try_for_each(|variable| write!(f, "{}, ", variable))?;
-						write!(f, "{}>", last)
-					}
-				}
+				variables.split_last().map(|(last, slice)| {
+					write!(f, "<")?;
+					slice.iter().try_for_each(|variable| write!(f, "{}, ", variable))?;
+					write!(f, "{}>", last)
+				}).unwrap_or(Ok(()))
 			}
 		}
 	}
@@ -160,14 +155,11 @@ impl fmt::Display for TypeResolution {
 			}
 			TypeResolution::Instance(structure, resolutions) => {
 				write!(f, "{}", structure)?;
-				match resolutions.split_last() {
-					None => Ok(()),
-					Some((last, slice)) => {
-						write!(f, "<")?;
-						slice.iter().try_for_each(|resolution| write!(f, "{}, ", resolution))?;
-						write!(f, "{}>", last)
-					}
-				}
+				resolutions.split_last().map(|(last, slice)| {
+					write!(f, "<")?;
+					slice.iter().try_for_each(|resolution| write!(f, "{}, ", resolution))?;
+					write!(f, "{}>", last)
+				}).unwrap_or(Ok(()))
 			}
 		}
 	}

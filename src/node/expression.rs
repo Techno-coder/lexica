@@ -62,8 +62,7 @@ impl fmt::Display for UnaryOperator {
 		match self {
 			UnaryOperator::Negate => write!(f, "-"),
 			UnaryOperator::Dereference => write!(f, "*"),
-			UnaryOperator::Reference(Permission::Shared) => write!(f, "&"),
-			UnaryOperator::Reference(Permission::Unique) => write!(f, "~&"),
+			UnaryOperator::Reference(permission) => write!(f, "{}", permission),
 		}
 	}
 }

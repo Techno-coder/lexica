@@ -55,7 +55,7 @@ fn resolve_ascription(context: &Context, module_context: &ModuleContext,
 				resolve_ascriptions(context, module_context, template))?;
 			declaration_path
 		}
-		Ascription::Reference(_, ascription) =>
+		Ascription::Reference(_, _, ascription) =>
 			return resolve_ascriptions(context, module_context, ascription),
 		_ => return Ok(()),
 	};

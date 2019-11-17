@@ -10,6 +10,8 @@ pub type BindingPattern = Pattern<Spanned<BindingVariable>>;
 pub type AscriptionPattern = Pattern<Spanned<Ascription>>;
 pub type ExpressionPattern = Pattern<ExpressionKey>;
 
+type Lifetime = Arc<str>;
+
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub struct Variable(pub Arc<str>, pub usize);
 
@@ -74,7 +76,7 @@ pub enum Mutability {
 #[derive(Clone)]
 pub enum Ascription {
 	Structure(StructurePath, Vec<AscriptionPattern>),
-	Reference(Permission, Box<AscriptionPattern>),
+	Reference(Permission, Option<Spanned<Lifetime>>, Box<AscriptionPattern>),
 	Template(Arc<str>),
 }
 
@@ -88,8 +90,11 @@ impl fmt::Display for Ascription {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			Ascription::Template(template) => write!(f, "${}", template),
-			Ascription::Reference(Permission::Shared, ascription) => write!(f, "&{}", ascription),
-			Ascription::Reference(Permission::Unique, ascription) => write!(f, "~&{}", ascription),
+			Ascription::Reference(permission, lifetime, ascription) => {
+				write!(f, "{}", permission)?;
+				lifetime.iter().try_for_each(|lifetime| write!(f, "{} ", lifetime))?;
+				write!(f, "{}", ascription)
+			}
 			Ascription::Structure(structure, templates) => match templates.split_last() {
 				None => write!(f, "{}", structure),
 				Some((last, slice)) => {
@@ -106,6 +111,15 @@ impl fmt::Display for Ascription {
 pub enum Permission {
 	Shared,
 	Unique,
+}
+
+impl fmt::Display for Permission {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Permission::Shared => write!(f, "&"),
+			Permission::Unique => write!(f, "~&"),
+		}
+	}
 }
 
 #[derive(Debug, Clone)]

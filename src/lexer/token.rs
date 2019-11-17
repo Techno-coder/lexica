@@ -37,6 +37,7 @@ pub enum Token {
 	Swap,
 	Template,
 	Unique,
+	Prime,
 	Add,
 	Minus,
 	Multiply,

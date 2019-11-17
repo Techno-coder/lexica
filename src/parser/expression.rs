@@ -122,13 +122,8 @@ pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> 
 	Ok(match lexer.peek().node {
 		Token::Template => super::identifier(lexer.consume())?
 			.map(|identifier| Ascription::Template(identifier)),
-		Token::Reference => super::pattern(lexer.consume(), &mut ascription)?
-			.map(|ascription| Ascription::Reference(Permission::Shared, Box::new(ascription))),
-		Token::Unique => {
-			super::expect(lexer.consume(), Token::Reference)?;
-			super::pattern(lexer, &mut ascription)?.map(|ascription|
-				Ascription::Reference(Permission::Unique, Box::new(ascription)))
-		}
+		Token::Reference => reference(lexer, Permission::Shared)?,
+		Token::Unique => reference(lexer.consume(), Permission::Unique)?,
 		_ => {
 			let path = path(lexer).map(|path| path.map(|path| StructurePath(path)))?;
 			Spanned::new(Ascription::Structure(path.node, match lexer.peek().node {
@@ -143,6 +138,18 @@ pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> 
 			}), path.span)
 		}
 	})
+}
+
+fn reference(lexer: &mut Lexer, permission: Permission) -> Result<Spanned<Ascription>, Diagnostic> {
+	let initial = super::expect(lexer, Token::Reference)?;
+	let lifetime = match lexer.peek().node {
+		Token::Prime => Some(super::identifier(lexer.consume())?),
+		_ => None,
+	};
+
+	let pattern = super::pattern(lexer, &mut ascription)?;
+	let ascription = Ascription::Reference(permission, lifetime, Box::new(pattern.node));
+	Ok(Spanned::new(ascription, initial.merge(pattern.span)))
 }
 
 fn expect_terminator(lexer: &mut Lexer, expression: &Spanned<Expression>) -> Result<Span, Diagnostic> {

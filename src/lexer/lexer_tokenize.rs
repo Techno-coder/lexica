@@ -55,6 +55,7 @@ impl<'a> Iterator for LexerTokenize<'a> {
 				"," => Token::ListSeparator,
 				"$" => Token::Template,
 				"~" => Token::Unique,
+				"'" => Token::Prime,
 				"+" => Token::Add,
 				"-" => Token::Minus,
 				"*" => match whitespace {
