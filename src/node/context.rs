@@ -17,8 +17,10 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 	let mut function_type = crate::parser::function_type(context, function_path)?;
 	super::shadow::shadow_function_type(&mut function_type)?;
 
+	let context_path = context.node_definitions.get(&function_path.node).map(|definition|
+		definition.declaration.clone()).unwrap_or(declaration_path.module_path.clone());
 	super::resolution::resolve_function_type(context, &context.module_contexts
-		.read().get(&declaration_path.module_path).unwrap(), &mut function_type)?;
+		.read().get(&context_path).unwrap(), &mut function_type)?;
 
 	let function_type = Arc::new(function_type);
 	context.function_types.insert(function_path.node.clone(), function_type.clone());
@@ -35,8 +37,10 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 	let mut function = crate::parser::function(context, function_path)?;
 	super::shadow::shadow_function(&mut function)?;
 
+	let context_path = context.node_definitions.get(&function_path.node).map(|definition|
+		definition.declaration.clone()).unwrap_or(declaration_path.module_path.clone());
 	super::resolution::resolve_function(context, &context.module_contexts
-		.read().get(&declaration_path.module_path).unwrap(), &mut function.context)?;
+		.read().get(&context_path).unwrap(), &mut function.context)?;
 
 	let function = Arc::new(function);
 	context.node_functions.insert(function_path.node.clone(), function.clone());

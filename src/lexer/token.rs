@@ -38,6 +38,7 @@ pub enum Token {
 	Implies,
 	Swap,
 	Template,
+	Mutable,
 	Unique,
 	Prime,
 	Add,

@@ -40,11 +40,11 @@ pub enum InclusionTerminal {
 #[derive(Debug)]
 pub struct Definition {
 	pub declaration: Declaration,
-	pub methods: HashMap<Arc<str>, Declaration>,
+	pub methods: Vec<(Arc<str>, Spanned<Declaration>)>,
 }
 
 impl Definition {
 	pub fn new(declaration: Declaration) -> Self {
-		Definition { declaration, methods: HashMap::new() }
+		Definition { declaration, methods: Vec::new() }
 	}
 }

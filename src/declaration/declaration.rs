@@ -24,7 +24,6 @@ pub enum DeclarationError {
 	UndefinedModule(Arc<ModulePath>),
 	ModuleDeclarationLocation,
 	ExpectedDeclaration,
-	DuplicateMethod(Arc<str>),
 	DuplicateFunction(Arc<FunctionPath>),
 	DuplicateStructure(Arc<StructurePath>),
 	ExpectedPathElement,
@@ -48,8 +47,6 @@ impl fmt::Display for DeclarationError {
 				write!(f, "Module can only be declared in root or module file"),
 			DeclarationError::ExpectedDeclaration =>
 				write!(f, "Expected a module, function, or structure declaration"),
-			DeclarationError::DuplicateMethod(identifier) =>
-				write!(f, "Method: {}, has already been declared", identifier),
 			DeclarationError::DuplicateFunction(path) =>
 				write!(f, "Function: {}, has already been declared", path),
 			DeclarationError::DuplicateStructure(path) =>
@@ -85,7 +82,7 @@ impl Into<Declaration> for ModulePending {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Declaration {
 	pub source: SourceKey,
 	pub line_offset: LineOffset,

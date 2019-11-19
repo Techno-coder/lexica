@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::inference::TypeContext;
+use crate::inference::{TypeContext, TypeResolution};
 use crate::node::{BindingVariable, Expression, ExpressionKey, FunctionContext,
 	MutationKind, Pattern, UnaryOperator};
 use crate::span::Spanned;
@@ -108,7 +108,7 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 		}
 		Expression::Field(expression, field) => {
 			let (value, mut component) = basic(function, type_context, context, expression);
-			let location = match value {
+			let mut location = match value {
 				Value::Location(location) => location,
 				Value::Item(_) => {
 					let variable = context.temporary();
@@ -117,6 +117,12 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 					Location::new(variable)
 				}
 			};
+
+			let mut resolution = &type_context[expression];
+			while let TypeResolution::Reference(_, type_resolution) = resolution {
+				location.projections.push(Projection::Dereference);
+				resolution = type_resolution;
+			}
 
 			let location = location.push(Projection::Field(field.node.clone()));
 			(Value::Location(location), component)

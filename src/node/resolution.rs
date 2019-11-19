@@ -112,7 +112,7 @@ fn resolve_declaration<F>(module_context: &ModuleContext, declaration_path: &mut
 				candidate.module_path = inclusion.node.module_path.clone()
 					.append(&candidate.module_path);
 				if predicate(candidate.clone()) {
-					resolve(declaration_path, candidate.module_path, span)?;
+					resolve(declaration_path, inclusion.node.module_path.clone(), span)?;
 				}
 			}
 		}

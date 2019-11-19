@@ -18,8 +18,8 @@ impl<'a> SourceParse<'a> {
 		let declarations = &self.context.declarations_structure;
 		match declarations.get(&structure_path) {
 			None => declarations.insert(structure_path, declaration),
-			Some(declaration) => {
-				let location = declaration.span().location(self.context);
+			Some(duplicate) => {
+				let location = duplicate.span().location(self.context);
 				let error = DeclarationError::DuplicateStructure(structure_path);
 				self.context.emit(Err(Diagnostic::new(Spanned::new(error, placement_span))
 					.note(format!("Duplicate declared in: {}", location))))
@@ -29,29 +29,25 @@ impl<'a> SourceParse<'a> {
 
 	pub fn function(&mut self, identifier: Arc<str>, declaration: Declaration, placement_span: Span) {
 		let declarations = &self.context.declarations_function;
-		let (error, duplicate) = match self.is_definition {
+		match self.is_definition {
 			false => {
 				let module_path = self.current_module.clone();
 				let path = DeclarationPath { module_path, identifier };
 				let function_path = Arc::new(FunctionPath(path));
 				match declarations.get(&function_path) {
 					None => return declarations.insert(function_path, declaration).unwrap_none(),
-					Some(duplicate) => (DeclarationError::DuplicateFunction(function_path), duplicate.span()),
+					Some(duplicate) => {
+						let location = duplicate.span().location(self.context);
+						let error = DeclarationError::DuplicateFunction(function_path);
+						let error = Diagnostic::new(Spanned::new(error, placement_span))
+							.note(format!("Duplicate declared in: {}", location));
+						let _: Option<!> = self.context.emit(Err(error));
+					}
 				}
 			}
-			true => {
-				let definitions = &mut self.module_context().definitions;
-				let definition = definitions.last_mut().unwrap();
-				match definition.methods.get(&identifier) {
-					None => return definition.methods.insert(identifier, declaration).unwrap_none(),
-					Some(duplicate) => (DeclarationError::DuplicateMethod(identifier), duplicate.span()),
-				}
-			}
-		};
-
-		let error = Diagnostic::new(Spanned::new(error, placement_span))
-			.note(format!("Duplicate declared in: {}", duplicate.location(self.context)));
-		let _: Option<!> = self.context.emit(Err(error));
+			true => self.module_context().definitions.last_mut().unwrap()
+				.methods.push((identifier, Spanned::new(declaration, placement_span))),
+		}
 	}
 
 	pub fn module(&mut self, identifier: Arc<str>, declaration_span: Span, placement_span: Span) -> Option<()> {

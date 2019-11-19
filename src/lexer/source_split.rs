@@ -4,7 +4,7 @@ use std::str::CharIndices;
 use crate::source::SourceKey;
 use crate::span::{Span, Spanned};
 
-pub const SINGULARITIES: &[char] = &['\t', '\n', '(', ')', '~', ',', '*', '.', '$'];
+pub const SINGULARITIES: &[char] = &['\t', '\n', '(', ')', ',', '*', '.', '$'];
 
 /// Splits a source string into spanned string slices.
 #[derive(Debug, Clone)]
@@ -122,5 +122,14 @@ mod tests {
 			.map(|node| node.node).collect();
 		assert_eq!(&lexemes, &["fn", " ", "function'", "(", "variable",
 			":", " ", "&", "'", "lifetime", ")"]);
+	}
+
+	#[test]
+	fn test_unique() {
+		let string = "let (~variable) = ~&expression";
+		let lexemes: Vec<_> = SourceSplit::new(string, SourceKey::INTERNAL)
+			.map(|node| node.node).collect();
+		assert_eq!(&lexemes, &["let", " ", "(", "~", "variable", ")",
+			" ", "=", " ", "~&", "expression"]);
 	}
 }

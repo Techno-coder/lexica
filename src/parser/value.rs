@@ -90,10 +90,11 @@ fn consume_terminal(context: &mut FunctionContext, lexer: &mut Lexer) -> Result<
 			Spanned::new(UnaryOperator::Dereference, token.span)),
 		Token::Reference => unary(context, lexer,
 			Spanned::new(UnaryOperator::Reference(Permission::Shared), token.span)),
-		Token::Unique => {
-			super::expect(lexer, Token::Reference)?;
-			let operator = UnaryOperator::Reference(Permission::Unique);
-			unary(context, lexer, Spanned::new(operator, token.span))
+		Token::Unique => unary(context, lexer,
+			Spanned::new(UnaryOperator::Reference(Permission::Unique), token.span)),
+		Token::SelfVariable => {
+			let expression = Expression::Variable(Variable::new("self".into()));
+			Ok(context.register(Spanned::new(expression, token.span)))
 		}
 		Token::Identifier(identifier) => match lexer.peek().node {
 			Token::ParenthesisOpen | Token::PathSeparator => {

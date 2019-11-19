@@ -18,6 +18,9 @@ pub enum ParserError {
 	ExpectedStructureTerminator(Token),
 	ExpectedPathAssociation(Token),
 	DuplicateField(Arc<str>),
+	FunctionSelfVariable,
+	BindingSelfVariable,
+	SelfVariablePosition,
 }
 
 impl fmt::Display for ParserError {
@@ -41,6 +44,12 @@ impl fmt::Display for ParserError {
 				write!(f, "Expected a function call or structure literal instead got token: {:?}", token),
 			ParserError::DuplicateField(field) =>
 				write!(f, "Field with identifier: {}, has already been defined", field),
+			ParserError::FunctionSelfVariable =>
+				write!(f, "Variable: self, cannot appear in function that is not in a definition"),
+			ParserError::BindingSelfVariable =>
+				write!(f, "Variable: self, cannot be bound in a function except in parameters"),
+			ParserError::SelfVariablePosition =>
+				write!(f, "Self variable must appear as first parameter in a method"),
 		}
 	}
 }

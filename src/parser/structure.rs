@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::context::Context;
-use crate::declaration::{Declaration, StructurePath};
+use crate::declaration::{Declaration, ModulePath, StructurePath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
 use crate::node::{AscriptionPattern, Definition, Expression, ExpressionKey,
@@ -34,7 +34,8 @@ pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>
 	Ok(Structure { templates, fields })
 }
 
-pub fn definition(context: &Context, definition: &Declaration) -> Result<Definition, Diagnostic> {
+pub fn definition(context: &Context, declaration: Arc<ModulePath>,
+                  definition: &Declaration) -> Result<Definition, Diagnostic> {
 	let source = definition.source.get(context);
 	let lexer = &mut Lexer::declaration(&source, definition)?;
 
@@ -42,7 +43,7 @@ pub fn definition(context: &Context, definition: &Declaration) -> Result<Definit
 	let structure = super::expression::path(lexer)?
 		.map(|path| StructurePath(path));
 	let templates = templates(lexer)?;
-	Ok(Definition { structure, templates })
+	Ok(Definition { declaration, structure, templates })
 }
 
 pub fn literal(context: &mut FunctionContext, lexer: &mut Lexer,

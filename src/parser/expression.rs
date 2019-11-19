@@ -78,21 +78,34 @@ fn expression_terminator(context: &mut FunctionContext, lexer: &mut Lexer) -> Re
 }
 
 fn variable(lexer: &mut Lexer) -> Result<Spanned<Variable>, Diagnostic> {
-	Ok(super::identifier(lexer)
-		.map_err(|diagnostic| diagnostic.note("In parsing a variable"))?
-		.map(|identifier| Variable::new(identifier)))
+	let token = lexer.next();
+	match token.node {
+		Token::Identifier(identifier) => Ok(Spanned::new(Variable::new(identifier), token.span)),
+		Token::SelfVariable => Ok(Spanned::new(Variable::new("self".into()), token.span)),
+		_ => Err(Diagnostic::new(token.map(|token| ParserError::ExpectedIdentifier(token)))
+			.note("In parsing a variable"))
+	}
 }
 
 pub fn binding_variable(lexer: &mut Lexer) -> Result<Spanned<BindingVariable>, Diagnostic> {
 	let mut mutability = Mutability::Immutable;
-	if lexer.peek().node == Token::Unique {
+	if lexer.peek().node == Token::Mutable {
 		mutability = Mutability::Mutable;
 		lexer.next();
 	}
 
-	let variable = variable(lexer).map_err(|diagnostic|
-		diagnostic.note("In parsing a binding pattern"))?;
-	Ok(variable.map(|variable| BindingVariable(variable, mutability)))
+	let token = lexer.peek();
+	match token.node {
+		Token::SelfVariable => {
+			let error = ParserError::BindingSelfVariable;
+			Err(Diagnostic::new(Spanned::new(error, token.span)))
+		}
+		_ => {
+			let variable = variable(lexer).map_err(|diagnostic|
+				diagnostic.note("In parsing a binding pattern"))?;
+			Ok(variable.map(|variable| BindingVariable(variable, mutability)))
+		}
+	}
 }
 
 pub fn path(lexer: &mut Lexer) -> Result<Spanned<DeclarationPath>, Diagnostic> {
@@ -123,7 +136,7 @@ pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> 
 		Token::Template => super::identifier(lexer.consume())?
 			.map(|identifier| Ascription::Template(identifier)),
 		Token::Reference => reference(lexer, Permission::Shared)?,
-		Token::Unique => reference(lexer.consume(), Permission::Unique)?,
+		Token::Unique => reference(lexer, Permission::Unique)?,
 		_ => {
 			let path = path(lexer).map(|path| path.map(|path| StructurePath(path)))?;
 			Spanned::new(Ascription::Structure(path.node, match lexer.peek().node {
@@ -141,15 +154,18 @@ pub fn ascription(lexer: &mut Lexer) -> Result<Spanned<Ascription>, Diagnostic> 
 }
 
 fn reference(lexer: &mut Lexer, permission: Permission) -> Result<Spanned<Ascription>, Diagnostic> {
-	let initial = super::expect(lexer, Token::Reference)?;
-	let lifetime = match lexer.peek().node {
-		Token::Prime => Some(super::identifier(lexer.consume())?),
-		_ => None,
-	};
-
+	let initial = lexer.next().span;
+	let lifetime = lifetime(lexer)?;
 	let pattern = super::pattern(lexer, &mut ascription)?;
 	let ascription = Ascription::Reference(permission, lifetime, Box::new(pattern.node));
 	Ok(Spanned::new(ascription, initial.merge(pattern.span)))
+}
+
+pub fn lifetime(lexer: &mut Lexer) -> Result<Option<Spanned<Arc<str>>>, Diagnostic> {
+	Ok(match lexer.peek().node {
+		Token::Prime => Some(super::identifier(lexer.consume())?),
+		_ => None
+	})
 }
 
 fn expect_terminator(lexer: &mut Lexer, expression: &Spanned<Expression>) -> Result<Span, Diagnostic> {

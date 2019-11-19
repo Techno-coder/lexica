@@ -1,7 +1,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use crate::declaration::DeclarationPath;
+use crate::declaration::{DeclarationPath, StructurePath};
 use crate::error::CompileError;
 
 #[derive(Debug)]
@@ -11,6 +11,7 @@ pub enum NodeError {
 	DuplicateParameter(Arc<str>),
 	ResolutionConflict(DeclarationPath),
 	UnresolvedResolution(DeclarationPath),
+	DuplicateMethod(StructurePath, Arc<str>),
 }
 
 impl fmt::Display for NodeError {
@@ -26,6 +27,8 @@ impl fmt::Display for NodeError {
 				write!(f, "Item: {}, has conflicting resolutions", item),
 			NodeError::UnresolvedResolution(item) =>
 				write!(f, "Item: {}, has no matching resolutions", item),
+			NodeError::DuplicateMethod(structure, identifier) =>
+				write!(f, "Method: {}, is already defined for structure: {}", identifier, structure),
 		}
 	}
 }
