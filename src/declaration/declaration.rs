@@ -24,9 +24,11 @@ pub enum DeclarationError {
 	UndefinedModule(Arc<ModulePath>),
 	ModuleDeclarationLocation,
 	ExpectedDeclaration,
+	DuplicateMethod(Arc<str>),
 	DuplicateFunction(Arc<FunctionPath>),
 	DuplicateStructure(Arc<StructurePath>),
 	ExpectedPathElement,
+	DefinitionItem,
 }
 
 impl fmt::Display for DeclarationError {
@@ -46,12 +48,16 @@ impl fmt::Display for DeclarationError {
 				write!(f, "Module can only be declared in root or module file"),
 			DeclarationError::ExpectedDeclaration =>
 				write!(f, "Expected a module, function, or structure declaration"),
+			DeclarationError::DuplicateMethod(identifier) =>
+				write!(f, "Method: {}, has already been declared", identifier),
 			DeclarationError::DuplicateFunction(path) =>
 				write!(f, "Function: {}, has already been declared", path),
 			DeclarationError::DuplicateStructure(path) =>
 				write!(f, "Structure: {}, has already been declared", path),
 			DeclarationError::ExpectedPathElement =>
 				write!(f, "Expected path element"),
+			DeclarationError::DefinitionItem =>
+				write!(f, "Structure definitions must only contain functions"),
 		}
 	}
 }
@@ -125,7 +131,7 @@ pub fn load_module(context: &Context, module: ModulePending) -> Option<()> {
 		return context.emit(Err(diagnostic));
 	}
 
-	context.module_contexts.insert(module.module_path.clone(),
+	context.module_contexts.write().insert(module.module_path.clone(),
 		ModuleContext::new(module.module_path.clone(), module.declaration_span)).unwrap_none();
 	sources.into_iter().try_for_each(|(source_key, physical_path)|
 		super::SourceParse::parse(context, module.module_path.clone(), module.declaration_span,

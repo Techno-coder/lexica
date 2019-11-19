@@ -3,10 +3,12 @@ use std::sync::Arc;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
 	Data,
+	Define,
 	Function,
 	Module,
 	Export,
 	Use,
+	SelfVariable,
 	Identifier(Arc<str>),
 	Integer(i128),
 	Truth(bool),

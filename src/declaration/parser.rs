@@ -1,3 +1,4 @@
+use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -8,7 +9,7 @@ use crate::lexer::{Lexer, Token};
 use crate::source::SourceKey;
 use crate::span::{Span, Spanned};
 
-use super::{Declaration, DeclarationError, DeclarationPath, FunctionPath, ModulePath, StructurePath};
+use super::{Declaration, DeclarationError, Definition, ModuleContext, ModulePath};
 
 #[derive(Debug)]
 pub struct SourceParse<'a> {
@@ -19,9 +20,10 @@ pub struct SourceParse<'a> {
 	pub lexer: Lexer<'a>,
 
 	line_offsets: LineOffsets,
-	pub module_indents: Vec<usize>,
+	pub item_indents: Vec<usize>,
 	pub current_module: Arc<ModulePath>,
 	pub current_indent: usize,
+	pub is_definition: bool,
 }
 
 impl<'a> SourceParse<'a> {
@@ -41,31 +43,57 @@ impl<'a> SourceParse<'a> {
 			source_key,
 			lexer,
 			line_offsets: string.line_offsets(),
-			module_indents: Vec::new(),
+			item_indents: Vec::new(),
 			current_module: module_path,
 			current_indent: 0,
+			is_definition: false,
 		}.traverse();
 		Some(())
+	}
+
+	pub fn module_context(&self) -> impl Deref<Target=ModuleContext> + DerefMut + 'a {
+		use parking_lot::RwLockWriteGuard;
+		RwLockWriteGuard::map(self.context.module_contexts.write(),
+			|modules| modules.get_mut(&self.module_path).unwrap_or_else(||
+				panic!("Module context: {}, has not been constructed", self.module_path)))
 	}
 
 	fn traverse(&mut self) {
 		loop {
 			let token = self.lexer.next();
 			self.handle_block_change(&token);
+			let (&line_offset, _) = self.line_offsets
+				.range(..=token.span.byte_start).next_back().unwrap();
+
 			match token.node {
-				Token::Module | Token::Function | Token::Data => (),
-				Token::BlockOpen | Token::BlockClose => continue,
-				Token::Export | Token::LineBreak => continue,
 				Token::End => break,
+				Token::BlockOpen | Token::BlockClose | Token::LineBreak => continue,
+				Token::Function => (),
+				_ if self.is_definition => {
+					let error = Spanned::new(DeclarationError::DefinitionItem, token.span);
+					let _: Option<!> = self.context.emit(Err(Diagnostic::new(error)));
+					self.advance_until_break();
+					continue;
+				}
+				Token::Module | Token::Data => (),
+				Token::Export => continue,
 				Token::Use => {
 					if self.inclusion_root().is_none() {
 						self.advance_until_break();
 					}
 					continue;
 				}
+				Token::Define => {
+					let declaration = Declaration { source: self.source_key, line_offset };
+					self.module_context().definitions.push(Definition::new(declaration));
+					self.item_indents.push(self.current_indent);
+					self.advance_until_break();
+					self.is_definition = true;
+					continue;
+				}
 				_ => {
 					let error = Spanned::new(DeclarationError::ExpectedDeclaration, token.span);
-					let _: Option<()> = self.context.emit(Err(Diagnostic::new(error)));
+					let _: Option<!> = self.context.emit(Err(Diagnostic::new(error)));
 					self.advance_until_break();
 					continue;
 				}
@@ -76,26 +104,19 @@ impl<'a> SourceParse<'a> {
 				Token::Identifier(identifier) => identifier,
 				_ => {
 					let error = Spanned::new(DeclarationError::ExpectedIdentifier, identifier_token.span);
-					let _: Option<()> = self.context.emit(Err(Diagnostic::new(error)));
+					let _: Option<!> = self.context.emit(Err(Diagnostic::new(error)));
 					self.advance_until_break();
 					continue;
 				}
 			};
 
-			let (&line_offset, _) = self.line_offsets.range(..=token.span.byte_start)
-				.next_back().unwrap();
 			let placement_span = token.span.extend(identifier_token.span.byte_end);
 			match token.node {
 				Token::Data | Token::Function => {
-					let module_path = self.current_module.clone();
-					let path = DeclarationPath { module_path, identifier };
 					let declaration = Declaration { source: self.source_key, line_offset };
-
 					match token.node {
-						Token::Data => self.structure(Arc::new(StructurePath(path)),
-							declaration, placement_span),
-						Token::Function => self.function(Arc::new(FunctionPath(path)),
-							declaration, placement_span),
+						Token::Data => self.structure(identifier, declaration, placement_span),
+						Token::Function => self.function(identifier, declaration, placement_span),
 						_ => unreachable!(),
 					};
 

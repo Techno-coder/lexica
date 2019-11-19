@@ -4,14 +4,17 @@ use crate::error::Diagnostic;
 use crate::lexer::Token;
 use crate::span::{Span, Spanned};
 
-use super::{Declaration, DeclarationError, FunctionPath, ModuleContext,
-	ModulePending, SourceParse, StructurePath};
+use super::{Declaration, DeclarationError, DeclarationPath, FunctionPath,
+	ModuleContext, ModulePending, SourceParse, StructurePath};
 
 const ROOT_FILE: &str = "main.lx";
 const MODULE_FILE: &str = "module.lx";
 
 impl<'a> SourceParse<'a> {
-	pub fn structure(&mut self, structure_path: Arc<StructurePath>, declaration: Declaration, placement_span: Span) {
+	pub fn structure(&mut self, identifier: Arc<str>, declaration: Declaration, placement_span: Span) {
+		let module_path = self.current_module.clone();
+		let path = DeclarationPath { module_path, identifier };
+		let structure_path = Arc::new(StructurePath(path));
 		let declarations = &self.context.declarations_structure;
 		match declarations.get(&structure_path) {
 			None => declarations.insert(structure_path, declaration),
@@ -24,17 +27,31 @@ impl<'a> SourceParse<'a> {
 		};
 	}
 
-	pub fn function(&mut self, function_path: Arc<FunctionPath>, declaration: Declaration, placement_span: Span) {
+	pub fn function(&mut self, identifier: Arc<str>, declaration: Declaration, placement_span: Span) {
 		let declarations = &self.context.declarations_function;
-		match declarations.get(&function_path) {
-			None => declarations.insert(function_path, declaration),
-			Some(declaration) => {
-				let location = declaration.span().location(self.context);
-				let error = DeclarationError::DuplicateFunction(function_path);
-				self.context.emit(Err(Diagnostic::new(Spanned::new(error, placement_span))
-					.note(format!("Duplicate declared in: {}", location))))
+		let (error, duplicate) = match self.is_definition {
+			false => {
+				let module_path = self.current_module.clone();
+				let path = DeclarationPath { module_path, identifier };
+				let function_path = Arc::new(FunctionPath(path));
+				match declarations.get(&function_path) {
+					None => return declarations.insert(function_path, declaration).unwrap_none(),
+					Some(duplicate) => (DeclarationError::DuplicateFunction(function_path), duplicate.span()),
+				}
+			}
+			true => {
+				let definitions = &mut self.module_context().definitions;
+				let definition = definitions.last_mut().unwrap();
+				match definition.methods.get(&identifier) {
+					None => return definition.methods.insert(identifier, declaration).unwrap_none(),
+					Some(duplicate) => (DeclarationError::DuplicateMethod(identifier), duplicate.span()),
+				}
 			}
 		};
+
+		let error = Diagnostic::new(Spanned::new(error, placement_span))
+			.note(format!("Duplicate declared in: {}", duplicate.location(self.context)));
+		let _: Option<!> = self.context.emit(Err(error));
 	}
 
 	pub fn module(&mut self, identifier: Arc<str>, declaration_span: Span, placement_span: Span) -> Option<()> {
@@ -50,10 +67,10 @@ impl<'a> SourceParse<'a> {
 
 	fn nested(&mut self, identifier: Arc<str>, placement_span: Span) -> Option<()> {
 		self.require_block();
-		self.module_indents.push(self.current_indent);
+		self.item_indents.push(self.current_indent);
 		self.current_module = self.current_module.clone().push(identifier);
 		let module_context = ModuleContext::new(self.current_module.clone(), placement_span);
-		self.context.module_contexts.insert(self.current_module.clone(), module_context);
+		self.context.module_contexts.write().insert(self.current_module.clone(), module_context);
 		Some(())
 	}
 

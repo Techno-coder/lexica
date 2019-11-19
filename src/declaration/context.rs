@@ -1,16 +1,18 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use chashmap::CHashMap;
+use parking_lot::RwLock;
 
 use crate::span::{Span, Spanned};
 
-use super::ModulePath;
+use super::{Declaration, ModulePath};
 
-pub type ModuleContexts = CHashMap<Arc<ModulePath>, ModuleContext>;
+pub type ModuleContexts = RwLock<HashMap<Arc<ModulePath>, ModuleContext>>;
 
 #[derive(Debug)]
 pub struct ModuleContext {
 	pub inclusions: Vec<Spanned<Inclusion>>,
+	pub definitions: Vec<Definition>,
 }
 
 impl ModuleContext {
@@ -19,7 +21,7 @@ impl ModuleContext {
 		let terminal = InclusionTerminal::Wildcard;
 		let inclusion = Inclusion { module_path, terminal };
 		inclusions.push(Spanned::new(inclusion, span));
-		Self { inclusions }
+		ModuleContext { inclusions, definitions: Vec::new() }
 	}
 }
 
@@ -33,4 +35,16 @@ pub struct Inclusion {
 pub enum InclusionTerminal {
 	Identifier(Arc<str>),
 	Wildcard,
+}
+
+#[derive(Debug)]
+pub struct Definition {
+	pub declaration: Declaration,
+	pub methods: HashMap<Arc<str>, Declaration>,
+}
+
+impl Definition {
+	pub fn new(declaration: Declaration) -> Self {
+		Definition { declaration, methods: HashMap::new() }
+	}
 }

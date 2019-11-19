@@ -1,4 +1,6 @@
-use crate::source::SourceKey;
+use crate::declaration::Declaration;
+use crate::error::Diagnostic;
+use crate::source::{Source, SourceKey};
 use crate::span::Spanned;
 
 use super::space_lexer::SpaceLexer;
@@ -21,6 +23,12 @@ impl<'a> Lexer<'a> {
 			token: None,
 			byte_offset,
 		}
+	}
+
+	pub fn declaration(source: &'a Source, declaration: &Declaration) -> Result<Self, Diagnostic> {
+		let string = source.read_string().map_err(|error|
+			Diagnostic::new(Spanned::new(error, declaration.span())))?;
+		Ok(Self::new(string, *declaration.line_offset, declaration.source))
 	}
 
 	/// Ignores the next token and returns itself.

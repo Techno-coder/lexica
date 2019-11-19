@@ -5,14 +5,14 @@ use crate::vector::vector::*
 fn main() -> u64:
 	let test = Test: reference: &35
 	*test.reference += 128
-	fn'(&Test: reference: &3)
 	fibonacci(*test.reference)
 
 data Test:
 	reference: &u64
 
-fn fn'(test: &'lifetime Test):
-	let nothing = true
+define Test:
+	fn set(&self, value: u64):
+		*self.reference = value
 
 fn fibonacci(n: u64) -> u64:
 	let ~first = 1

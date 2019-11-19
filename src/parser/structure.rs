@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::context::Context;
-use crate::declaration::StructurePath;
+use crate::declaration::{Declaration, StructurePath};
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
-use crate::node::{AscriptionPattern, Expression, ExpressionKey,
+use crate::node::{AscriptionPattern, Definition, Expression, ExpressionKey,
 	FunctionContext, Structure, Variable};
 use crate::span::{Span, Spanned};
 
@@ -16,10 +16,8 @@ pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>
 	let declaration = context.declarations_structure.get(&structure_path.node).ok_or_else(||
 		Diagnostic::new(structure_path.clone().map(|path| ParserError::UndefinedStructure(path))))?;
 	let source = declaration.source.get(context);
-	let lexer = &mut Lexer::new(source.read_string()
-		.map_err(|error| Diagnostic::new(Spanned::new(error, structure_path.span)))?,
-		*declaration.line_offset, declaration.source);
 
+	let lexer = &mut Lexer::declaration(&source, &declaration)?;
 	super::expect(lexer, Token::Data)?;
 	super::identifier(lexer)?;
 
@@ -34,6 +32,17 @@ pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>
 	};
 
 	Ok(Structure { templates, fields })
+}
+
+pub fn definition(context: &Context, definition: &Declaration) -> Result<Definition, Diagnostic> {
+	let source = definition.source.get(context);
+	let lexer = &mut Lexer::declaration(&source, definition)?;
+
+	super::expect(lexer, Token::Define)?;
+	let structure = super::expression::path(lexer)?
+		.map(|path| StructurePath(path));
+	let templates = templates(lexer)?;
+	Ok(Definition { structure, templates })
 }
 
 pub fn literal(context: &mut FunctionContext, lexer: &mut Lexer,
@@ -54,7 +63,7 @@ pub fn literal(context: &mut FunctionContext, lexer: &mut Lexer,
 	Ok(context.register(Spanned::new(expression, span)))
 }
 
-fn templates(lexer: &mut Lexer) -> Result<Vec<Spanned<Arc<str>>>, Diagnostic> {
+pub fn templates(lexer: &mut Lexer) -> Result<Vec<Spanned<Arc<str>>>, Diagnostic> {
 	let mut templates = Vec::new();
 	let token = lexer.next();
 	match token.node {

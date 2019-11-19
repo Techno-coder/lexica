@@ -26,6 +26,7 @@ fn main() {
 
 	let context = &Context::default();
 	crate::declaration::module_root(context, "examples/mathematics/main.lx".to_owned().into());
+	crate::node::load_definitions(context);
 
 	let parameters = Vec::new();
 	let result = context.emit(crate::evaluation::function(context, &Spanned::new(Arc::new(

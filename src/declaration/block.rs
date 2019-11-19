@@ -11,11 +11,14 @@ impl<'a> SourceParse<'a> {
 			Token::BlockOpen => self.current_indent += 1,
 			Token::BlockClose => {
 				self.current_indent -= 1;
-				if let Some(indent) = self.module_indents.last() {
+				if let Some(indent) = self.item_indents.last() {
 					if &self.current_indent == indent {
-						self.module_indents.pop().unwrap();
-						self.current_module = self.current_module.parent.as_ref()
-							.unwrap().clone();
+						self.item_indents.pop().unwrap();
+						match self.is_definition {
+							true => self.is_definition = false,
+							false => self.current_module = self.current_module
+								.parent.as_ref().unwrap().clone(),
+						}
 					}
 				}
 			}
@@ -54,7 +57,7 @@ impl<'a> SourceParse<'a> {
 			Token::BlockOpen => (),
 			_ => {
 				let error = Spanned::new(DeclarationError::ExpectedBlock, self.lexer.peek().span);
-				let _: Option<()> = self.context.emit(Err(Diagnostic::new(error)));
+				let _: Option<!> = self.context.emit(Err(Diagnostic::new(error)));
 			}
 		}
 	}
@@ -65,6 +68,7 @@ impl<'a> SourceParse<'a> {
 			match self.lexer.peek().node {
 				Token::BlockOpen => break,
 				Token::LineBreak => break,
+				Token::End => break,
 				_ => self.lexer.next(),
 			};
 		}

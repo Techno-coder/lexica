@@ -15,10 +15,8 @@ pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath
 	let declaration = context.declarations_function.get(&function_path.node).ok_or_else(||
 		Diagnostic::new(function_path.clone().map(|path| ParserError::UndefinedFunction(path))))?;
 	let source = declaration.source.get(context);
-	let lexer = &mut Lexer::new(source.read_string()
-		.map_err(|error| Diagnostic::new(Spanned::new(error, function_path.span)))?,
-		*declaration.line_offset, declaration.source);
 
+	let lexer = &mut Lexer::declaration(&source, &declaration)?;
 	super::expect(lexer, Token::Function)?;
 	super::identifier(lexer)?;
 

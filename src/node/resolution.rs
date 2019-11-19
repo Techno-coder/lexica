@@ -42,6 +42,16 @@ pub fn resolve_structure(context: &Context, module_context: &ModuleContext,
 		resolve_ascriptions(context, module_context, ascriptions))
 }
 
+pub fn resolve_structure_path(context: &Context, module_context: &ModuleContext,
+                              structure_path: &mut Spanned<StructurePath>) -> Result<(), Diagnostic> {
+	let StructurePath(declaration_path) = &mut structure_path.node;
+	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
+
+	let structures = &context.declarations_structure;
+	resolve_declaration(module_context, declaration_path, structure_path.span,
+		&mut |candidate| structures.contains_key(&StructurePath(candidate)))
+}
+
 fn resolve_ascriptions(context: &Context, module_context: &ModuleContext,
                        pattern: &mut Pattern<Spanned<Ascription>>) -> Result<(), Diagnostic> {
 	pattern.apply(&mut |terminal| resolve_ascription(context, module_context, terminal))
@@ -80,16 +90,6 @@ fn resolve_function_path(context: &Context, module_context: &ModuleContext,
 	let functions = &context.declarations_function;
 	resolve_declaration(module_context, declaration_path, function_path.span,
 		&mut |candidate| functions.contains_key(&FunctionPath(candidate)))
-}
-
-fn resolve_structure_path(context: &Context, module_context: &ModuleContext,
-                          structure_path: &mut Spanned<StructurePath>) -> Result<(), Diagnostic> {
-	let StructurePath(declaration_path) = &mut structure_path.node;
-	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
-
-	let structures = &context.declarations_structure;
-	resolve_declaration(module_context, declaration_path, structure_path.span,
-		&mut |candidate| structures.contains_key(&StructurePath(candidate)))
 }
 
 fn resolve_declaration<F>(module_context: &ModuleContext, declaration_path: &mut DeclarationPath,

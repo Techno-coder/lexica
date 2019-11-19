@@ -49,9 +49,8 @@ impl<'a> SourceParse<'a> {
 				self.lexer.peek().span))))?;
 
 		let span = Span::new(self.source_key, byte_start, byte_end);
-		self.context.module_contexts.get_mut(&self.module_path).unwrap_or_else(||
-			panic!("Module context: {}, has not been constructed", self.module_path))
-			.inclusions.push(Spanned::new(Inclusion { module_path, terminal }, span));
+		let inclusion = Spanned::new(Inclusion { module_path, terminal }, span);
+		self.module_context().inclusions.push(inclusion);
 		Some(())
 	}
 
