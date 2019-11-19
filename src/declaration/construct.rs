@@ -72,15 +72,11 @@ impl<'a> SourceParse<'a> {
 		let parent = self.physical_path.parent().unwrap();
 		let expected_path = parent.join(format!("{}.lx", identifier));
 		let expected_module_path = parent.join(format!("{}/module.lx", identifier));
-
-		let module = ModulePending {
+		super::load_module(self.context, ModulePending {
+			module_path: self.current_module.clone().push(identifier),
 			expected_path: Arc::new(expected_path),
 			expected_module_path: Some(Arc::new(expected_module_path)),
 			declaration_span,
-		};
-
-		let module_path = self.current_module.clone().push(identifier);
-		self.context.modules_pending.insert(module_path, module);
-		Some(())
+		})
 	}
 }

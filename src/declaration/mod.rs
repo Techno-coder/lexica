@@ -1,11 +1,11 @@
 pub use context::{Inclusion, InclusionTerminal, ModuleContext, ModuleContexts};
-pub use declaration::*;
-pub use module::load_modules;
+pub use declaration::{Declaration, DeclarationError, DeclarationsFunction,
+	DeclarationsStructure, module_root};
+use declaration::{load_module, ModulePending};
 use parser::SourceParse;
-pub use path::*;
+pub use path::{DeclarationPath, FunctionPath, ModulePath, StructurePath};
 
 mod declaration;
-mod module;
 mod parser;
 mod block;
 mod construct;

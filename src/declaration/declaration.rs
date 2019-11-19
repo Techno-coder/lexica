@@ -4,14 +4,14 @@ use std::sync::Arc;
 
 use chashmap::CHashMap;
 
-use crate::error::CompileError;
+use crate::context::Context;
+use crate::error::{CompileError, Diagnostic};
 use crate::extension::LineOffset;
 use crate::source::SourceKey;
-use crate::span::Span;
+use crate::span::{Span, Spanned};
 
-use super::{FunctionPath, ModulePath, StructurePath};
+use super::{FunctionPath, ModuleContext, ModulePath, StructurePath};
 
-pub type ModulesPending = CHashMap<Arc<ModulePath>, ModulePending>;
 pub type DeclarationsFunction = CHashMap<Arc<FunctionPath>, Declaration>;
 pub type DeclarationsStructure = CHashMap<Arc<StructurePath>, Declaration>;
 
@@ -64,6 +64,7 @@ impl From<DeclarationError> for CompileError {
 
 #[derive(Debug, Clone)]
 pub struct ModulePending {
+	pub module_path: Arc<ModulePath>,
 	pub expected_path: Arc<PathBuf>,
 	pub expected_module_path: Option<Arc<PathBuf>>,
 	pub declaration_span: Span,
@@ -88,4 +89,45 @@ impl Declaration {
 	pub fn span(&self) -> Span {
 		Span::new_point(self.source, *self.line_offset)
 	}
+}
+
+pub fn module_root(context: &Context, path: PathBuf) -> Option<()> {
+	load_module(context, ModulePending {
+		module_path: ModulePath::root(),
+		expected_path: Arc::new(path),
+		expected_module_path: None,
+		declaration_span: Span::INTERNAL,
+	})
+}
+
+/// Recursively loads all modules.
+pub fn load_module(context: &Context, module: ModulePending) -> Option<()> {
+	let mut sources = Vec::new();
+	let mut source_errors = Vec::new();
+
+	match crate::source::source_key(context, &module.expected_path) {
+		Ok(source_key) => sources.push((source_key, &module.expected_path)),
+		Err(error) => source_errors.push(error),
+	}
+
+	if let Some(expected_module_path) = &module.expected_module_path {
+		match crate::source::source_key(context, &expected_module_path) {
+			Ok(source_key) => sources.push((source_key, expected_module_path)),
+			Err(error) => source_errors.push(error),
+		}
+	}
+
+	if sources.is_empty() {
+		let error = DeclarationError::UndefinedModule(module.module_path);
+		let diagnostic = Diagnostic::new(Spanned::new(error, module.declaration_span));
+		let diagnostic = source_errors.into_iter().fold(diagnostic, |diagnostic, error|
+			diagnostic.note(error.to_string()));
+		return context.emit(Err(diagnostic));
+	}
+
+	context.module_contexts.insert(module.module_path.clone(),
+		ModuleContext::new(module.module_path.clone(), module.declaration_span)).unwrap_none();
+	sources.into_iter().try_for_each(|(source_key, physical_path)|
+		super::SourceParse::parse(context, module.module_path.clone(), module.declaration_span,
+			physical_path, source_key))
 }

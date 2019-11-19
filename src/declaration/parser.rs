@@ -30,8 +30,8 @@ impl<'a> SourceParse<'a> {
 	             physical_path: &Arc<PathBuf>, source_key: SourceKey) -> Option<()> {
 		assert!(physical_path.is_file());
 		let source = source_key.get(context);
-		let string = context.emit(source.read_string()
-			.map_err(|error| Diagnostic::new(Spanned::new(error, declaration_span))))?;
+		let string = context.emit(source.read_string().map_err(|error|
+			Diagnostic::new(Spanned::new(error, declaration_span))))?;
 		let lexer = Lexer::new(string, 0, source_key);
 
 		SourceParse {

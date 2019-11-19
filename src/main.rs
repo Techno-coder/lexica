@@ -23,17 +23,9 @@ fn main() {
 	use crate::context::Context;
 	use crate::declaration::*;
 	use crate::span::*;
-	use std::path::PathBuf;
-
-	let path: Arc<PathBuf> = Arc::new("examples/mathematics/main.lx".to_owned().into());
-	let module = ModulePending {
-		expected_path: path.clone(),
-		expected_module_path: None,
-		declaration_span: Span::INTERNAL,
-	};
 
 	let context = &Context::default();
-	context.modules_pending.insert(ModulePath::root(), module);
+	crate::declaration::module_root(context, "examples/mathematics/main.lx".to_owned().into());
 
 	let parameters = Vec::new();
 	let result = context.emit(crate::evaluation::function(context, &Spanned::new(Arc::new(

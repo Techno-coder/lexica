@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::context::Context;
-use crate::declaration::{self, StructurePath};
+use crate::declaration::StructurePath;
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
 use crate::node::{AscriptionPattern, Expression, ExpressionKey,
@@ -13,10 +13,6 @@ use super::ParserError;
 
 pub fn structure(context: &Context, structure_path: &Spanned<Arc<StructurePath>>)
                  -> Result<Structure, Diagnostic> {
-	let StructurePath(declaration_path) = &*structure_path.node;
-	declaration::load_modules(context, declaration_path.module_path.clone())
-		.map_err(|error| Diagnostic::new(Spanned::new(error, structure_path.span)))?;
-
 	let declaration = context.declarations_structure.get(&structure_path.node).ok_or_else(||
 		Diagnostic::new(structure_path.clone().map(|path| ParserError::UndefinedStructure(path))))?;
 	let source = declaration.source.get(context);

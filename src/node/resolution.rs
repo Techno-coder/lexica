@@ -68,7 +68,7 @@ fn resolve_ascription(context: &Context, module_context: &ModuleContext,
 	}
 
 	let structures = &context.declarations_structure;
-	resolve_declaration(context, module_context, declaration_path, ascription.span,
+	resolve_declaration(module_context, declaration_path, ascription.span,
 		&mut |candidate| structures.contains_key(&StructurePath(candidate)))
 }
 
@@ -78,7 +78,7 @@ fn resolve_function_path(context: &Context, module_context: &ModuleContext,
 	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
 
 	let functions = &context.declarations_function;
-	resolve_declaration(context, module_context, declaration_path, function_path.span,
+	resolve_declaration(module_context, declaration_path, function_path.span,
 		&mut |candidate| functions.contains_key(&FunctionPath(candidate)))
 }
 
@@ -88,13 +88,13 @@ fn resolve_structure_path(context: &Context, module_context: &ModuleContext,
 	if !declaration_path.module_path.any_unresolved() { return Ok(()); }
 
 	let structures = &context.declarations_structure;
-	resolve_declaration(context, module_context, declaration_path, structure_path.span,
+	resolve_declaration(module_context, declaration_path, structure_path.span,
 		&mut |candidate| structures.contains_key(&StructurePath(candidate)))
 }
 
-fn resolve_declaration<F>(context: &Context, module_context: &ModuleContext,
-                          declaration_path: &mut DeclarationPath, span: Span, condition: &mut F)
-                          -> Result<(), Diagnostic> where F: FnMut(DeclarationPath) -> bool {
+fn resolve_declaration<F>(module_context: &ModuleContext, declaration_path: &mut DeclarationPath,
+                          span: Span, predicate: &mut F) -> Result<(), Diagnostic>
+	where F: FnMut(DeclarationPath) -> bool {
 	if declaration_path.module_path.head().map(|head| head.is_root()).unwrap_or(false) {
 		declaration_path.module_path = declaration_path.module_path.clone().tail();
 	}
@@ -111,10 +111,8 @@ fn resolve_declaration<F>(context: &Context, module_context: &ModuleContext,
 				let mut candidate = comparison_path.clone();
 				candidate.module_path = inclusion.node.module_path.clone()
 					.append(&candidate.module_path);
-				if crate::declaration::load_modules(context, candidate.module_path.clone()).is_ok() {
-					if condition(candidate.clone()) {
-						resolve(declaration_path, candidate.module_path, span)?;
-					}
+				if predicate(candidate.clone()) {
+					resolve(declaration_path, candidate.module_path, span)?;
 				}
 			}
 		}

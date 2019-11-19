@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::context::Context;
-use crate::declaration::{self, FunctionPath};
+use crate::declaration::FunctionPath;
 use crate::error::Diagnostic;
 use crate::lexer::{Lexer, Token};
 use crate::node::{Ascription, AscriptionPattern, FunctionContext, FunctionType, NodeFunction,
@@ -12,10 +12,6 @@ use super::ParserError;
 
 pub fn function_type(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
                      -> Result<FunctionType, Diagnostic> {
-	let FunctionPath(declaration_path) = &*function_path.node;
-	declaration::load_modules(context, declaration_path.module_path.clone())
-		.map_err(|error| Diagnostic::new(Spanned::new(error, function_path.span)))?;
-
 	let declaration = context.declarations_function.get(&function_path.node).ok_or_else(||
 		Diagnostic::new(function_path.clone().map(|path| ParserError::UndefinedFunction(path))))?;
 	let source = declaration.source.get(context);
