@@ -16,9 +16,11 @@ pub enum InferenceError {
 	Unresolved(TypeVariable),
 	FunctionArity(usize, usize),
 	UndefinedField(Arc<StructurePath>, Arc<str>),
+	UndefinedMethod(StructurePath, Arc<str>),
 	MissingField(Arc<StructurePath>, Arc<str>),
 	ResolvedTemplate(Arc<str>, StructurePath),
 	TemplateProjection(Projection),
+	TemplateMethodCall(Arc<str>),
 	TemplateUnification(Arc<InferenceType>, Arc<InferenceType>),
 	Dereference(Arc<InferenceType>),
 }
@@ -36,12 +38,16 @@ impl fmt::Display for InferenceError {
 				write!(f, "Expression arity: {}, is not equal to function arity: {}", expression, function),
 			InferenceError::UndefinedField(structure, field) =>
 				write!(f, "Field: {}, is not defined on structure: {}", field, structure),
+			InferenceError::UndefinedMethod(structure, method) =>
+				write!(f, "Method: {}, is not defined on structure: {}", method, structure),
 			InferenceError::MissingField(structure, field) =>
 				write!(f, "Structure: {}, is missing field: {}", structure, field),
 			InferenceError::ResolvedTemplate(template, structure) =>
 				write!(f, "Template: {}, cannot be resolved to a structure: {}", template, structure),
 			InferenceError::TemplateProjection(projection) =>
 				write!(f, "Projection: {:?}, cannot be performed on a template", projection),
+			InferenceError::TemplateMethodCall(identifier) =>
+				write!(f, "Method call: {}, cannot be performed on a template", identifier),
 			InferenceError::TemplateUnification(left, right) =>
 				write!(f, "Templates: {}, and: {}, cannot match", left, right),
 			InferenceError::Dereference(inference) =>

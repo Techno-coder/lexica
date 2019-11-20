@@ -24,7 +24,7 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
 		.for_each(|Parameter(pattern, _)| pattern.traverse(&mut |terminal|
 			parameters.push(terminal.clone().map(|BindingVariable(variable, _)| variable))));
 
-	let mut basic_context = BasicContext::new(reversibility);
+	let mut basic_context = BasicContext::new(context, reversibility);
 	let mut component = function.function_type.parameters.iter().map(|parameter| &parameter.node)
 		.fold(basic_context.component(), |component, Parameter(pattern, _)| {
 			let location = Location::new(basic_context.temporary());
@@ -55,7 +55,7 @@ pub fn expression(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
 	let function = crate::node::function(context, function_path)?;
 	let type_context = crate::inference::function(context, function_path)?;
 
-	let mut basic_context = BasicContext::new(reversibility);
+	let mut basic_context = BasicContext::new(context, reversibility);
 	let (value, component) = basic(&function.context, &type_context,
 		&mut basic_context, expression);
 

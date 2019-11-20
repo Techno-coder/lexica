@@ -4,14 +4,14 @@ use crate::vector::vector::*
 
 fn main() -> u64:
 	let ~test = Test: reference: &35
-	Test::set(&test, 16)
+	test.set(16)
 	fibonacci(*test.reference)
 
 data Test:
 	reference: &u64
 
 define Test:
-	fn set(&self, value: u64):
+	fn set(~&self, value: u64):
 		*self.reference = value
 
 fn fibonacci(n: u64) -> u64:

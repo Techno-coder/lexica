@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
+use crate::declaration::FunctionPath;
 use crate::inference::{TypeContext, TypeResolution};
-use crate::node::{BindingVariable, Expression, ExpressionKey, FunctionContext,
-	MutationKind, Pattern, UnaryOperator};
+use crate::node::{Ascription, BindingVariable, Expression, ExpressionKey,
+	FunctionContext, MutationKind, Parameter, Pattern, UnaryOperator};
 use crate::span::Spanned;
 
 use super::{BasicContext, Component, Compound, Direction, Instance, Item,
@@ -126,6 +127,52 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 
 			let location = location.push(Projection::Field(field.node.clone()));
 			(Value::Location(location), component)
+		}
+		Expression::MethodCall(receiver, method, expressions) => {
+			let mut values = Vec::new();
+			let (mut value, mut component) = basic(function, type_context, context, receiver);
+
+			let mut receiver = &type_context[receiver];
+			let structure = loop {
+				match receiver {
+					TypeResolution::Instance(structure, _) => break structure,
+					TypeResolution::Reference(_, resolution) => {
+						match &mut value {
+							Value::Location(location) => location
+								.projections.push(Projection::Dereference),
+							_ => panic!("Cannot dereference value that is not reference"),
+						}
+						receiver = resolution;
+					}
+					_ => panic!("Receiver type resolution must be instance or reference")
+				}
+			}.clone();
+
+			let function_path = method.clone().map(|method|
+				Arc::new(FunctionPath::method(structure, method)));
+			let function_type = crate::node::function_type(context.context, &function_path).unwrap();
+			let parameter = &function_type.parameters.first().unwrap().node;
+			if let Parameter(_, Pattern::Terminal(ascription)) = parameter {
+				if let Ascription::Reference(permission, _, _) = ascription.node {
+					let variable = context.temporary();
+					let compound = Compound::Unary(UnaryOperator::Reference(permission), value);
+					let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
+					value = Value::Location(Location::new(variable));
+					component = context.push(component, statement);
+				}
+			}
+
+			values.push(value);
+			for expression in expressions {
+				let (value, other) = basic(function, type_context, context, expression);
+				component = context.join(component, other, function[expression].span);
+				values.push(value);
+			}
+
+			let variable = context.temporary();
+			let compound = Compound::FunctionCall(function_path, values);
+			let statement = Spanned::new(Statement::Binding(variable.clone(), compound), span);
+			(Value::Location(Location::new(variable)), context.push(component, statement))
 		}
 		Expression::FunctionCall(function_path, expressions, _) => {
 			let mut values = Vec::new();

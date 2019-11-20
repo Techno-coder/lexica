@@ -34,7 +34,7 @@ pub enum Expression {
 	Binary(Spanned<BinaryOperator>, ExpressionKey, ExpressionKey),
 	Conditional(Vec<Branch>),
 	Field(ExpressionKey, Spanned<Arc<str>>),
-//	MethodCall(ExpressionKey, Spanned<Arc<str>>, Vec<ExpressionKey>),
+	MethodCall(ExpressionKey, Spanned<Arc<str>>, Vec<ExpressionKey>),
 	FunctionCall(Spanned<FunctionPath>, Vec<ExpressionKey>, Execution),
 	Structure(Spanned<StructurePath>, HashMap<Arc<str>, (Span, ExpressionKey)>),
 	Pattern(ExpressionPattern),

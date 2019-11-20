@@ -69,13 +69,16 @@ fn parameters(lexer: &mut Lexer, definition: Option<&Definition>)
 fn self_variable(definition: Option<&Definition>, parameters: &mut Vec<Spanned<Parameter>>,
                  lexer: &mut Lexer) -> Result<(), Diagnostic> {
 	use super::expression;
-	let (permission, lifetime, mutability) = match lexer.next().node {
+	let (permission, lifetime, mutability) = match lexer.peek().node {
 		Token::Reference => (Some(Permission::Shared),
-			expression::lifetime(lexer)?, Mutability::Immutable),
+			expression::lifetime(lexer.consume())?, Mutability::Immutable),
 		Token::Unique => (Some(Permission::Unique),
-			expression::lifetime(lexer)?, Mutability::Immutable),
+			expression::lifetime(lexer.consume())?, Mutability::Immutable),
 		Token::SelfVariable => (None, None, Mutability::Immutable),
-		Token::Mutable => (None, None, Mutability::Mutable),
+		Token::Mutable => {
+			lexer.next();
+			(None, None, Mutability::Mutable)
+		}
 		_ => unreachable!(),
 	};
 

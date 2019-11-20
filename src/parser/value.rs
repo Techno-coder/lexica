@@ -163,8 +163,8 @@ fn projection(context: &mut FunctionContext, lexer: &mut Lexer,
 	let span = identifier.span;
 
 	let expression = Spanned::new(match lexer.peek().node {
-		// TODO: Implement parse of method call
-		Token::ParenthesisOpen => unimplemented!(),
+		Token::ParenthesisOpen => Expression::MethodCall(expression,
+			identifier, arguments(context, lexer)?.node),
 		_ => Expression::Field(expression, identifier),
 	}, span);
 	Ok(context.register(expression))

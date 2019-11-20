@@ -115,6 +115,14 @@ impl fmt::Debug for DeclarationPath {
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub struct FunctionPath(pub DeclarationPath);
 
+impl FunctionPath {
+	pub fn method(structure: StructurePath, identifier: Arc<str>) -> Self {
+		let StructurePath(module_path) = structure;
+		let module_path = module_path.module_path.push(module_path.identifier);
+		FunctionPath(DeclarationPath { module_path, identifier })
+	}
+}
+
 impl fmt::Display for FunctionPath {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let FunctionPath(path) = self;

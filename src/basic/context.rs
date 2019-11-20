@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{self, Write};
 use std::ops::{Index, IndexMut};
 
+use crate::context::Context;
 use crate::extension::{Indent, Traverse};
 use crate::node::Variable;
 use crate::span::{Span, Spanned};
@@ -12,7 +13,8 @@ use super::{BasicNode, Branch, Component, Direction, Divergence, Location,
 type Frame = HashMap<Variable, Span>;
 
 #[derive(Debug)]
-pub struct BasicContext {
+pub struct BasicContext<'a> {
+	pub context: &'a Context,
 	next_temporary: usize,
 	next_component: usize,
 	reversibility: Reversibility,
@@ -20,9 +22,10 @@ pub struct BasicContext {
 	frames: Vec<Frame>,
 }
 
-impl BasicContext {
-	pub fn new(reversibility: Reversibility) -> Self {
+impl<'a> BasicContext<'a> {
+	pub fn new(context: &'a Context, reversibility: Reversibility) -> Self {
 		BasicContext {
+			context,
 			next_temporary: 0,
 			next_component: 0,
 			reversibility,
@@ -170,7 +173,7 @@ impl BasicContext {
 	}
 }
 
-impl Index<&NodeTarget> for BasicContext {
+impl<'a> Index<&NodeTarget> for BasicContext<'a> {
 	type Output = BasicNode;
 
 	fn index(&self, index: &NodeTarget) -> &Self::Output {
@@ -179,14 +182,14 @@ impl Index<&NodeTarget> for BasicContext {
 	}
 }
 
-impl IndexMut<&NodeTarget> for BasicContext {
+impl<'a> IndexMut<&NodeTarget> for BasicContext<'a> {
 	fn index_mut(&mut self, index: &NodeTarget) -> &mut Self::Output {
 		self.nodes.get_mut(index).unwrap_or_else(||
 			panic!("Node target: {:?}, does not exist in context", index))
 	}
 }
 
-impl fmt::Display for BasicContext {
+impl<'a> fmt::Display for BasicContext<'a> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		self.nodes.iter().try_for_each(|(target, node)| {
 			match node.direction {

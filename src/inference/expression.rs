@@ -92,6 +92,12 @@ fn inference_type(context: &Context, function: &FunctionContext, environment: &m
 			expression(context, function, environment, engine, expression_key)?;
 			engine.new_variable_type()
 		}
+		Expression::MethodCall(expression_key, _, arguments) => {
+			expression(context, function, environment, engine, expression_key)?;
+			arguments.iter().try_for_each(|argument| expression(context,
+				function, environment, engine, argument).map(|_| ()))?;
+			engine.new_variable_type()
+		}
 		Expression::FunctionCall(function_path, expressions, _) => {
 			let function_type = crate::node::function_type(context,
 				&function_path.clone().map(|function_path| Arc::new(function_path)))?;

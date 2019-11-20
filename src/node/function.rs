@@ -103,7 +103,12 @@ impl FunctionContext {
 						context.traverse(expression, function),
 					Expression::Field(expression, _) =>
 						context.traverse(expression, function),
-					Expression::FunctionCall(_, expressions, _) => expressions.iter()
+					Expression::MethodCall(expression, _, arguments) => {
+						context.traverse(expression, function)?;
+						arguments.iter().try_for_each(|expression|
+							context.traverse(expression, function))
+					}
+					Expression::FunctionCall(_, arguments, _) => arguments.iter()
 						.try_for_each(|expression| context.traverse(expression, function)),
 					Expression::Unary(_, expression) =>
 						context.traverse(expression, function),
