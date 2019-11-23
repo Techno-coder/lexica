@@ -8,7 +8,14 @@ use crate::span::Span;
 const GUTTER: &str = "    ";
 const LOCATION_PREFIX: &str = "    -->";
 
-pub fn display(write: &mut dyn Write, context: &Context, diagnostic: &Diagnostic) -> Result {
+pub fn string(context: &Context, diagnostic: &Diagnostic) -> String {
+	let mut string = String::new();
+	display(&mut string, context, diagnostic)
+		.expect("Failed to write diagnostic to string");
+	string
+}
+
+fn display(write: &mut dyn Write, context: &Context, diagnostic: &Diagnostic) -> Result {
 	writeln!(write, "{} {}", "[Error]", diagnostic.error.node)?;
 
 	let span = diagnostic.error.span;

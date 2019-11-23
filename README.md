@@ -19,6 +19,21 @@ fn fibonacci(n: u64) -> u64:
 	second
 ```
 
+## Installation
+```
+cargo +nightly install --locked --git https://github.com/Techno-coder/lexica
+```
+
+## Usage
+```
+lexica <path>/main.lx
+```
+
+## Commands
+* `context` - Displays the compiler context state
+* `basic <reversible|entropic> <function>` - Displays the basic node lowering of a function
+* `evaluate <function>` - Evaluates and returns the result of a zero arity function
+
 ## Influence
 Lexica has been influenced by:
 - [Rust](https://github.com/rust-lang/rust)

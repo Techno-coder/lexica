@@ -31,12 +31,8 @@ pub fn interface(context: &Context) -> InterfaceResult {
 	let errors = std::mem::replace(context.errors.write().as_mut(), Vec::new());
 	interface.captures.push(match errors.is_empty() {
 		true => format!("{:#?}", context),
-		false => {
-			let mut capture = String::new();
-			errors.into_iter().map(|diagnostic| crate::error::display(&mut capture,
-				context, &diagnostic)).collect::<Result<(), _>>()?;
-			capture
-		}
+		false => errors.into_iter().map(|diagnostic|
+			crate::error::string(context, &diagnostic)).collect()
 	});
 
 	let output = std::io::stdout().into_raw_mode()?;
@@ -54,7 +50,8 @@ pub fn interface(context: &Context) -> InterfaceResult {
 				Key::Ctrl('u') => interface.command.clear(),
 				Key::Char('\n') => {
 					let command = std::mem::replace(&mut interface.command, String::new());
-					let capture = commands.execute(context, &command);
+					let capture = commands.execute(context, &command)
+						.replace('\t', &" ".repeat(4));
 
 					interface.history.push(command);
 					interface.captures.push(capture);

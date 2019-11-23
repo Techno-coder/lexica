@@ -1,4 +1,5 @@
 use expression::{ascription, binding_variable, expression};
+pub use expression::path;
 pub use function::{function, function_type};
 use parser::{pattern, skip};
 pub use parser::{expect, identifier, list};
