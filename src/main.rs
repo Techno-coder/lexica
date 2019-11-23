@@ -15,27 +15,17 @@ mod extension;
 mod evaluation;
 mod inference;
 mod intrinsic;
+mod interface;
 
-fn main() {
-	println!("Hello, world!");
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+	let arguments: Vec<_> = std::env::args_os().collect();
+	let root_path = match arguments.get(1) {
+		Some(path) => std::path::PathBuf::from(path.clone()),
+		None => return Ok(eprintln!("The module root file is not specified")),
+	};
 
-	use std::sync::Arc;
-	use crate::context::Context;
-	use crate::declaration::*;
-	use crate::span::*;
-
-	let context = &Context::default();
-	crate::declaration::module_root(context, "examples/mathematics/main.lx".to_owned().into());
+	let context = &context::Context::default();
+	crate::declaration::module_root(context, root_path);
 	crate::node::load_definitions(context);
-
-	let parameters = Vec::new();
-	let result = context.emit(crate::evaluation::function(context, &Spanned::new(Arc::new(
-		FunctionPath(crate::declaration::DeclarationPath {
-			module_path: ModulePath::root(),
-			identifier: "main".into(),
-		})), Span::INTERNAL), parameters));
-	result.map(|result| println!("{:#?}", result));
-
-	context.errors.read().iter().for_each(|error| crate::error::display(context, error));
-	println!("{:#?}", context);
+	interface::interface(context)
 }

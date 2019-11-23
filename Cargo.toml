@@ -1,3 +1,5 @@
+cargo-features = ["profile-overrides"]
+
 [package]
 name = "lexica"
 version = "0.1.0"
@@ -6,7 +8,12 @@ edition = "2018"
 
 [dependencies]
 chashmap = "^2.2"
+termion = "^1.5"
+tui = "^0.6"
 
 [dependencies.parking_lot]
 version = "^0.9"
 features = ["nightly"]
+
+[profile.dev.overrides."*"]
+opt-level = 2

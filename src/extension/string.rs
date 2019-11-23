@@ -1,6 +1,6 @@
-use std::fmt;
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
+use std::fmt;
 use std::ops::Deref;
 
 pub type LineOffsets = BTreeMap<LineOffset, usize>;
@@ -33,6 +33,8 @@ impl fmt::Debug for LineOffset {
 pub trait StringExtension {
 	/// Creates a map of line start indexes to line numbers.
 	fn line_offsets(&self) -> LineOffsets;
+	/// Checks if another string is a prefix or equal to this string.
+	fn prefix_equal(&self, other: &str) -> bool;
 }
 
 impl StringExtension for &str {
@@ -43,5 +45,20 @@ impl StringExtension for &str {
 			.map(|(line, offset)| (LineOffset(offset), line + 1))
 			.collect()
 	}
+
+	fn prefix_equal(&self, other: &str) -> bool {
+		self == &other || self.starts_with(other)
+	}
 }
 
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_prefix_equal() {
+		assert!("context".prefix_equal("con"));
+		assert!("context".prefix_equal("context"));
+		assert!(!"context".prefix_equal("context_"));
+	}
+}
