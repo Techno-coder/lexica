@@ -20,6 +20,7 @@ impl Commands {
 		commands.insert("context", Box::new(CommandContext));
 		commands.insert("basic", Box::new(super::function::CommandBasic));
 		commands.insert("evaluate", Box::new(super::function::CommandEvaluate));
+		commands.insert("cycle", Box::new(super::function::CommandCycle));
 		Self { commands }
 	}
 

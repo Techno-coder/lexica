@@ -21,22 +21,27 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>)
 
 	let mut environment = Environment::default();
 	let engine = &mut TypeEngine::default();
-	for parameter in &function_type.parameters {
+	for (index, parameter) in function_type.parameters.iter().enumerate() {
 		let Parameter(binding, ascription) = &parameter.node;
 		pattern::bind_pattern(&mut environment, engine, binding);
 
 		let binding_type = pattern::binding_type(&mut environment, engine, binding);
 		let ascription_type = pattern::template_type(&mut environment, engine, ascription);
-		engine.unify(binding_type, ascription_type).map_err(|error|
+		engine.unify(binding_type, ascription_type.clone()).map_err(|error|
 			Diagnostic::new(Spanned::new(error, parameter.span)))?;
+
+		let variable = engine.new_variable();
+		environment.variable(Variable::new_temporary(index), variable, parameter.span);
+		engine.unify(Arc::new(InferenceType::Variable(variable)), ascription_type)
+			.map_err(|error| Diagnostic::new(Spanned::new(error, parameter.span)))?;
 	}
 
 	let expression = super::expression(context, &function.context,
 		&mut environment, engine, &function.expression)?;
 	projection(context, &function.context, &mut environment, engine)?;
 
-	let return_type = pattern::template_type(&mut environment, engine,
-		&function_type.return_type.node);
+	let return_type = pattern::template_type(&mut environment,
+		engine, &function_type.return_type.node);
 	engine.unify(expression, return_type).map_err(|error|
 		Diagnostic::new(Spanned::new(error, function_type.return_type.span)))?;
 

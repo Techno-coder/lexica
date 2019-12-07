@@ -1,13 +1,12 @@
 use std::fmt::{self, Write};
-use std::ops::{Index, Not};
+use std::ops::{BitXor, Index, Not};
 use std::sync::Arc;
 
 use chashmap::CHashMap;
 
 use crate::declaration::FunctionPath;
 use crate::extension::Indent;
-use crate::node::Variable;
-use crate::span::Spanned;
+use crate::inference::TypeResolution;
 
 use super::{BasicNode, NodeTarget};
 
@@ -15,9 +14,16 @@ pub type BasicFunctions = CHashMap<(Arc<FunctionPath>, Reversibility), Arc<Basic
 
 #[derive(Debug)]
 pub struct BasicFunction {
-	pub parameters: Vec<Spanned<Variable>>,
+	pub parameters: Vec<TypeResolution>,
 	pub component: Component,
 	pub nodes: Vec<BasicNode>,
+}
+
+impl BasicFunction {
+	pub fn parameter_type(&self) -> TypeResolution {
+		let path = crate::intrinsic::Intrinsic::Tuple.structure();
+		TypeResolution::Instance(path, self.parameters.clone())
+	}
 }
 
 impl Index<&NodeTarget> for BasicFunction {
@@ -73,7 +79,7 @@ impl Component {
 	}
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Direction {
 	Advance,
 	Reverse,
@@ -90,8 +96,28 @@ impl Not for Direction {
 	}
 }
 
+impl BitXor for Direction {
+	type Output = Direction;
+
+	fn bitxor(self, other: Self) -> Self::Output {
+		match self == other {
+			true => Direction::Advance,
+			false => Direction::Reverse,
+		}
+	}
+}
+
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Reversibility {
 	Reversible,
 	Entropic,
+}
+
+impl From<Direction> for Reversibility {
+	fn from(direction: Direction) -> Self {
+		match direction {
+			Direction::Advance => Reversibility::Entropic,
+			Direction::Reverse => Reversibility::Reversible,
+		}
+	}
 }

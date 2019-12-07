@@ -1,4 +1,4 @@
-use crate::basic::{Compound, Item, Value};
+use crate::basic::{Compound, Direction, Item, Value};
 use crate::node::{Arithmetic, BinaryOperator, UnaryOperator, Variable};
 
 use super::{EvaluationError, EvaluationItem, ValueContext};
@@ -23,11 +23,19 @@ macro_rules! binary_integer {
     };
 }
 
-pub fn binding(context: &mut ValueContext, variable: &Variable,
-               compound: &Compound) -> Result<(), EvaluationError> {
-	let item = item(context, compound)?;
-	context.frame().items.insert(variable.clone(), item);
-	Ok(())
+pub fn binding(context: &mut ValueContext, direction: Direction,
+               variable: &Variable, compound: &Compound) -> Result<(), EvaluationError> {
+	Ok(match direction {
+		Direction::Advance => {
+			let item = item(context, compound)?;
+			context.frame().items.insert(variable.clone(), item);
+		}
+		Direction::Reverse => {
+			if let Compound::Value(Value::Location(location)) = compound {
+				*context.location(location) = context.frame().items[variable].clone();
+			}
+		}
+	})
 }
 
 fn item(context: &mut ValueContext, compound: &Compound) -> Result<EvaluationItem, EvaluationError> {

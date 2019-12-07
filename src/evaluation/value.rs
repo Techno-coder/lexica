@@ -2,7 +2,7 @@ use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
-use crate::basic::{Item, Location, Projection, Value};
+use crate::basic::{BasicFunction, Branch, Item, Location, Projection, Value};
 use crate::node::Variable;
 
 use super::{EvaluationInstance, EvaluationItem, FrameIndex};
@@ -104,6 +104,38 @@ impl ValueStack {
 #[derive(Debug, Default)]
 pub struct ValueFrame {
 	pub items: HashMap<Variable, EvaluationItem>,
+}
+
+impl ValueFrame {
+	pub fn advance<I>(function: &BasicFunction, arguments: I) -> Self
+		where I: Iterator<Item=EvaluationItem> {
+		let mut frame = ValueFrame::default();
+		let type_resolution = function.parameter_type();
+		let fields = arguments.enumerate().map(|(index, item)|
+			(index.to_string().into(), item)).collect();
+		let item = Item::Instance(EvaluationInstance { type_resolution, fields });
+		frame.items.insert(Variable::new_temporary(0), EvaluationItem::Item(item));
+		frame
+	}
+
+	pub fn reverse(function: &BasicFunction, return_item: EvaluationItem) -> Self {
+		let mut frame = ValueFrame::default();
+		let type_resolution = function.parameter_type();
+		let fields = function.parameters.iter().enumerate().map(|(index, _)|
+			(index.to_string().into(), EvaluationItem::Item(Item::Uninitialised))).collect();
+		let item = Item::Instance(EvaluationInstance { type_resolution, fields });
+		frame.items.insert(Variable::new_temporary(0), EvaluationItem::Item(item));
+
+		match &function[&function.component.exit].advance.node {
+			Branch::Return(Value::Item(_)) => (),
+			Branch::Return(Value::Location(location)) => match location.projections.is_empty() {
+				true => frame.items.insert(location.variable.clone(), return_item).unwrap_none(),
+				false => panic!("Return branch location: {}, cannot have projections", location),
+			},
+			other => panic!("Branch: {}, must be return in reverse function entry", other),
+		}
+		frame
+	}
 }
 
 #[derive(Debug, Default)]

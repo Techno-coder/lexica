@@ -3,10 +3,10 @@ use std::sync::Arc;
 use crate::context::Context;
 use crate::declaration::FunctionPath;
 use crate::error::Diagnostic;
-use crate::node::{BindingVariable, ExpressionKey, Parameter};
+use crate::node::{ExpressionKey, Parameter, Variable};
 use crate::span::Spanned;
 
-use super::{BasicContext, BasicFunction, Branch, Location, Reversibility};
+use super::{BasicContext, BasicFunction, Branch, Location, Projection, Reversibility, Value};
 use super::expression::basic;
 
 /// Lowers a partially evaluated function.
@@ -17,21 +17,21 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
 		return Ok(function.clone());
 	}
 
-	let mut parameters = Vec::new();
-	let function = crate::evaluation::partial_function(context, function_path)?;
-	let span = function.context[&function.expression].span;
-	function.function_type.parameters.iter().map(|parameter| &parameter.node)
-		.for_each(|Parameter(pattern, _)| pattern.traverse(&mut |terminal|
-			parameters.push(terminal.clone().map(|BindingVariable(variable, _)| variable))));
-
 	let mut basic_context = BasicContext::new(context, reversibility);
-	let mut component = function.function_type.parameters.iter().map(|parameter| &parameter.node)
-		.fold(basic_context.component(), |component, Parameter(pattern, _)| {
-			let location = Location::new(basic_context.temporary());
-			super::pattern::binding(&mut basic_context, component, &pattern, location)
-		});
-
+	let function = crate::evaluation::partial_function(context, function_path)?;
 	let type_context = crate::inference::function(context, function_path)?;
+	let span = function.context[&function.expression].span;
+
+	let mut parameters = Vec::new();
+	let parameter = basic_context.temporary();
+	let mut component = function.function_type.parameters.iter().map(|parameter| &parameter.node)
+		.enumerate().fold(basic_context.component(), |component, (index, Parameter(pattern, _))| {
+		parameters.push(type_context[&Variable::new_temporary(index)].clone());
+		let projection = Projection::Field(index.to_string().into());
+		let location = Location::new(parameter.clone()).push(projection);
+		super::pattern::binding(&mut basic_context, component, &pattern, location)
+	});
+
 	let (value, other) = basic(&function.context, &type_context,
 		&mut basic_context, &function.expression);
 	component = basic_context.join(component, other, span);
@@ -39,8 +39,14 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
 	basic_context.consume_value(&value);
 	let other = basic_context.pop_frame();
 	component = basic_context.join(component, other, span);
-	let return_branch = Spanned::new(Branch::Return(value), span);
-	basic_context[&component.exit].advance = return_branch;
+	let advance_branch = Spanned::new(Branch::Return(value), span);
+	basic_context[&component.exit].advance = advance_branch;
+
+	if basic_context.is_reversible() {
+		let reverse_value = Value::Location(Location::new(parameter));
+		let reverse_branch = Spanned::new(Branch::Return(reverse_value), span);
+		basic_context[&component.entry].reverse = reverse_branch;
+	}
 
 	let (nodes, component) = basic_context.flatten(component);
 	let function = Arc::new(BasicFunction { parameters, component, nodes });
@@ -62,7 +68,5 @@ pub fn expression(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
 	let return_branch = Spanned::new(Branch::Return(value), function_path.span);
 	basic_context[&component.exit].advance = return_branch;
 	let (nodes, component) = basic_context.flatten(component);
-
-	let parameters = Vec::new();
-	Ok(BasicFunction { parameters, component, nodes })
+	Ok(BasicFunction { parameters: Vec::new(), component, nodes })
 }

@@ -2,6 +2,13 @@ module vector
 
 use crate::vector::vector::*
 
+fn main'() -> u64:
+	increment(1337)
+
+fn increment(x: u64) -> u64:
+	x += 1
+	x
+
 fn main() -> u64:
 	let ~test = Test: reference: &35
 	test.set(16)
@@ -27,15 +34,15 @@ fn fibonacci(n: u64) -> u64:
 		drop summation = second - first
 		counter += 1
 
-	drop n = second
+	drop n = counter
 	second
 
-fn fibonacci_recursive(n: u64) -> u64:
+fn fibonacci'(n: u64) -> u64:
 	if:
 		n <= 1 => n <= 1: 1
 		true => true:
-			let left = fibonacci_recursive(n - 2)
-			let right = fibonacci_recursive(n - 1)
+			let left = fibonacci'(n - 2)
+			let right = fibonacci'(n - 1)
 			left + right
 
 fn summation(n: u64) -> u64:

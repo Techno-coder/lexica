@@ -1,10 +1,14 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::basic::Reversibility;
+use crate::basic::{Direction, Item, Reversibility};
 use crate::context::Context;
 use crate::declaration::FunctionPath;
 use crate::error::Diagnostic;
+use crate::evaluation::{EvaluationContext, EvaluationInstance,
+	EvaluationItem, FunctionFrame, ValueFrame};
 use crate::extension::StringExtension;
+use crate::node::Variable;
 use crate::span::{Span, Spanned};
 
 use super::Command;
@@ -50,6 +54,39 @@ impl Command for CommandEvaluate {
 			true => crate::evaluation::function(context, &path, Vec::new())
 				.and_then(|item| Ok(item.collapse().map_err(|error|
 					Diagnostic::new(Spanned::new(error, Span::INTERNAL)))?.to_string()))
+		}
+	}
+
+	fn symbols(&self, context: &Context, string: &str) -> Vec<String> {
+		function_candidates(context, string)
+	}
+}
+
+#[derive(Debug)]
+pub struct CommandCycle;
+
+impl Command for CommandCycle {
+	fn execute(&self, context: &Context, string: &str) -> Result<String, Diagnostic> {
+		let path = function_path(string)?;
+		let function_type = crate::node::function_type(context, &path)?;
+		match function_type.parameters.is_empty() {
+			false => Ok("Evaluated functions must have zero arity".to_owned()),
+			true => {
+				let function = crate::basic::function(context, &path, Reversibility::Reversible)?;
+				let (type_resolution, fields) = (function.parameter_type(), HashMap::new());
+				let item = Item::Instance(EvaluationInstance { type_resolution, fields });
+
+				let mut frame = ValueFrame::default();
+				frame.items.insert(Variable::new_temporary(0), EvaluationItem::Item(item));
+				let mut context = EvaluationContext::new(context, Reversibility::Reversible,
+					FunctionFrame::new(function.clone(), Direction::Advance), frame)?;
+				let item = context.resume(Direction::Advance)?;
+
+				context.values.frames.push(ValueFrame::reverse(&function, item));
+				context.functions.push(FunctionFrame::new(function, Direction::Reverse));
+				context.resume(Direction::Reverse).and_then(|item| Ok(item.collapse().map_err(|error|
+					Diagnostic::new(Spanned::new(error, Span::INTERNAL)))?.to_string()))
+			}
 		}
 	}
 

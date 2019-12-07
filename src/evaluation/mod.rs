@@ -1,8 +1,9 @@
-use context::EvaluationContext;
-pub use evaluation::{EvaluationError, expression, function};
-use item::{EvaluationInstance, EvaluationItem, FrameIndex};
+pub use context::{EvaluationContext, FunctionFrame};
+pub use evaluation::{EvaluationError, expression, function, reverse};
+pub use item::{EvaluationInstance, EvaluationItem};
+use item::FrameIndex;
 pub use partial::{partial_function, PartialFunctions};
-use value::{DropStack, ValueContext, ValueFrame};
+pub use value::{DropStack, ValueContext, ValueFrame};
 
 mod context;
 mod evaluation;
