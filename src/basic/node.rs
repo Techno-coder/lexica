@@ -6,7 +6,7 @@ use crate::span::{Span, Spanned};
 
 use super::{Branch, Direction, Statement};
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Hash, Ord, PartialOrd, Eq, PartialEq)]
 pub struct NodeTarget(pub usize);
 
 impl NodeTarget {

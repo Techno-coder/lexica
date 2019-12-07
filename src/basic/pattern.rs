@@ -29,21 +29,20 @@ pub fn binding(context: &mut BasicContext, mut component: Component,
 	}
 }
 
-pub fn explicit_drop(context: &mut BasicContext, mut component: Component, value: &Value,
+pub fn explicit_drop(context: &mut BasicContext, mut component: Component,
                      pattern: &VariablePattern, location: Location) -> Component {
 	match pattern {
 		Pattern::Wildcard => panic!("Wildcard explicit drop is invalid"),
 		Pattern::Terminal(terminal) => {
-			let value = Value::Location(location);
-			let location = Location::new(terminal.node.clone());
-			let statement = Statement::Mutation(MutationKind::Assign, location, value);
+			let compound = Compound::Value(Value::Location(location));
+			let statement = Statement::Binding(terminal.node.clone(), compound);
 			context.push(component, Spanned::new(statement, terminal.span))
 		}
 		Pattern::Tuple(patterns) => {
 			for (index, pattern) in patterns.iter().enumerate() {
 				let field: Arc<str> = index.to_string().into();
 				let location = location.clone().push(Projection::Field(field));
-				component = explicit_drop(context, component, value, pattern, location);
+				component = explicit_drop(context, component, pattern, location);
 			}
 			component
 		}

@@ -47,16 +47,6 @@ pub fn function(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
 		.resume(Direction::Advance)
 }
 
-/// Reverses and evaluates a function and provides the function parameter value.
-pub fn reverse(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
-               item: Item) -> Result<EvaluationItem, Diagnostic> {
-	let function = crate::basic::function(context, function_path, Reversibility::Reversible)?;
-	let frame = ValueFrame::reverse(&function, EvaluationItem::item(&item));
-	EvaluationContext::new(context, Reversibility::Reversible,
-		FunctionFrame::new(function, Direction::Reverse), frame)?
-		.resume(Direction::Reverse)
-}
-
 /// Fully evaluates an expression and provides the expression result.
 pub fn expression(context: &Context, function_path: &Spanned<Arc<FunctionPath>>,
                   expression: &ExpressionKey, variables: HashMap<Variable, Item>)

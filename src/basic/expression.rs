@@ -6,8 +6,18 @@ use crate::node::{Ascription, BindingVariable, Expression, ExpressionKey,
 	FunctionContext, MutationKind, Parameter, Pattern, UnaryOperator};
 use crate::span::Spanned;
 
-use super::{BasicContext, Component, Compound, Direction, Instance, Item,
-	Location, Projection, Statement, Value};
+use super::*;
+
+pub fn entropic(function: &FunctionContext, type_context: &TypeContext,
+                context: &mut BasicContext, expression_key: &ExpressionKey) -> (Value, Component) {
+	context.push_frame();
+	let reversibility = std::mem::replace(&mut context.reversibility, Reversibility::Entropic);
+	let (value, component) = basic(function, type_context, context, expression_key);
+	let frame = context.pop_frame();
+
+	context.reversibility = reversibility;
+	(value, context.join(component, frame, function[expression_key].span))
+}
 
 pub fn basic(function: &FunctionContext, type_context: &TypeContext,
              context: &mut BasicContext, expression_key: &ExpressionKey) -> (Value, Component) {
@@ -75,17 +85,13 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 			(Value::Item(Item::Unit), context.component()),
 		Expression::ExplicitDrop(variable, expression) => {
 			variable.traverse(&mut |variable| context.consume_variable(&variable.node));
-			let (value, component) = basic(function, type_context, context, expression);
-			let component = context.invert(component);
+			let (value, component) = entropic(function, type_context, context, expression);
 			let component = match &variable {
 				Pattern::Wildcard => panic!("Wildcard explicit drop is invalid"),
 				Pattern::Terminal(variable) => {
-					let location = Location::new(variable.node.clone());
-					let statement = Statement::Mutation(MutationKind::Assign, location, value);
-
-					let mutation = context.component();
-					let mutation = context.push(mutation, Spanned::new(statement, span));
-					context.join(mutation, component, span)
+					let variable = variable.node.clone();
+					let statement = Statement::Binding(variable, Compound::Value(value));
+					context.push(component, Spanned::new(statement, span))
 				}
 				Pattern::Tuple(_) => {
 					let location = match &value {
@@ -95,11 +101,12 @@ pub fn basic(function: &FunctionContext, type_context: &TypeContext,
 
 					let mutation = context.component();
 					let mutation = super::pattern::explicit_drop(context,
-						mutation, &value, &variable, location);
+						mutation, &variable, location);
 					context.join(mutation, component, span)
 				}
 			};
 
+			let component = context.invert(component);
 			let (entry, exit) = (context.component(), context.component());
 			context.link(Direction::Advance, &entry, &exit, span);
 			context.link(Direction::Advance, &component, &exit, span);

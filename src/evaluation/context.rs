@@ -129,7 +129,13 @@ impl<'a> EvaluationContext<'a> {
 				super::mutation::mutation(&mut self.values, &self.reversibility,
 					direction, mutation, location, value),
 			Statement::ImplicitDrop(location) => Ok(match direction {
-				Direction::Reverse => *self.values.location(location) = self.values.stack.restore(),
+				Direction::Reverse => {
+					if !self.values.frame().items.contains_key(&location.variable) {
+						self.values.frame().items.insert(location.variable.clone(),
+							EvaluationItem::Item(Item::Uninitialised)).unwrap_none();
+					}
+					*self.values.location(location) = self.values.stack.restore()
+				}
 				Direction::Advance => {
 					let item = self.values.location(location).clone();
 					self.values.stack.drop(item);

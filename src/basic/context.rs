@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::{self, Write};
 use std::ops::{Index, IndexMut};
 
@@ -17,8 +17,8 @@ pub struct BasicContext<'a> {
 	pub context: &'a Context,
 	next_temporary: usize,
 	next_component: usize,
-	reversibility: Reversibility,
-	nodes: HashMap<NodeTarget, BasicNode>,
+	pub reversibility: Reversibility,
+	nodes: BTreeMap<NodeTarget, BasicNode>,
 	frames: Vec<Frame>,
 }
 
@@ -29,7 +29,7 @@ impl<'a> BasicContext<'a> {
 			next_temporary: 0,
 			next_component: 0,
 			reversibility,
-			nodes: HashMap::new(),
+			nodes: BTreeMap::new(),
 			frames: vec![Frame::new()],
 		}
 	}
@@ -82,12 +82,14 @@ impl<'a> BasicContext<'a> {
 		if base_node.in_reverse.is_empty() && target_node.in_advance.is_empty() {
 			let mut targets = HashMap::new();
 			targets.insert(target.entry, base.exit);
-
 			let mut target_node = self.nodes.remove(&target.entry).unwrap();
-			target_node.in_reverse.into_iter().for_each(|target|
-				self[&target].retarget(&targets));
+			target_node.in_reverse.iter().for_each(|target|
+				self[target].retarget(&targets));
 
 			let base_node = &mut self[&base.exit];
+			target_node.in_reverse.iter().for_each(|target|
+				base_node.in_reverse.push(*target));
+
 			base_node.statements.append(&mut target_node.statements);
 			base_node.advance = target_node.advance;
 			if target.exit != target.entry {
@@ -157,15 +159,13 @@ impl<'a> BasicContext<'a> {
 
 	pub fn pop_frame(&mut self) -> Component {
 		let frame = self.frames.pop().expect("Context frame stack is empty");
-		frame.into_iter().fold(self.component(), |component, (variable, span)| {
-			match self.is_reversible() {
-				false => component,
-				true => {
-					let statement = Statement::ImplicitDrop(Location::new(variable));
-					self.push(component, Spanned::new(statement, span))
-				}
-			}
-		})
+		match self.is_reversible() {
+			false => self.component(),
+			true => frame.into_iter().fold(self.component(), |component, (variable, span)| {
+				let statement = Statement::ImplicitDrop(Location::new(variable));
+				self.push(component, Spanned::new(statement, span))
+			})
+		}
 	}
 
 	fn frame(&mut self) -> &mut Frame {

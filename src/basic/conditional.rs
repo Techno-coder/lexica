@@ -4,7 +4,7 @@ use crate::node::{Arithmetic, BinaryOperator, ConditionEnd, ConditionStart,
 use crate::span::{Span, Spanned};
 
 use super::*;
-use super::expression::basic;
+use super::expression::{basic, entropic};
 
 pub fn termination(function: &FunctionContext, type_context: &TypeContext, context: &mut BasicContext,
                    condition_start: &Option<ConditionStart>, condition_end: &ConditionEnd,
@@ -14,7 +14,7 @@ pub fn termination(function: &FunctionContext, type_context: &TypeContext, conte
 	let (_, mut component) = basic(function, type_context, context, expression);
 
 	let condition_start = match (context.is_reversible(), &condition_start) {
-		(true, Some(condition_start)) => Some(basic(function,
+		(true, Some(condition_start)) => Some(entropic(function,
 			type_context, context, &condition_start)),
 		(true, None) => {
 			let variable = context.temporary();
@@ -93,7 +93,8 @@ pub fn conditional(function: &FunctionContext, type_context: &TypeContext, conte
 			true => match all_reversible {
 				true => {
 					let condition_end = condition_end.as_ref().unwrap();
-					let (end_condition, end_component) = basic(function, type_context, context, condition_end);
+					let (end_condition, end_component) = entropic(function,
+						type_context, context, condition_end);
 					(Some(end_condition), Some((end_component, function[condition_end].span)))
 				}
 				false => {

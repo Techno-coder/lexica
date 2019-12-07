@@ -1,5 +1,5 @@
 pub use context::{EvaluationContext, FunctionFrame};
-pub use evaluation::{EvaluationError, expression, function, reverse};
+pub use evaluation::{EvaluationError, expression, function};
 pub use item::{EvaluationInstance, EvaluationItem};
 use item::FrameIndex;
 pub use partial::{partial_function, PartialFunctions};
